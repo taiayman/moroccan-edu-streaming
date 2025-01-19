@@ -98,7 +98,7 @@ const TeacherDashboard = () => {
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      backgroundColor: '#FAFAFA',
+      backgroundColor: '#f2f0e9',
       pt: { xs: '70px', md: '90px' },
       pb: 4
     }}>

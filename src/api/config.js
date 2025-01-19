@@ -1,8 +1,34 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, FacebookAuthProvider } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
+const firebaseConfig = {
+  apiKey: "AIzaSyC6gdAOUcIA9w_KuCYXse6aCfZjqLYU71s",
+  authDomain: "moroccan-platform-streaming.firebaseapp.com",
+  projectId: "moroccan-platform-streaming",
+  storageBucket: "moroccan-platform-streaming.firebasestorage.app",
+  messagingSenderId: "785334032082",
+  appId: "1:785334032082:web:07ed141b102ba995417f0b",
+  measurementId: "G-K4YKPL8DBS"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
+export const googleProvider = new GoogleAuthProvider();
+
+// Constants
+export const ROLES = {
+  STUDENT: 'student',
+  PARENT: 'parent',
+  TEACHER: 'teacher',
+  ADMIN: 'admin'
+};
+
+// API endpoints configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
 export const endpoints = {
@@ -29,12 +55,3 @@ export const getAuthHeaders = () => {
     'Content-Type': 'application/json',
   };
 };
-
-export const ROLES = {
-  STUDENT: 'student',
-  PARENT: 'parent',
-  TEACHER: 'teacher',
-  ADMIN: 'admin'
-};
-
-export default {};

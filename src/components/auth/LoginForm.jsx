@@ -15,46 +15,86 @@ import {
   CircularProgress,
   IconButton,
   InputAdornment,
+  Alert,
 } from '@mui/material';
 import {
   Google as GoogleIcon,
-  Facebook as FacebookIcon,
   Visibility,
   VisibilityOff,
 } from '@mui/icons-material';
+import { 
+  signInWithEmailAndPassword, 
+  signInWithPopup 
+} from 'firebase/auth';
+import { auth, googleProvider, ROLES } from '../../api/config';
+import { verifyUserRole } from '../../api/users';
+import { navigateByRole } from '../../utils/navigation';
 
 const LoginForm = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('student');
+  const [selectedRole, setSelectedRole] = useState(ROLES.STUDENT);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     setLoading(true);
-
-    // Create mock user data
-    const mockUser = {
-      id: '123',
-      email: formData.email || 'test@example.com',
-      role: selectedRole,
-      displayName: 'Test User',
-    };
+    setError('');
     
-    // Store mock data
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    localStorage.setItem('token', 'fake-token-123');
+    try {
+      const { user } = await signInWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
 
-    // Direct navigation based on role
-    if (selectedRole === 'teacher') {
-      window.location.href = '/teacher/dashboard';
-    } else if (selectedRole === 'parent') {
-      window.location.href = '/parent/dashboard';
-    } else {
-      window.location.href = '/student/dashboard';
+      // Verify role and get user profile
+      const userProfile = await verifyUserRole(user.uid, selectedRole);
+
+      // Store complete user data
+      const userData = {
+        id: user.uid,
+        ...userProfile
+      };
+      
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      // Navigate to role-specific dashboard
+      navigateByRole(navigate, userProfile.role);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const { user } = await signInWithPopup(auth, googleProvider);
+
+      // Verify role and get user profile
+      const userProfile = await verifyUserRole(user.uid, selectedRole);
+
+      // Store complete user data
+      const userData = {
+        id: user.uid,
+        ...userProfile
+      };
+      
+      localStorage.setItem('user', JSON.stringify(userData));
+
+      // Navigate to role-specific dashboard
+      navigateByRole(navigate, userProfile.role);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
     }
   };
 
@@ -74,7 +114,7 @@ const LoginForm = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#FAFAFA'
+        background: '#f2f0e9'
       }}
     >
       <Box
@@ -103,68 +143,15 @@ const LoginForm = () => {
               fontSize: '1.1rem'
             }}
           >
-            Welcome back! Enter your details below
+            Welcome back! Please select your role and enter your details
           </Typography>
         </Box>
 
-        {/* Social Login Buttons */}
-        <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<GoogleIcon />}
-            onClick={() => window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`}
-            sx={{
-              py: 1.5,
-              color: '#000',
-              borderColor: '#ddd',
-              backgroundColor: '#fff',
-              textTransform: 'none',
-              fontSize: '1rem',
-              fontWeight: 500,
-              '&:hover': {
-                backgroundColor: '#f5f5f5',
-                borderColor: '#ddd'
-              }
-            }}
-          >
-            Google
-          </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<FacebookIcon />}
-            onClick={() => window.location.href = `${process.env.REACT_APP_API_URL}/auth/facebook`}
-            sx={{
-              py: 1.5,
-              color: '#000',
-              borderColor: '#ddd',
-              backgroundColor: '#fff',
-              textTransform: 'none',
-              fontSize: '1rem',
-              fontWeight: 500,
-              '&:hover': {
-                backgroundColor: '#f5f5f5',
-                borderColor: '#ddd'
-              }
-            }}
-          >
-            Facebook
-          </Button>
-        </Box>
-
-        <Box 
-          sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 2, 
-            mb: 4 
-          }}
-        >
-          <Box sx={{ flex: 1, height: '1px', backgroundColor: '#ddd' }} />
-          <Typography sx={{ color: '#666' }}>or</Typography>
-          <Box sx={{ flex: 1, height: '1px', backgroundColor: '#ddd' }} />
-        </Box>
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
 
         {/* Role Selection */}
         <FormControl 
@@ -194,9 +181,9 @@ const LoginForm = () => {
             label="Select Role"
             onChange={(e) => setSelectedRole(e.target.value)}
           >
-            <MenuItem value="student">Student</MenuItem>
-            <MenuItem value="teacher">Teacher</MenuItem>
-            <MenuItem value="parent">Parent</MenuItem>
+            <MenuItem value={ROLES.STUDENT}>Student</MenuItem>
+            <MenuItem value={ROLES.PARENT}>Parent</MenuItem>
+            <MenuItem value={ROLES.TEACHER}>Teacher</MenuItem>
           </Select>
         </FormControl>
 
@@ -359,6 +346,30 @@ const LoginForm = () => {
             ) : (
               'Sign in'
             )}
+          </Button>
+        </Box>
+
+        <Box sx={{ mb: 4 }}>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<GoogleIcon />}
+            onClick={handleGoogleLogin}
+            sx={{
+              py: 1.5,
+              color: '#000',
+              borderColor: '#ddd',
+              backgroundColor: '#fff',
+              textTransform: 'none',
+              fontSize: '1rem',
+              fontWeight: 500,
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+                borderColor: '#ddd'
+              }
+            }}
+          >
+            Continue with Google
           </Button>
         </Box>
 

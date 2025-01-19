@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AppBar,
@@ -22,16 +22,36 @@ import {
   Language as LanguageIcon,
   KeyboardArrowDown as KeyboardArrowDownIcon
 } from '@mui/icons-material';
-import { useAuth } from '../../hooks/useAuth';
+import { auth } from '../../api/config';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const Navbar = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const navigate = useNavigate();
-  const { user, userData, logout } = useAuth();
+  const [user, setUser] = useState(null);
   const [anchorEl, setAnchorEl] = useState(null);
   const [langAnchorEl, setLangAnchorEl] = useState(null);
   const [notificationsAnchor, setNotificationsAnchor] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Get user data from localStorage to include role
+        const userData = JSON.parse(localStorage.getItem('user'));
+        setUser({
+          ...user,
+          role: userData?.role || 'student',
+          displayName: user.displayName || userData?.displayName || 'User'
+        });
+      } else {
+        setUser(null);
+        navigate('/auth/login');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -59,7 +79,8 @@ const Navbar = () => {
 
   const handleLogout = async () => {
     try {
-      await logout();
+      await signOut(auth);
+      localStorage.removeItem('user');
       navigate('/auth/login');
     } catch (error) {
       console.error('Logout failed:', error);
@@ -67,7 +88,7 @@ const Navbar = () => {
   };
 
   const getDashboardPath = () => {
-    switch (userData?.role) {
+    switch (user?.role) {
       case 'student':
         return '/student/dashboard';
       case 'teacher':
@@ -78,6 +99,8 @@ const Navbar = () => {
         return '/';
     }
   };
+
+  if (!user) return null;
 
   return (
     <AppBar 
@@ -128,7 +151,7 @@ const Navbar = () => {
               >
                 Dashboard
               </Button>
-              {userData?.role === 'student' && (
+              {user?.role === 'student' && (
                 <Button 
                   sx={{ 
                     color: '#666',
@@ -182,8 +205,8 @@ const Navbar = () => {
               onClick={handleMenu}
             >
               <Avatar
-                alt={userData?.displayName}
-                src={user?.photoURL}
+                alt={user.displayName}
+                src={user.photoURL}
                 sx={{
                   width: 38,
                   height: 38,
@@ -201,17 +224,18 @@ const Navbar = () => {
                         lineHeight: 1.2
                       }}
                     >
-                      {userData?.displayName || 'User'}
+                      {user.displayName}
                     </Typography>
                     <Typography
                       variant="caption"
                       sx={{
                         color: '#666',
                         display: 'block',
-                        lineHeight: 1.2
+                        lineHeight: 1.2,
+                        textTransform: 'capitalize'
                       }}
                     >
-                      {userData?.role || 'Student'}
+                      {user.role}
                     </Typography>
                   </Box>
                   <KeyboardArrowDownIcon sx={{ color: '#666', fontSize: 20 }} />

@@ -17,14 +17,20 @@ import {
 } from '@mui/material';
 import {
   Visibility,
-  VisibilityOff
+  VisibilityOff,
+  Google as GoogleIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../hooks/useAuth';
-import { ROLES } from '../../api/config';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithPopup,
+  updateProfile
+} from 'firebase/auth';
+import { auth, googleProvider, ROLES } from '../../api/config';
+import { createUserProfile, verifyUserRole } from '../../api/users';
+import { navigateByRole } from '../../utils/navigation';
 
 const RegisterForm = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -46,6 +52,10 @@ const RegisterForm = () => {
   };
 
   const validateForm = () => {
+    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+      setError('All fields are required');
+      return false;
+    }
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return false;
@@ -65,17 +75,88 @@ const RegisterForm = () => {
 
     setLoading(true);
     try {
+      const { user } = await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+
+      // Prepare user data
+      const firstName = formData.firstName.trim() || 'User';
+      const lastName = formData.lastName.trim() || '';
+      const displayName = firstName + (lastName ? ` ${lastName}` : '');
+
+      // Update Firebase profile
+      await updateProfile(user, {
+        displayName
+      });
+
+      // Prepare user data for storage
       const userData = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        displayName: `${formData.firstName} ${formData.lastName}`
+        email: user.email || '',
+        role: formData.role,
+        displayName: displayName,
+        firstName: firstName,
+        lastName: lastName
       };
 
-      await register(formData.email, formData.password, formData.role, userData);
-      navigate('/dashboard');
+      // Save to Firestore
+      await createUserProfile(user.uid, userData);
+      
+      // Store in localStorage
+      localStorage.setItem('user', JSON.stringify({
+        id: user.uid,
+        ...userData
+      }));
+
+      // Navigate to role-specific dashboard
+      navigateByRole(navigate, userData.role);
     } catch (error) {
       setError(error.message);
-    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const { user } = await signInWithPopup(auth, googleProvider);
+
+      // Process user data
+      const displayName = user.displayName || 'User';
+      let firstName = 'User';
+      let lastName = '';
+      
+      if (displayName && displayName !== 'User') {
+        const nameParts = displayName.split(' ');
+        firstName = nameParts[0] || 'User';
+        lastName = nameParts.slice(1).join(' ') || '';
+      }
+
+      // Prepare user data for storage
+      const userData = {
+        email: user.email || '',
+        role: formData.role,
+        displayName: displayName,
+        firstName: firstName,
+        lastName: lastName
+      };
+
+      // Save to Firestore
+      await createUserProfile(user.uid, userData);
+      
+      // Store in localStorage
+      localStorage.setItem('user', JSON.stringify({
+        id: user.uid,
+        ...userData
+      }));
+
+      // Navigate to role-specific dashboard
+      navigateByRole(navigate, userData.role);
+    } catch (error) {
+      setError(error.message);
       setLoading(false);
     }
   };
@@ -88,7 +169,7 @@ const RegisterForm = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#FAFAFA',
+        background: '#f2f0e9',
         py: { xs: 4, md: 8 }
       }}
     >
@@ -137,6 +218,41 @@ const RegisterForm = () => {
             {error}
           </Alert>
         )}
+
+        {/* Role Selection */}
+        <FormControl 
+          fullWidth 
+          sx={{ 
+            mb: 3,
+            '& .MuiOutlinedInput-root': {
+              backgroundColor: '#fff',
+              '& fieldset': {
+                borderColor: '#ddd',
+              },
+              '&:hover fieldset': {
+                borderColor: '#000',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: '#000',
+              }
+            },
+            '& .MuiInputLabel-root.Mui-focused': {
+              color: '#000'
+            }
+          }}
+        >
+          <InputLabel>Role</InputLabel>
+          <Select
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            required
+          >
+            <MenuItem value={ROLES.STUDENT}>Student</MenuItem>
+            <MenuItem value={ROLES.PARENT}>Parent</MenuItem>
+            <MenuItem value={ROLES.TEACHER}>Teacher</MenuItem>
+          </Select>
+        </FormControl>
 
         <Box component="form" onSubmit={handleSubmit} noValidate>
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
@@ -270,7 +386,7 @@ const RegisterForm = () => {
             onChange={handleChange}
             required
             sx={{ 
-              mb: 2,
+              mb: 3,
               '& .MuiOutlinedInput-root': {
                 backgroundColor: '#fff',
                 '& fieldset': {
@@ -288,40 +404,6 @@ const RegisterForm = () => {
               }
             }}
           />
-
-          <FormControl 
-            fullWidth 
-            sx={{ 
-              mb: 4,
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: '#fff',
-                '& fieldset': {
-                  borderColor: '#ddd',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#000',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#000',
-                }
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: '#000'
-              }
-            }}
-          >
-            <InputLabel>Role</InputLabel>
-            <Select
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              required
-            >
-              <MenuItem value={ROLES.STUDENT}>Student</MenuItem>
-              <MenuItem value={ROLES.PARENT}>Parent</MenuItem>
-              <MenuItem value={ROLES.TEACHER}>Teacher</MenuItem>
-            </Select>
-          </FormControl>
 
           <Box
             sx={{
@@ -371,26 +453,50 @@ const RegisterForm = () => {
               {loading ? <CircularProgress size={24} sx={{ color: '#fff' }} /> : 'Create Account'}
             </Button>
           </Box>
+        </Box>
 
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography sx={{ color: '#666' }}>
-              Already have an account?{' '}
-              <Button
-                onClick={() => navigate('/auth/login')}
-                sx={{ 
-                  textTransform: 'none',
-                  color: '#000',
-                  fontWeight: 500,
-                  '&:hover': {
-                    backgroundColor: 'transparent',
-                    textDecoration: 'underline'
-                  }
-                }}
-              >
-                Sign in
-              </Button>
-            </Typography>
-          </Box>
+        <Box sx={{ mb: 4 }}>
+          <Button
+            fullWidth
+            variant="outlined"
+            startIcon={<GoogleIcon />}
+            onClick={handleGoogleSignUp}
+            sx={{
+              py: 1.5,
+              color: '#000',
+              borderColor: '#ddd',
+              backgroundColor: '#fff',
+              textTransform: 'none',
+              fontSize: '1rem',
+              fontWeight: 500,
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+                borderColor: '#ddd'
+              }
+            }}
+          >
+            Sign up with Google
+          </Button>
+        </Box>
+
+        <Box sx={{ textAlign: 'center' }}>
+          <Typography sx={{ color: '#666' }}>
+            Already have an account?{' '}
+            <Button
+              onClick={() => navigate('/auth/login')}
+              sx={{ 
+                textTransform: 'none',
+                color: '#000',
+                fontWeight: 500,
+                '&:hover': {
+                  backgroundColor: 'transparent',
+                  textDecoration: 'underline'
+                }
+              }}
+            >
+              Sign in
+            </Button>
+          </Typography>
         </Box>
       </Box>
     </Container>

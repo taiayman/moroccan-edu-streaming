@@ -298,7 +298,7 @@ const StudentDashboard = () => {
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      backgroundColor: '#FAFAFA',
+      backgroundColor: '#f2f0e9',
       pt: '90px', // Space for AppBar
       pb: 4
     }}>
