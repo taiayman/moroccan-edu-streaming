@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import StudentDashboard from '../pages/student/Dashboard';
 import LiveClasses from '../pages/student/LiveClasses';
-import LiveClassRoom from '../pages/student/LiveClassRoom';
+import LiveClass from '../pages/student/LiveClass';
 import AssignmentsPage from '../pages/student/AssignmentsPage';
 import SchedulePage from '../pages/student/SchedulePage';
 import LoginPage from '../pages/auth/LoginPage';
@@ -39,7 +39,7 @@ const AppRoutes = () => {
       } />
       <Route path="/student/live-class/:id" element={
         <ProtectedRoute>
-          <LiveClassRoom />
+          <LiveClass />
         </ProtectedRoute>
       } />
       <Route path="/student/assignments" element={
