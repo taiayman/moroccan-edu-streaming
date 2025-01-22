@@ -51,11 +51,6 @@ const Sidebar = ({ open, onClose }) => {
           path: '/student/dashboard'
         },
         {
-          text: 'My Courses',
-          icon: <SchoolIcon />,
-          path: '/student/courses'
-        },
-        {
           text: 'Live Classes',
           icon: <LiveTvIcon />,
           path: '/student/live-classes'
@@ -69,11 +64,6 @@ const Sidebar = ({ open, onClose }) => {
           text: 'Schedule',
           icon: <ScheduleIcon />,
           path: '/student/schedule'
-        },
-        {
-          text: 'Discussion',
-          icon: <ForumIcon />,
-          path: '/student/discussion'
         }
       ],
       teacher: [

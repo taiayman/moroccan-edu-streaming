@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
 import { db } from './config';
 
 export const createUserProfile = async (userId, userData) => {
@@ -57,6 +57,56 @@ export const verifyUserRole = async (userId, requestedRole) => {
     return userProfile;
   } catch (error) {
     console.error('Error verifying user role:', error);
+    throw error;
+  }
+};
+
+/**
+ * Gather user-specific stats for the dashboard:
+ * - Number of courses enrolled
+ * - Overall progress average
+ * - Number of upcoming assignments
+ */
+export const getDashboardStats = async (userId) => {
+  try {
+    // 1) Get user enrollments
+    const enrollmentsRef = collection(db, 'users', userId, 'enrollments');
+    const enrollmentsSnap = await getDocs(enrollmentsRef);
+
+    const totalCourses = enrollmentsSnap.size;
+    let sumProgress = 0;
+
+    for (const enrollmentDoc of enrollmentsSnap.docs) {
+      const { progress = 0 } = enrollmentDoc.data();
+      sumProgress += progress;
+    }
+    const avgProgress = totalCourses > 0 ? Math.floor(sumProgress / totalCourses) : 0;
+
+    // 2) Get upcoming assignments
+    const assignmentsRef = collection(db, 'assignments');
+    const assignmentsSnap = await getDocs(assignmentsRef);
+
+    const courseIds = enrollmentsSnap.docs.map(docSnap => docSnap.id);
+    const now = new Date();
+    let upcomingCount = 0;
+
+    assignmentsSnap.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (courseIds.includes(data.courseId)) {
+        const dueDate = new Date(data.dueDate);
+        if (dueDate > now) {
+          upcomingCount += 1;
+        }
+      }
+    });
+
+    return {
+      totalCourses,
+      avgProgress,
+      upcomingCount,
+    };
+  } catch (error) {
+    console.error('Error getting dashboard stats:', error);
     throw error;
   }
 };

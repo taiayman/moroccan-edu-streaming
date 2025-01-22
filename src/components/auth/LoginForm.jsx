@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import authService from '../../api/auth';
 import {
   Box,
   TextField,
@@ -8,26 +10,16 @@ import {
   Checkbox,
   FormControlLabel,
   Container,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  CircularProgress,
   IconButton,
   InputAdornment,
   Alert,
+  CircularProgress,
 } from '@mui/material';
-import {
-  Google as GoogleIcon,
-  Visibility,
-  VisibilityOff,
-} from '@mui/icons-material';
-import { 
-  signInWithEmailAndPassword, 
-  signInWithPopup 
-} from 'firebase/auth';
-import { auth, googleProvider, ROLES } from '../../api/config';
-import { verifyUserRole } from '../../api/users';
+import { Visibility, VisibilityOff, Google as GoogleIcon } from '@mui/icons-material';
+import { signInWithPopup } from 'firebase/auth';
+import { getDoc, doc } from 'firebase/firestore';
+import { auth, googleProvider, db } from '../../api/config';
+import { createUserProfile } from '../../api/users';
 import { navigateByRole } from '../../utils/navigation';
 
 const LoginForm = () => {
@@ -35,39 +27,32 @@ const LoginForm = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const [selectedRole, setSelectedRole] = useState(ROLES.STUDENT);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
 
+  const { login } = useAuth();
+
   const handleLogin = async () => {
     setLoading(true);
     setError('');
     
     try {
-      const { user } = await signInWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
+      if (!formData.email || !formData.password) {
+        throw new Error('Please enter email and password');
+      }
 
-      // Verify role and get user profile
-      const userProfile = await verifyUserRole(user.uid, selectedRole);
-
-      // Store complete user data
-      const userData = {
-        id: user.uid,
-        ...userProfile
-      };
-      
-      localStorage.setItem('user', JSON.stringify(userData));
-
-      // Navigate to role-specific dashboard
-      navigateByRole(navigate, userProfile.role);
+      const response = await authService.login(formData.email, formData.password);
+      await login(response.user, response.token);
+      navigateByRole(navigate, response.user.role);
     } catch (err) {
-      setError(err.message);
+      console.error('Login error:', err);
+      setError(err.message || 'Failed to login. Please check your credentials.');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } finally {
       setLoading(false);
     }
   };
@@ -78,22 +63,56 @@ const LoginForm = () => {
 
     try {
       const { user } = await signInWithPopup(auth, googleProvider);
+      
+      // Check if user already exists
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      let userProfile;
 
-      // Verify role and get user profile
-      const userProfile = await verifyUserRole(user.uid, selectedRole);
+      if (!userDoc.exists()) {
+        // New user - create minimal profile
+        const userData = {
+          id: user.uid,
+          email: user.email,
+          displayName: user.displayName || 'User',
+          firstName: user.displayName?.split(' ')[0] || 'User',
+          lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+          createdAt: new Date().toISOString(),
+          isNewUser: true,
+          photoURL: user.photoURL
+        };
+        
+        await createUserProfile(user.uid, userData);
+        userProfile = userData;
+      } else {
+        userProfile = {
+          ...userDoc.data(),
+          id: user.uid
+        };
+      }
 
-      // Store complete user data
-      const userData = {
+      const token = await user.getIdToken();
+      
+      // Store auth data
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify({
         id: user.uid,
         ...userProfile
-      };
-      
-      localStorage.setItem('user', JSON.stringify(userData));
+      }));
 
-      // Navigate to role-specific dashboard
-      navigateByRole(navigate, userProfile.role);
+      // Login through context
+      await login(userProfile, token);
+      
+      // Navigate based on user status
+      if (!userDoc.exists() || userProfile.isNewUser) {
+        navigate('/auth/role-selection');
+      } else if (userProfile.role) {
+        navigateByRole(navigate, userProfile.role);
+      } else {
+        setError('User profile is incomplete. Please contact support.');
+      }
     } catch (err) {
       setError(err.message);
+    } finally {
       setLoading(false);
     }
   };
@@ -131,7 +150,8 @@ const LoginForm = () => {
             sx={{ 
               fontWeight: 700, 
               mb: 2,
-              fontSize: { xs: '2rem', sm: '2.5rem' }
+              fontSize: { xs: '2rem', sm: '2.5rem' },
+              color: '#000'
             }}
           >
             Sign in
@@ -143,49 +163,25 @@ const LoginForm = () => {
               fontSize: '1.1rem'
             }}
           >
-            Welcome back! Please select your role and enter your details
+            Welcome back! Please enter your credentials to continue
           </Typography>
         </Box>
 
         {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 3,
+              backgroundColor: 'rgba(187, 92, 57, 0.05)',
+              color: '#bb5c39',
+              '& .MuiAlert-icon': {
+                color: '#bb5c39'
+              }
+            }}
+          >
             {error}
           </Alert>
         )}
-
-        {/* Role Selection */}
-        <FormControl 
-          fullWidth 
-          sx={{ 
-            mb: 3,
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: '#fff',
-              '& fieldset': {
-                borderColor: '#ddd',
-              },
-              '&:hover fieldset': {
-                borderColor: '#000',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#000',
-              }
-            },
-            '& .MuiInputLabel-root.Mui-focused': {
-              color: '#000'
-            }
-          }}
-        >
-          <InputLabel>Select Role</InputLabel>
-          <Select
-            value={selectedRole}
-            label="Select Role"
-            onChange={(e) => setSelectedRole(e.target.value)}
-          >
-            <MenuItem value={ROLES.STUDENT}>Student</MenuItem>
-            <MenuItem value={ROLES.PARENT}>Parent</MenuItem>
-            <MenuItem value={ROLES.TEACHER}>Teacher</MenuItem>
-          </Select>
-        </FormControl>
 
         <TextField
           margin="normal"
@@ -200,9 +196,9 @@ const LoginForm = () => {
           sx={{ 
             mb: 2,
             '& .MuiOutlinedInput-root': {
-              backgroundColor: '#fff',
+              backgroundColor: 'rgba(255, 255, 255, 0.5)',
               '& fieldset': {
-                borderColor: '#ddd',
+                borderColor: 'rgba(0, 0, 0, 0.1)',
               },
               '&:hover fieldset': {
                 borderColor: '#000',
@@ -243,9 +239,10 @@ const LoginForm = () => {
           sx={{ 
             mb: 3,
             '& .MuiOutlinedInput-root': {
-              backgroundColor: '#fff',
+              backgroundColor: 'rgba(255, 255, 255, 0.5)',
               '& fieldset': {
-                borderColor: '#ddd',
+                borderColor: 'rgba(0, 0, 0, 0.1)',
+                borderRadius: 0
               },
               '&:hover fieldset': {
                 borderColor: '#000',
@@ -273,7 +270,7 @@ const LoginForm = () => {
                 onChange={(e) => setRememberMe(e.target.checked)}
                 sx={{ 
                   '&.Mui-checked': { 
-                    color: '#000' 
+                    color: '#bb5c39' 
                   }
                 }}
               />
@@ -288,7 +285,7 @@ const LoginForm = () => {
             to="/auth/forgot-password" 
             style={{ 
               textDecoration: 'none',
-              color: '#000',
+              color: '#bb5c39',
               fontWeight: 500
             }}
           >
@@ -307,9 +304,8 @@ const LoginForm = () => {
               left: '6px',
               right: '-6px',
               bottom: '-6px',
-              backgroundColor: '#666',
-              opacity: 0.3,
-              borderRadius: '4px',
+              backgroundColor: '#bb5c39',
+              opacity: 0.1,
               zIndex: 0
             }
           }}
@@ -321,23 +317,19 @@ const LoginForm = () => {
             onClick={handleLogin}
             sx={{
               py: 1.75,
-              backgroundColor: '#000',
+              backgroundColor: '#bb5c39',
               color: '#fff',
               textTransform: 'none',
               fontSize: '1rem',
               fontWeight: 600,
-              borderRadius: '4px',
               position: 'relative',
               zIndex: 1,
               boxShadow: 'none',
-              border: '1px solid #333',
+              border: 'none',
+              borderRadius: 0,
               transition: 'all 0.2s ease-in-out',
               '&:hover': {
-                backgroundColor: '#1a1a1a',
-                transform: 'translate(-2px, -2px)',
-                '&:before': {
-                  transform: 'translate(2px, 2px)'
-                }
+                backgroundColor: '#a94f30'
               }
             }}
           >
@@ -358,14 +350,16 @@ const LoginForm = () => {
             sx={{
               py: 1.5,
               color: '#000',
-              borderColor: '#ddd',
-              backgroundColor: '#fff',
+              borderColor: '#000',
+              backgroundColor: 'transparent',
               textTransform: 'none',
               fontSize: '1rem',
               fontWeight: 500,
+              borderRadius: 0,
               '&:hover': {
-                backgroundColor: '#f5f5f5',
-                borderColor: '#ddd'
+                backgroundColor: 'rgba(187, 92, 57, 0.05)',
+                borderColor: '#bb5c39',
+                color: '#bb5c39'
               }
             }}
           >
@@ -380,7 +374,7 @@ const LoginForm = () => {
               to="/auth/register" 
               style={{ 
                 textDecoration: 'none',
-                color: '#000',
+                color: '#bb5c39',
                 fontWeight: 500
               }}
             >

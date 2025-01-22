@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import {
   Box,
   Typography,
@@ -21,6 +22,7 @@ import {
 
 const ParentDashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeChild, setActiveChild] = useState(0);
 
   const children = [

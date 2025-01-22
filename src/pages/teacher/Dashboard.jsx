@@ -8,8 +8,6 @@ import {
   Chip,
   Stack,
   Container,
-  Paper,
-  Avatar,
   IconButton,
   LinearProgress
 } from '@mui/material';
@@ -20,13 +18,123 @@ import {
   Timer as TimerIcon,
   Assignment as AssignmentIcon,
   CalendarToday as CalendarIcon,
-  ArrowForward as ArrowForwardIcon,
   Add as AddIcon,
   TrendingUp as TrendingUpIcon,
-  MenuBook as MenuBookIcon,
-  NotificationsNone as NotificationsIcon
+  MenuBook as MenuBookIcon
 } from '@mui/icons-material';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../store/authStore';
+
+const StatsCard = ({ stat }) => (
+  <Box
+    sx={{
+      p: 3,
+      backgroundColor: stat.accent ? '#bb5c39' : 'rgba(0, 0, 0, 0.02)',
+      borderRadius: 2,
+      border: '1px solid',
+      borderColor: stat.accent ? '#bb5c39' : 'transparent',
+      transition: 'transform 0.2s',
+      '&:hover': {
+        transform: 'translateY(-4px)'
+      }
+    }}
+  >
+    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+      {React.cloneElement(stat.icon, { 
+        sx: { 
+          fontSize: 28, 
+          color: stat.accent ? '#fff' : '#000'
+        } 
+      })}
+    </Box>
+    <Typography variant="h4" sx={{ 
+      fontWeight: 700, 
+      mb: 1,
+      color: stat.accent ? '#fff' : '#000'
+    }}>
+      {stat.value}
+    </Typography>
+    <Typography variant="body1" sx={{ 
+      color: stat.accent ? 'rgba(255, 255, 255, 0.8)' : '#666',
+      mb: 1 
+    }}>
+      {stat.title}
+    </Typography>
+    <Typography variant="caption" sx={{ 
+      color: stat.accent ? 'rgba(255, 255, 255, 0.8)' : '#666'
+    }}>
+      {stat.change}
+    </Typography>
+  </Box>
+);
+
+const ClassItem = ({ class_, onStart }) => (
+  <Box
+    sx={{
+      p: 3,
+      borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
+      '&:last-child': {
+        borderBottom: 'none'
+      },
+      '&:hover': {
+        backgroundColor: 'rgba(0, 0, 0, 0.02)'
+      }
+    }}
+  >
+    <Grid container alignItems="center" spacing={3}>
+      <Grid item xs={12} sm={7}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            sx={{
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              backgroundColor: '#bb5c39'
+            }}
+          />
+          <Box>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              {class_.time} - {class_.duration}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#666' }}>
+              {class_.subject} • {class_.level}
+            </Typography>
+          </Box>
+        </Box>
+      </Grid>
+      <Grid item xs={12} sm={5} sx={{ 
+        display: 'flex', 
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        gap: 2
+      }}>
+        <Chip
+          icon={<PeopleIcon sx={{ fontSize: '18px !important' }} />}
+          label={`${class_.students} étudiants`}
+          sx={{ 
+            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            borderRadius: '8px'
+          }}
+        />
+        <Button
+          variant="contained"
+          startIcon={<LiveTvIcon />}
+          onClick={onStart}
+          sx={{
+            backgroundColor: '#bb5c39',
+            color: '#fff',
+            textTransform: 'none',
+            borderRadius: '4px',
+            '&:hover': {
+              backgroundColor: '#a94f30'
+            }
+          }}
+        >
+          Démarrer
+        </Button>
+      </Grid>
+    </Grid>
+  </Box>
+);
 
 const TeacherDashboard = () => {
   const navigate = useNavigate();
@@ -40,8 +148,7 @@ const TeacherDashboard = () => {
       time: '10:00',
       duration: '1h 30min',
       students: 25,
-      level: 'Niveau 2',
-      avatar: '/api/placeholder/40/40'
+      level: 'Niveau 2'
     },
     {
       id: 2,
@@ -50,8 +157,7 @@ const TeacherDashboard = () => {
       time: '14:00',
       duration: '1h',
       students: 30,
-      level: 'Niveau 1',
-      avatar: '/api/placeholder/40/40'
+      level: 'Niveau 1'
     }
   ];
 
@@ -78,20 +184,21 @@ const TeacherDashboard = () => {
     {
       title: 'Classes',
       value: '6',
-      icon: <MenuBookIcon sx={{ fontSize: 28, color: '#000' }} />,
+      icon: <MenuBookIcon />,
       change: '+2 ce semestre'
     },
     {
       title: 'Étudiants',
       value: '150',
-      icon: <PeopleIcon sx={{ fontSize: 28, color: '#000' }} />,
+      icon: <PeopleIcon />,
       change: 'Total actuel'
     },
     {
       title: 'Taux de Réussite',
       value: '92%',
-      icon: <TrendingUpIcon sx={{ fontSize: 28, color: '#000' }} />,
-      change: 'Moyenne globale'
+      icon: <TrendingUpIcon />,
+      change: 'Moyenne globale',
+      accent: true
     }
   ];
 
@@ -108,7 +215,7 @@ const TeacherDashboard = () => {
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={6}>
               <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                Tableau de Bord Professeur
+                Tableau de Bord
               </Typography>
               <Typography variant="body1" sx={{ color: '#666', mt: 1 }}>
                 {user?.displayName || 'Prof. Benali'} • Mathématiques
@@ -122,8 +229,9 @@ const TeacherDashboard = () => {
                   borderColor: '#000',
                   color: '#000',
                   '&:hover': {
-                    borderColor: '#000',
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                    borderColor: '#bb5c39',
+                    color: '#bb5c39',
+                    backgroundColor: 'rgba(187, 92, 57, 0.05)'
                   }
                 }}
               >
@@ -133,9 +241,9 @@ const TeacherDashboard = () => {
                 variant="contained"
                 startIcon={<AddIcon />}
                 sx={{
-                  backgroundColor: '#000',
+                  backgroundColor: '#bb5c39',
                   '&:hover': {
-                    backgroundColor: '#333'
+                    backgroundColor: '#a94f30'
                   }
                 }}
               >
@@ -152,47 +260,7 @@ const TeacherDashboard = () => {
             <Grid container spacing={3} sx={{ mb: 4 }}>
               {stats.map((stat, index) => (
                 <Grid item xs={12} md={4} key={index}>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 3,
-                      backgroundColor: index === 2 ? '#000' : '#fff',
-                      borderRadius: '16px',
-                      border: '1px solid',
-                      borderColor: index === 2 ? '#000' : 'rgba(0, 0, 0, 0.1)',
-                      transition: 'transform 0.2s',
-                      '&:hover': {
-                        transform: 'translateY(-4px)'
-                      }
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                      {React.cloneElement(stat.icon, { 
-                        sx: { 
-                          fontSize: 28, 
-                          color: index === 2 ? '#fff' : '#000'
-                        } 
-                      })}
-                    </Box>
-                    <Typography variant="h4" sx={{ 
-                      fontWeight: 700, 
-                      mb: 1,
-                      color: index === 2 ? '#fff' : '#000'
-                    }}>
-                      {stat.value}
-                    </Typography>
-                    <Typography variant="body1" sx={{ 
-                      color: index === 2 ? 'rgba(255, 255, 255, 0.7)' : '#666',
-                      mb: 1 
-                    }}>
-                      {stat.title}
-                    </Typography>
-                    <Typography variant="caption" sx={{ 
-                      color: index === 2 ? 'rgba(255, 255, 255, 0.7)' : '#666'
-                    }}>
-                      {stat.change}
-                    </Typography>
-                  </Paper>
+                  <StatsCard stat={stat} />
                 </Grid>
               ))}
             </Grid>
@@ -202,78 +270,21 @@ const TeacherDashboard = () => {
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
                 Programme d'Aujourd'hui
               </Typography>
-              <Paper
-                elevation={0}
+              <Box
                 sx={{
-                  border: '1px solid rgba(0, 0, 0, 0.1)',
-                  borderRadius: '16px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                  borderRadius: 2,
                   overflow: 'hidden'
                 }}
               >
                 {upcomingClasses.map((class_, index) => (
-                  <Box
+                  <ClassItem 
                     key={class_.id}
-                    sx={{
-                      p: 3,
-                      borderBottom: index !== upcomingClasses.length - 1 ? '1px solid rgba(0, 0, 0, 0.1)' : 'none',
-                      '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.02)'
-                      }
-                    }}
-                  >
-                    <Grid container alignItems="center" spacing={3}>
-                      <Grid item xs={12} sm={7}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Box
-                            sx={{
-                              width: 12,
-                              height: 12,
-                              borderRadius: '50%',
-                              backgroundColor: '#22C55E'
-                            }}
-                          />
-                          <Box>
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                              {class_.time} - {class_.duration}
-                            </Typography>
-                            <Typography variant="body2" sx={{ color: '#666' }}>
-                              {class_.subject} • {class_.level}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={12} sm={5} sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'flex-end',
-                        alignItems: 'center',
-                        gap: 2
-                      }}>
-                        <Chip
-                          icon={<PeopleIcon sx={{ fontSize: '18px !important' }} />}
-                          label={`${class_.students} étudiants`}
-                          sx={{ 
-                            backgroundColor: '#F5F5F5',
-                            borderRadius: '8px'
-                          }}
-                        />
-                        <Button
-                          variant="contained"
-                          startIcon={<LiveTvIcon />}
-                          onClick={() => navigate(`/teacher/live-class/${class_.id}`)}
-                          sx={{
-                            backgroundColor: '#000',
-                            '&:hover': {
-                              backgroundColor: '#333'
-                            }
-                          }}
-                        >
-                          Démarrer
-                        </Button>
-                      </Grid>
-                    </Grid>
-                  </Box>
+                    class_={class_}
+                    onStart={() => navigate(`/teacher/live-class/${class_.id}`)}
+                  />
                 ))}
-              </Paper>
+              </Box>
             </Box>
 
             {/* Recent Activity */}
@@ -281,11 +292,10 @@ const TeacherDashboard = () => {
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
                 Activité Récente
               </Typography>
-              <Paper
-                elevation={0}
+              <Box
                 sx={{
-                  border: '1px solid rgba(0, 0, 0, 0.1)',
-                  borderRadius: '16px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                  borderRadius: 2,
                   p: 3
                 }}
               >
@@ -320,7 +330,7 @@ const TeacherDashboard = () => {
                           width: 8,
                           height: 8,
                           borderRadius: '50%',
-                          backgroundColor: '#000',
+                          backgroundColor: '#bb5c39',
                           mt: 1
                         }}
                       />
@@ -335,20 +345,19 @@ const TeacherDashboard = () => {
                     </Box>
                   ))}
                 </Stack>
-              </Paper>
+              </Box>
             </Box>
           </Grid>
 
-          {/* Right Column - Assignments and Quick Actions */}
+          {/* Right Column - Quick Actions and Assignments */}
           <Grid item xs={12} md={4}>
             <Stack spacing={4}>
               {/* Quick Actions */}
-              <Paper
-                elevation={0}
+              <Box
                 sx={{
                   p: 3,
-                  backgroundColor: '#000',
-                  borderRadius: '16px',
+                  backgroundColor: '#bb5c39',
+                  borderRadius: 2,
                   color: 'white'
                 }}
               >
@@ -385,6 +394,7 @@ const TeacherDashboard = () => {
                         color: 'white',
                         border: '1px solid rgba(255, 255, 255, 0.2)',
                         borderRadius: '8px',
+                        textTransform: 'none',
                         '&:hover': {
                           backgroundColor: 'rgba(255, 255, 255, 0.1)'
                         }
@@ -394,15 +404,14 @@ const TeacherDashboard = () => {
                     </Button>
                   ))}
                 </Stack>
-              </Paper>
+              </Box>
 
               {/* Assignments Overview */}
-              <Paper
-                elevation={0}
+              <Box
                 sx={{
                   p: 3,
-                  border: '1px solid rgba(0, 0, 0, 0.1)',
-                  borderRadius: '16px'
+                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                  borderRadius: 2
                 }}
               >
                 <Box sx={{ 
@@ -418,7 +427,7 @@ const TeacherDashboard = () => {
                     label="23 en attente"
                     size="small"
                     sx={{
-                      backgroundColor: '#000',
+                      backgroundColor: '#bb5c39',
                       color: 'white',
                       borderRadius: '8px',
                       fontWeight: 600
@@ -427,15 +436,14 @@ const TeacherDashboard = () => {
                 </Box>
                 <Stack spacing={2}>
                   {assignments.map((assignment) => (
-                    <Paper
+                    <Box
                       key={assignment.id}
-                      elevation={0}
                       sx={{
                         p: 2,
-                        backgroundColor: '#F5F5F5',
+                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
                         borderRadius: '8px',
                         '&:hover': {
-                          backgroundColor: '#EAEAEA'
+                          backgroundColor: 'rgba(0, 0, 0, 0.04)'
                         }
                       }}
                     >
@@ -450,10 +458,10 @@ const TeacherDashboard = () => {
                           {assignment.dueDate}
                         </Typography>
                       </Box>
-                    </Paper>
+                    </Box>
                   ))}
                 </Stack>
-              </Paper>
+              </Box>
             </Stack>
           </Grid>
         </Grid>

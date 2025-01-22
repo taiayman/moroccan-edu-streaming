@@ -1,32 +1,21 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Box,
   TextField,
   Button,
   Typography,
-  Alert,
-  CircularProgress,
+  Container,
+  Grid,
   IconButton,
   InputAdornment,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Container
+  Alert,
 } from '@mui/material';
 import {
   Visibility,
   VisibilityOff,
-  Google as GoogleIcon,
 } from '@mui/icons-material';
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithPopup,
-  updateProfile
-} from 'firebase/auth';
-import { auth, googleProvider, ROLES } from '../../api/config';
-import { createUserProfile, verifyUserRole } from '../../api/users';
+import { useAuth } from '../../hooks/useAuth';
 import { navigateByRole } from '../../utils/navigation';
 
 const RegisterForm = () => {
@@ -37,10 +26,8 @@ const RegisterForm = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: '',
     firstName: '',
     lastName: '',
-    role: ROLES.STUDENT
   });
 
   const handleChange = (e) => {
@@ -56,10 +43,6 @@ const RegisterForm = () => {
       setError('All fields are required');
       return false;
     }
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters long');
       return false;
@@ -67,7 +50,9 @@ const RegisterForm = () => {
     return true;
   };
 
-  const handleSubmit = async (e) => {
+  const { register } = useAuth();
+
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
 
@@ -75,86 +60,19 @@ const RegisterForm = () => {
 
     setLoading(true);
     try {
-      const { user } = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-
-      // Prepare user data
       const firstName = formData.firstName.trim() || 'User';
       const lastName = formData.lastName.trim() || '';
       const displayName = firstName + (lastName ? ` ${lastName}` : '');
 
-      // Update Firebase profile
-      await updateProfile(user, {
-        displayName
+      await register({
+        email: formData.email,
+        password: formData.password,
+        displayName: displayName,
+        firstName: firstName,
+        lastName: lastName
       });
 
-      // Prepare user data for storage
-      const userData = {
-        email: user.email || '',
-        role: formData.role,
-        displayName: displayName,
-        firstName: firstName,
-        lastName: lastName
-      };
-
-      // Save to Firestore
-      await createUserProfile(user.uid, userData);
-      
-      // Store in localStorage
-      localStorage.setItem('user', JSON.stringify({
-        id: user.uid,
-        ...userData
-      }));
-
-      // Navigate to role-specific dashboard
-      navigateByRole(navigate, userData.role);
-    } catch (error) {
-      setError(error.message);
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignUp = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const { user } = await signInWithPopup(auth, googleProvider);
-
-      // Process user data
-      const displayName = user.displayName || 'User';
-      let firstName = 'User';
-      let lastName = '';
-      
-      if (displayName && displayName !== 'User') {
-        const nameParts = displayName.split(' ');
-        firstName = nameParts[0] || 'User';
-        lastName = nameParts.slice(1).join(' ') || '';
-      }
-
-      // Prepare user data for storage
-      const userData = {
-        email: user.email || '',
-        role: formData.role,
-        displayName: displayName,
-        firstName: firstName,
-        lastName: lastName
-      };
-
-      // Save to Firestore
-      await createUserProfile(user.uid, userData);
-      
-      // Store in localStorage
-      localStorage.setItem('user', JSON.stringify({
-        id: user.uid,
-        ...userData
-      }));
-
-      // Navigate to role-specific dashboard
-      navigateByRole(navigate, userData.role);
+      navigate('/auth/role-selection');
     } catch (error) {
       setError(error.message);
       setLoading(false);
@@ -169,8 +87,7 @@ const RegisterForm = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f2f0e9',
-        py: { xs: 4, md: 8 }
+        background: '#f2f0e9'
       }}
     >
       <Box
@@ -187,7 +104,8 @@ const RegisterForm = () => {
             sx={{ 
               fontWeight: 700, 
               mb: 2,
-              fontSize: { xs: '2rem', sm: '2.5rem' }
+              fontSize: { xs: '2rem', sm: '2.5rem' },
+              color: '#000'
             }}
           >
             Create Account
@@ -199,7 +117,7 @@ const RegisterForm = () => {
               fontSize: '1.1rem'
             }}
           >
-            Fill in your details to get started
+            Please fill in your details to create an account
           </Typography>
         </Box>
 
@@ -208,10 +126,10 @@ const RegisterForm = () => {
             severity="error" 
             sx={{ 
               mb: 3,
-              backgroundColor: 'rgba(211, 47, 47, 0.05)',
-              color: '#d32f2f',
+              backgroundColor: 'rgba(187, 92, 57, 0.05)',
+              color: '#bb5c39',
               '& .MuiAlert-icon': {
-                color: '#d32f2f'
+                color: '#bb5c39'
               }
             }}
           >
@@ -219,61 +137,26 @@ const RegisterForm = () => {
           </Alert>
         )}
 
-        {/* Role Selection */}
-        <FormControl 
-          fullWidth 
-          sx={{ 
-            mb: 3,
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: '#fff',
-              '& fieldset': {
-                borderColor: '#ddd',
-              },
-              '&:hover fieldset': {
-                borderColor: '#000',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#000',
-              }
-            },
-            '& .MuiInputLabel-root.Mui-focused': {
-              color: '#000'
-            }
-          }}
-        >
-          <InputLabel>Role</InputLabel>
-          <Select
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            required
-          >
-            <MenuItem value={ROLES.STUDENT}>Student</MenuItem>
-            <MenuItem value={ROLES.PARENT}>Parent</MenuItem>
-            <MenuItem value={ROLES.TEACHER}>Teacher</MenuItem>
-          </Select>
-        </FormControl>
-
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
             <TextField
+              required
               fullWidth
               label="First Name"
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
-              required
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  backgroundColor: '#fff',
+                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
                   '& fieldset': {
-                    borderColor: '#ddd',
+                    borderColor: 'rgba(0, 0, 0, 0.1)'
                   },
                   '&:hover fieldset': {
-                    borderColor: '#000',
+                    borderColor: '#000'
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#000',
+                    borderColor: '#000'
                   }
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
@@ -281,24 +164,26 @@ const RegisterForm = () => {
                 }
               }}
             />
+          </Grid>
+          <Grid item xs={12} sm={6}>
             <TextField
+              required
               fullWidth
               label="Last Name"
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
-              required
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  backgroundColor: '#fff',
+                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
                   '& fieldset': {
-                    borderColor: '#ddd',
+                    borderColor: 'rgba(0, 0, 0, 0.1)'
                   },
                   '&:hover fieldset': {
-                    borderColor: '#000',
+                    borderColor: '#000'
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#000',
+                    borderColor: '#000'
                   }
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
@@ -306,196 +191,137 @@ const RegisterForm = () => {
                 }
               }}
             />
-          </Box>
-
-          <TextField
-            fullWidth
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            sx={{ 
-              mb: 2,
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: '#fff',
-                '& fieldset': {
-                  borderColor: '#ddd',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#000',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#000',
-                }
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: '#000'
-              }
-            }}
-          />
-
-          <TextField
-            fullWidth
-            label="Password"
-            name="password"
-            type={showPassword ? 'text' : 'password'}
-            value={formData.password}
-            onChange={handleChange}
-            required
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                    sx={{ color: '#666' }}
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-            sx={{ 
-              mb: 2,
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: '#fff',
-                '& fieldset': {
-                  borderColor: '#ddd',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#000',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#000',
-                }
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: '#000'
-              }
-            }}
-          />
-
-          <TextField
-            fullWidth
-            label="Confirm Password"
-            name="confirmPassword"
-            type={showPassword ? 'text' : 'password'}
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-            sx={{ 
-              mb: 3,
-              '& .MuiOutlinedInput-root': {
-                backgroundColor: '#fff',
-                '& fieldset': {
-                  borderColor: '#ddd',
-                },
-                '&:hover fieldset': {
-                  borderColor: '#000',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#000',
-                }
-              },
-              '& .MuiInputLabel-root.Mui-focused': {
-                color: '#000'
-              }
-            }}
-          />
-
-          <Box
-            sx={{
-              position: 'relative',
-              mb: 3,
-              '&:before': {
-                content: '""',
-                position: 'absolute',
-                top: '6px',
-                left: '6px',
-                right: '-6px',
-                bottom: '-6px',
-                backgroundColor: '#666',
-                opacity: 0.3,
-                borderRadius: '4px',
-                zIndex: 0
-              }
-            }}
-          >
-            <Button
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              required
               fullWidth
-              type="submit"
-              variant="contained"
-              disabled={loading}
+              label="Email Address"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
               sx={{
-                py: 1.75,
-                backgroundColor: '#000',
-                color: '#fff',
-                textTransform: 'none',
-                fontSize: '1rem',
-                fontWeight: 600,
-                borderRadius: '4px',
-                position: 'relative',
-                zIndex: 1,
-                boxShadow: 'none',
-                border: '1px solid #333',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  backgroundColor: '#1a1a1a',
-                  transform: 'translate(-2px, -2px)',
-                  '&:before': {
-                    transform: 'translate(2px, 2px)'
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                  '& fieldset': {
+                    borderColor: 'rgba(0, 0, 0, 0.1)'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#000'
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#000'
                   }
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#000'
                 }
               }}
-            >
-              {loading ? <CircularProgress size={24} sx={{ color: '#fff' }} /> : 'Create Account'}
-            </Button>
-          </Box>
-        </Box>
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <TextField
+              required
+              fullWidth
+              name="password"
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={handleChange}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                  '& fieldset': {
+                    borderColor: 'rgba(0, 0, 0, 0.1)'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#000'
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#000'
+                  }
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#000'
+                }
+              }}
+            />
+          </Grid>
+        </Grid>
 
-        <Box sx={{ mb: 4 }}>
+        <Box
+          sx={{
+            position: 'relative',
+            mt: 3,
+            mb: 3,
+            '&:before': {
+              content: '""',
+              position: 'absolute',
+              top: '6px',
+              left: '6px',
+              right: '-6px',
+              bottom: '-6px',
+              backgroundColor: '#bb5c39',
+              opacity: 0.1,
+              borderRadius: '4px',
+              zIndex: 0
+            }
+          }}
+        >
           <Button
             fullWidth
-            variant="outlined"
-            startIcon={<GoogleIcon />}
-            onClick={handleGoogleSignUp}
+            variant="contained"
+            onClick={handleRegister}
+            disabled={loading}
             sx={{
-              py: 1.5,
-              color: '#000',
-              borderColor: '#ddd',
-              backgroundColor: '#fff',
+              py: 1.75,
+              backgroundColor: '#bb5c39',
+              color: '#fff',
               textTransform: 'none',
               fontSize: '1rem',
-              fontWeight: 500,
+              fontWeight: 600,
+              borderRadius: '4px',
+              position: 'relative',
+              zIndex: 1,
+              boxShadow: 'none',
+              border: 'none',
+              transition: 'all 0.2s ease-in-out',
               '&:hover': {
-                backgroundColor: '#f5f5f5',
-                borderColor: '#ddd'
+                backgroundColor: '#a94f30'
               }
             }}
           >
-            Sign up with Google
+            {loading ? 'Creating Account...' : 'Create Account'}
           </Button>
         </Box>
 
         <Box sx={{ textAlign: 'center' }}>
           <Typography sx={{ color: '#666' }}>
             Already have an account?{' '}
-            <Button
-              onClick={() => navigate('/auth/login')}
-              sx={{ 
-                textTransform: 'none',
-                color: '#000',
-                fontWeight: 500,
-                '&:hover': {
-                  backgroundColor: 'transparent',
-                  textDecoration: 'underline'
-                }
+            <Link 
+              to="/auth/login" 
+              style={{ 
+                textDecoration: 'none',
+                color: '#bb5c39',
+                fontWeight: 500
               }}
             >
               Sign in
-            </Button>
+            </Link>
           </Typography>
         </Box>
       </Box>
