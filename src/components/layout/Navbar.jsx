@@ -45,7 +45,11 @@ const Navbar = () => {
   };
 
   const menuItems = [
-    { icon: <AccountIcon fontSize="small" />, text: 'Profile', action: () => navigate('/profile') },
+    {
+      icon: <AccountIcon fontSize="small" />,
+      text: 'Profile',
+      action: () => navigate(`/${user?.role || 'student'}/profile`)
+    },
     { icon: <SettingsIcon fontSize="small" />, text: 'Paramètres', action: () => navigate('/settings') },
     { icon: <HelpIcon fontSize="small" />, text: 'Aide', action: () => navigate('/help') }
   ];

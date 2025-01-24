@@ -20,6 +20,7 @@ import AssignmentsPage from './pages/student/AssignmentsPage';
 import SchedulePage from './pages/student/SchedulePage';
 import StudentRegistration from './pages/student/StudentRegistration';
 import AssignmentDetails from './pages/student/AssignmentDetails';
+import StudentProfile from './pages/student/Profile';
 
 // Teacher Components
 import TeacherDashboard from './pages/teacher/Dashboard';
@@ -129,6 +130,7 @@ const AppRoutes = () => {
         <Route path="assignments/:id" element={<AssignmentDetails />} />
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="register" element={<StudentRegistration />} />
+        <Route path="profile" element={<StudentProfile />} />
       </Route>
 
       {/* Teacher Routes */}

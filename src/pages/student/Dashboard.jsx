@@ -10,30 +10,27 @@ import {
   Container,
   Paper,
   Avatar,
-  IconButton,
-  LinearProgress,
-  Card,
-  CardContent,
-  Divider,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   Alert
 } from '@mui/material';
 import {
   School as SchoolIcon,
-  LiveTv as LiveTvIcon,
-  People as PeopleIcon,
-  Timer as TimerIcon,
   Assignment as AssignmentIcon,
   CalendarToday as CalendarIcon,
-  ArrowForward as ArrowForwardIcon,
-  PlayCircleOutline as PlayIcon,
   TrendingUp as TrendingUpIcon,
   MenuBook as MenuBookIcon,
-  NotificationsNone as NotificationsIcon
+  LiveTv as LiveTvIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { getEnrolledCourses } from '../../api/courses';
 import { getUpcomingAssignments } from '../../api/assignments';
 import { getDashboardStats } from '../../api/users';
+import { getAllTeachers, getTeacherCalendarEvents, getTeacherCalendarNotes } from '../../api/teacher';
 import ShimmerCard from '../../components/common/ShimmerCard';
 
 const StatCardShimmer = () => (
@@ -104,6 +101,35 @@ const StudentDashboard = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [teachers, setTeachers] = useState([]);
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [calendarData, setCalendarData] = useState({
+    events: [],
+    notes: {}
+  });
+
+  const fetchTeacherCalendar = async (teacherId) => {
+    try {
+      // Get current week's start and end dates
+      const now = new Date();
+      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+      const endOfWeek = new Date(now.setDate(now.getDate() + 6));
+
+      const [events, notes] = await Promise.all([
+        getTeacherCalendarEvents(teacherId, startOfWeek, endOfWeek),
+        getTeacherCalendarNotes(teacherId, startOfWeek, endOfWeek)
+      ]);
+
+      // Events from API will be filtered by time slot in the UI
+      setCalendarData({
+        events: events || [],
+        notes: notes || {}
+      });
+    } catch (error) {
+      console.error('Error fetching teacher calendar:', error);
+      setError('Failed to load teacher calendar');
+    }
+  };
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -114,15 +140,17 @@ const StudentDashboard = () => {
 
       try {
         console.log('Fetching data for user:', user.id);
-        const [courses, assignments, stats] = await Promise.all([
+        const [courses, assignments, stats, teachersList] = await Promise.all([
           getEnrolledCourses(user.id),
           getUpcomingAssignments(user.id),
-          getDashboardStats(user.id)
+          getDashboardStats(user.id),
+          getAllTeachers()
         ]);
 
         console.log('Fetched courses:', courses);
         console.log('Fetched assignments:', assignments);
         console.log('Fetched stats:', stats);
+        console.log('Fetched teachers:', teachersList);
 
         setEnrolledCourses(courses || []);
         setUpcomingAssignments(assignments || []);
@@ -131,8 +159,10 @@ const StudentDashboard = () => {
           avgProgress: 0,
           upcomingCount: 0
         });
+        setTeachers(teachersList || []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        setError('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
@@ -143,18 +173,11 @@ const StudentDashboard = () => {
     }
   }, [user]);
 
-  // Transform enrolled courses to match the UI format
-  const upcomingClasses = enrolledCourses.map(course => (
-    {
-      id: course.id,
-      subject: course.title,
-      topic: course.description,
-      time: course.schedule?.[0]?.time || 'Non programmé',
-      duration: '1h 30min',
-      teacher: course.teacherId,
-      avatar: course.imageURL || '/api/placeholder/40/40'
+  useEffect(() => {
+    if (selectedTeacher) {
+      fetchTeacherCalendar(selectedTeacher.id);
     }
-  ));
+  }, [selectedTeacher]);
 
   // Transform upcoming assignments to match the UI format
   const assignments = upcomingAssignments.map(assignment => (
@@ -246,99 +269,6 @@ const StudentDashboard = () => {
     </Box>
   );
 
-  const ClassCard = ({ class_ }) => (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 3,
-        border: '1px solid #eee',
-        borderRadius: '12px',
-        transition: 'all 0.2s',
-        '&:hover': {
-          borderColor: '#000',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-        }
-      }}
-    >
-      <Grid container alignItems="center" spacing={3}>
-        <Grid item xs={12} md={6}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Avatar src={class_.avatar} />
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                {class_.subject}
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
-                {class_.teacher}
-              </Typography>
-            </Box>
-          </Box>
-          <Typography variant="body1" sx={{ color: '#666', mb: 2 }}>
-            {class_.topic}
-          </Typography>
-          <Stack direction="row" spacing={2}>
-            <Chip
-              icon={<TimerIcon sx={{ fontSize: '18px !important' }} />}
-              label={class_.time}
-              sx={{ 
-                backgroundColor: '#F5F5F5',
-                borderRadius: '8px'
-              }}
-            />
-            <Chip
-              icon={<PlayIcon sx={{ fontSize: '18px !important' }} />}
-              label={class_.duration}
-              sx={{ 
-                backgroundColor: '#F5F5F5',
-                borderRadius: '8px'
-              }}
-            />
-          </Stack>
-        </Grid>
-        <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Box
-            sx={{
-              position: 'relative',
-              '&:before': {
-                content: '""',
-                position: 'absolute',
-                top: '6px',
-                left: '6px',
-                right: '-6px',
-                bottom: '-6px',
-                backgroundColor: 'rgba(0, 0, 0, 0.2)',
-                borderRadius: '8px',
-                zIndex: 0
-              }
-            }}
-          >
-            <Button
-              variant="contained"
-              startIcon={<LiveTvIcon />}
-              onClick={() => navigate(`/student/live-class/${class_.id}`)}
-              sx={{
-                py: 1.5,
-                px: 3,
-                backgroundColor: '#000',
-                color: '#fff',
-                position: 'relative',
-                zIndex: 1,
-                border: '1px solid rgba(0, 0, 0, 0.1)',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  backgroundColor: '#000',
-                  transform: 'translate(-2px, -2px)',
-                }
-              }}
-            >
-              Rejoindre le cours
-            </Button>
-          </Box>
-        </Grid>
-      </Grid>
-    </Paper>
-  );
-
   return (
     <Box sx={{ 
       minHeight: '100vh',
@@ -388,50 +318,179 @@ const StudentDashboard = () => {
               )}
             </Grid>
 
-            {/* Upcoming Classes */}
+            {/* Teachers Section */}
             <Box sx={{ mb: 4 }}>
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                mb: 3
-              }}>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Cours d'Aujourd'hui
-                </Typography>
-                <Button
-                  endIcon={<ArrowForwardIcon />}
-                  onClick={() => navigate('/student/schedule')}
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
+                Professeurs
+              </Typography>
+              <Grid container spacing={2}>
+                {teachers.map((teacher) => (
+                  <Grid item xs={12} sm={6} md={4} key={teacher.id}>
+                    <Paper
+                      elevation={0}
+                      onClick={() => setSelectedTeacher(teacher)}
+                      sx={{
+                        p: 2,
+                        border: '1px solid',
+                        borderColor: selectedTeacher?.id === teacher.id ? '#000' : '#eee',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          borderColor: '#000',
+                          transform: 'translateY(-2px)'
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar sx={{ width: 48, height: 48 }}>
+                          {teacher.displayName?.[0] || '?'}
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                            {teacher.displayName || 'Unknown Teacher'}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {teacher.email || 'No email'}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                ))}
+              </Grid>
+
+              {/* Calendar View */}
+              {selectedTeacher && (
+                <Paper
+                  elevation={0}
                   sx={{
-                    color: '#000',
-                    '&:hover': { 
-                      backgroundColor: 'transparent', 
-                      textDecoration: 'underline' 
-                    }
+                    mt: 3,
+                    p: 3,
+                    border: '1px solid #eee',
+                    borderRadius: '12px'
                   }}
                 >
-                  Voir l'Emploi du Temps
-                </Button>
-              </Box>
-              
-              <Stack spacing={2}>
-                {loading ? (
-                  [1, 2].map((index) => (
-                    <ShimmerCard key={index} height={160} />
-                  ))
-                ) : (
-                  <>
-                    {upcomingClasses.map((class_) => (
-                      <ClassCard key={class_.id} class_={class_} />
-                    ))}
-                    {upcomingClasses.length === 0 && (
-                      <Typography variant="body1" color="textSecondary" align="center">
-                        Aucun cours programmé pour aujourd'hui
-                      </Typography>
-                    )}
-                  </>
-                )}
-              </Stack>
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                    Emploi du temps de {selectedTeacher.displayName}
+                  </Typography>
+                 <TableContainer sx={{ maxHeight: 600, overflowY: 'auto' }}>
+                   <Table stickyHeader size="small">
+                     <TableHead>
+                       <TableRow>
+                         <TableCell
+                           sx={{
+                             fontWeight: 600,
+                             backgroundColor: '#fff',
+                             width: '80px'
+                           }}
+                         >
+                           Jour
+                         </TableCell>
+                         {Array.from({ length: 12 }, (_, i) => i + 8).map((hour) => (
+                           <TableCell
+                             key={hour}
+                             align="center"
+                             sx={{
+                               fontWeight: 600,
+                               backgroundColor: '#fff',
+                               minWidth: '100px'
+                             }}
+                           >
+                             {hour}:00
+                           </TableCell>
+                         ))}
+                       </TableRow>
+                     </TableHead>
+                     <TableBody>
+                       {['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'].map((day, dayIndex) => {
+                         const date = new Date();
+                         date.setDate(date.getDate() - date.getDay() + dayIndex);
+                         const dateStr = date.toISOString().split('T')[0];
+                         
+                         return (
+                           <TableRow key={day} hover>
+                             <TableCell
+                               sx={{
+                                 whiteSpace: 'nowrap',
+                                 fontWeight: 500,
+                                 position: 'sticky',
+                                 left: 0,
+                                 backgroundColor: '#fff',
+                                 zIndex: 1
+                               }}
+                             >
+                               {day}<br />{date.getDate()}/{date.getMonth() + 1}
+                             </TableCell>
+                             {Array.from({ length: 12 }, (_, i) => i + 8).map((hour) => {
+                               const timeSlot = `${hour}:00`;
+                               const events = calendarData.events.filter(event => {
+                                 const eventHour = parseInt(event.time.split(':')[0]);
+                                 return event.date === dateStr && eventHour === hour;
+                               });
+                               const dayNote = calendarData.notes[dateStr];
+
+                               return (
+                                 <TableCell
+                                   key={`${day}-${hour}`}
+                                   align="center"
+                                   sx={{
+                                     height: 60,
+                                     p: 1,
+                                     borderLeft: '1px solid rgba(224, 224, 224, 0.5)',
+                                     backgroundColor: events.length > 0 ? 'rgba(25, 118, 210, 0.04)' : 'inherit',
+                                     verticalAlign: 'top',
+                                     '&:hover': {
+                                       backgroundColor: events.length > 0 ? 'rgba(25, 118, 210, 0.08)' : 'rgba(0, 0, 0, 0.04)'
+                                     }
+                                   }}
+                                 >
+                                   <Box sx={{
+                                     display: 'flex',
+                                     flexDirection: 'column',
+                                     gap: 0.5,
+                                     minHeight: '100%'
+                                   }}>
+                                     {events.map((event, i) => (
+                                       <Chip
+                                         key={i}
+                                         label={event.title || 'Cours'}
+                                         size="small"
+                                         color="primary"
+                                         variant="outlined"
+                                         sx={{
+                                           fontSize: '0.75rem',
+                                           height: '24px',
+                                           mb: 0.5
+                                         }}
+                                       />
+                                     ))}
+                                     {dayNote && (
+                                       <Typography
+                                         variant="caption"
+                                         color="text.secondary"
+                                         sx={{
+                                           display: 'block',
+                                           fontSize: '0.75rem',
+                                           lineHeight: 1.2,
+                                           mt: 'auto'
+                                         }}
+                                       >
+                                         {dayNote}
+                                       </Typography>
+                                     )}
+                                   </Box>
+                                 </TableCell>
+                               );
+                             })}
+                           </TableRow>
+                         );
+                       })}
+                     </TableBody>
+                   </Table>
+                 </TableContainer>
+                </Paper>
+              )}
             </Box>
           </Grid>
 
