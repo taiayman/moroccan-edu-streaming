@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
 import {
   Box,
   Typography,
@@ -9,464 +10,1980 @@ import {
   Stack,
   Container,
   IconButton,
-  LinearProgress
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  MenuItem,
+  CircularProgress,
+  Alert,
+  Link,
+  Paper,
+  Avatar
 } from '@mui/material';
 import {
   School as SchoolIcon,
   LiveTv as LiveTvIcon,
   People as PeopleIcon,
-  Timer as TimerIcon,
   Assignment as AssignmentIcon,
   CalendarToday as CalendarIcon,
   Add as AddIcon,
   TrendingUp as TrendingUpIcon,
-  MenuBook as MenuBookIcon
+  MenuBook as MenuBookIcon,
+  Close as CloseIcon,
+  ArrowForward as ArrowForwardIcon,
+  PlayCircleOutline as PlayIcon,
+  NotificationsNone as NotificationsIcon,
+  KeyboardArrowDown as KeyboardArrowDownIcon,
+  Edit as EditIcon,
+  Save as SaveIcon,
+  PictureAsPdf as PictureAsPdfIcon,
+  CloudUpload as CloudUploadIcon,
+  Delete as DeleteIcon,
 } from '@mui/icons-material';
-import { useAuth } from '../../store/authStore';
+import {
+  getTeacherLessons,
+  getTeacherSchedule,
+  startLiveClass,
+  saveLessonPlan,
+  getTeacherStats,
+  getTeacherCourses,
+  getTeacherAssignments,
+  getTeacherStudents,
+  createNewCourse,
+  createNewAssignment,
+  getRecentActivities,
+  getTeacherCalendarEvents,
+  getTeacherCalendarNotes,
+  saveCalendarEvent,
+  saveCalendarNote,
+  deleteCalendarEvent,
+} from '../../api/teacher';
 
-const StatsCard = ({ stat }) => (
-  <Box
-    sx={{
-      p: 3,
-      backgroundColor: stat.accent ? '#bb5c39' : 'rgba(0, 0, 0, 0.02)',
-      borderRadius: 2,
-      border: '1px solid',
-      borderColor: stat.accent ? '#bb5c39' : 'transparent',
-      transition: 'transform 0.2s',
-      '&:hover': {
-        transform: 'translateY(-4px)'
-      }
-    }}
-  >
-    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-      {React.cloneElement(stat.icon, { 
-        sx: { 
-          fontSize: 28, 
-          color: stat.accent ? '#fff' : '#000'
-        } 
-      })}
-    </Box>
-    <Typography variant="h4" sx={{ 
-      fontWeight: 700, 
-      mb: 1,
-      color: stat.accent ? '#fff' : '#000'
-    }}>
-      {stat.value}
-    </Typography>
-    <Typography variant="body1" sx={{ 
-      color: stat.accent ? 'rgba(255, 255, 255, 0.8)' : '#666',
-      mb: 1 
-    }}>
-      {stat.title}
-    </Typography>
-    <Typography variant="caption" sx={{ 
-      color: stat.accent ? 'rgba(255, 255, 255, 0.8)' : '#666'
-    }}>
-      {stat.change}
-    </Typography>
-  </Box>
-);
+const formatRelativeTime = (timestamp) => {
+  const now = new Date();
+  const date = new Date(timestamp);
+  const diffInSeconds = Math.floor((now - date) / 1000);
 
-const ClassItem = ({ class_, onStart }) => (
-  <Box
-    sx={{
-      p: 3,
-      borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
-      '&:last-child': {
-        borderBottom: 'none'
-      },
-      '&:hover': {
-        backgroundColor: 'rgba(0, 0, 0, 0.02)'
-      }
-    }}
-  >
-    <Grid container alignItems="center" spacing={3}>
-      <Grid item xs={12} sm={7}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Box
-            sx={{
-              width: 12,
-              height: 12,
-              borderRadius: '50%',
-              backgroundColor: '#bb5c39'
-            }}
-          />
-          <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              {class_.time} - {class_.duration}
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#666' }}>
-              {class_.subject} • {class_.level}
-            </Typography>
-          </Box>
-        </Box>
-      </Grid>
-      <Grid item xs={12} sm={5} sx={{ 
-        display: 'flex', 
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        gap: 2
-      }}>
-        <Chip
-          icon={<PeopleIcon sx={{ fontSize: '18px !important' }} />}
-          label={`${class_.students} étudiants`}
-          sx={{ 
-            backgroundColor: 'rgba(0, 0, 0, 0.04)',
-            borderRadius: '8px'
-          }}
-        />
-        <Button
-          variant="contained"
-          startIcon={<LiveTvIcon />}
-          onClick={onStart}
-          sx={{
-            backgroundColor: '#bb5c39',
-            color: '#fff',
-            textTransform: 'none',
-            borderRadius: '4px',
-            '&:hover': {
-              backgroundColor: '#a94f30'
-            }
-          }}
-        >
-          Démarrer
-        </Button>
-      </Grid>
-    </Grid>
-  </Box>
-);
+  if (diffInSeconds < 60) {
+    return 'Just now';
+  }
 
-const TeacherDashboard = () => {
-  const navigate = useNavigate();
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (diffInMinutes < 60) {
+    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
+  }
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) {
+    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+  }
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) {
+    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+  }
+
+  return date.toLocaleDateString();
+};
+
+const getDaysInMonth = (year, month) => {
+  return new Date(year, month + 1, 0).getDate();
+};
+
+const getFirstDayOfMonth = (year, month) => {
+  return new Date(year, month, 1).getDay();
+};
+
+const StatsCard = ({ stat }) => {
   const { user } = useAuth();
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(today));
+  const [isScheduleExpanded, setIsScheduleExpanded] = useState(true);
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [dayNote, setDayNote] = useState('');
+  const [savedNotes, setSavedNotes] = useState({});
+  const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [newEvent, setNewEvent] = useState({
+    title: '',
+    time: '',
+    description: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const upcomingClasses = [
-    {
-      id: 1,
-      subject: 'Mathématiques',
-      topic: 'Analyse: Les Dérivées',
-      time: '10:00',
-      duration: '1h 30min',
-      students: 25,
-      level: 'Niveau 2'
-    },
-    {
-      id: 2,
-      subject: 'Mathématiques',
-      topic: 'Algèbre Linéaire',
-      time: '14:00',
-      duration: '1h',
-      students: 30,
-      level: 'Niveau 1'
-    }
-  ];
+  // Get Monday of the current week
+  function getWeekStart(date) {
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is sunday
+    return new Date(d.setDate(diff));
+  }
 
-  const assignments = [
-    {
-      id: 1,
-      subject: 'Mathématiques',
-      title: 'Exercices sur les Dérivées',
-      dueDate: 'Pour demain',
-      submissions: 18,
-      totalStudents: 25
-    },
-    {
-      id: 2,
-      subject: 'Mathématiques',
-      title: 'Matrices et Déterminants',
-      dueDate: 'Dans 3 jours',
-      submissions: 5,
-      totalStudents: 30
-    }
-  ];
+  // Get dates for the week
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(currentWeekStart);
+    date.setDate(currentWeekStart.getDate() + i);
+    return date;
+  });
 
-  const stats = [
-    {
-      title: 'Classes',
-      value: '6',
-      icon: <MenuBookIcon />,
-      change: '+2 ce semestre'
-    },
-    {
-      title: 'Étudiants',
-      value: '150',
-      icon: <PeopleIcon />,
-      change: 'Total actuel'
-    },
-    {
-      title: 'Taux de Réussite',
-      value: '92%',
-      icon: <TrendingUpIcon />,
-      change: 'Moyenne globale',
-      accent: true
+  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const handlePrevWeek = () => {
+    const newWeekStart = new Date(currentWeekStart);
+    newWeekStart.setDate(currentWeekStart.getDate() - 7);
+    setCurrentWeekStart(newWeekStart);
+  };
+
+  const handleNextWeek = () => {
+    const newWeekStart = new Date(currentWeekStart);
+    newWeekStart.setDate(currentWeekStart.getDate() + 7);
+    setCurrentWeekStart(newWeekStart);
+  };
+
+  const isToday = (date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() && 
+           date.getMonth() === today.getMonth() && 
+           date.getFullYear() === today.getFullYear();
+  };
+
+  const hasEvents = (date) => {
+    if (!stat.schedule || !Array.isArray(stat.schedule)) return false;
+    const dateStr = date.toISOString().split('T')[0];
+    return stat.schedule.some(event => event.date === dateStr);
+  };
+
+  useEffect(() => {
+    if (stat.isCalendar && user) {
+      loadCalendarData();
     }
-  ];
+  }, [currentWeekStart, user]);
+
+  // Add new effect for loading notes when date changes
+  useEffect(() => {
+    if (selectedDate && user) {
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      setDayNote(savedNotes[dateStr] || '');
+    }
+  }, [selectedDate, savedNotes]);
+
+  const loadCalendarData = async () => {
+    try {
+      setLoading(true);
+      const endDate = new Date(currentWeekStart);
+      endDate.setDate(currentWeekStart.getDate() + 6);
+      
+      // Load events
+      const events = await getTeacherCalendarEvents(user.id, currentWeekStart, endDate);
+      console.log('Loaded events:', events);
+      stat.schedule = events;
+      
+      // Load notes
+      const notes = await getTeacherCalendarNotes(user.id, currentWeekStart, endDate);
+      console.log('Loaded notes:', notes);
+      setSavedNotes(notes);
+    } catch (err) {
+      console.error('Error loading calendar data:', err);
+      setError('Failed to load calendar data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddEvent = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      if (!newEvent.title || !newEvent.time) {
+        setError('Title and time are required');
+        return;
+      }
+
+      const eventData = {
+        ...newEvent,
+        date: selectedDate.toISOString().split('T')[0],
+        teacherId: user.id
+      };
+
+      console.log('Saving event data:', eventData);
+      const eventId = await saveCalendarEvent(user.id, eventData);
+      console.log('Event saved with ID:', eventId);
+      
+      // Reset form and refresh data
+    setNewEvent({ title: '', time: '', description: '' });
+    setIsAddEventOpen(false);
+      await loadCalendarData();
+    } catch (err) {
+      console.error('Error adding event:', err);
+      setError('Failed to add event');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveNote = async () => {
+    try {
+      setLoading(true);
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      
+      await saveCalendarNote(user.id, dateStr, dayNote);
+      
+      // Update local state
+      setSavedNotes(prev => ({
+        ...prev,
+        [dateStr]: dayNote
+      }));
+      
+      setIsEditingNote(false);
+    } catch (err) {
+      console.error('Error saving note:', err);
+      setError('Failed to save note');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    try {
+      setLoading(true);
+      console.log('Deleting event:', eventId);
+      console.log('Teacher ID:', user.id);
+      await deleteCalendarEvent(user.id, eventId);
+      console.log('Event deleted successfully');
+      await loadCalendarData();
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      setError(err.message || 'Failed to delete event');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteNote = async () => {
+    try {
+      setLoading(true);
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      await saveCalendarNote(user.id, dateStr, ''); // Save empty note to delete it
+      setSavedNotes(prev => ({
+        ...prev,
+        [dateStr]: ''
+      }));
+      setDayNote('');
+    } catch (err) {
+      console.error('Error deleting note:', err);
+      setError('Failed to delete note');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleSchedule = () => {
+    setIsScheduleExpanded(!isScheduleExpanded);
+  };
+
+  // Add debug output in the render to check events
+  console.log('Current schedule:', stat.schedule);
+  console.log('Selected date:', selectedDate?.toISOString().split('T')[0]);
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      backgroundColor: '#f2f0e9',
-      pt: { xs: '70px', md: '90px' },
-      pb: 4
-    }}>
-      <Container maxWidth="xl">
-        {/* Header Section */}
-        <Box sx={{ mb: 4 }}>
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                Tableau de Bord
-              </Typography>
-              <Typography variant="body1" sx={{ color: '#666', mt: 1 }}>
-                {user?.displayName || 'Prof. Benali'} • Mathématiques
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: { xs: 'flex-start', md: 'flex-end' }, gap: 2 }}>
-              <Button
-                variant="outlined"
-                startIcon={<CalendarIcon />}
-                sx={{
-                  borderColor: '#000',
-                  color: '#000',
-                  '&:hover': {
-                    borderColor: '#bb5c39',
-                    color: '#bb5c39',
-                    backgroundColor: 'rgba(187, 92, 57, 0.05)'
-                  }
-                }}
-              >
-                Emploi du Temps
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                sx={{
-                  backgroundColor: '#bb5c39',
-                  '&:hover': {
-                    backgroundColor: '#a94f30'
-                  }
-                }}
-              >
-                Nouveau Cours
-              </Button>
-            </Grid>
-          </Grid>
-        </Box>
-
-        <Grid container spacing={4}>
-          {/* Left Column - Stats and Classes */}
-          <Grid item xs={12} md={8}>
-            {/* Stats Cards */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              {stats.map((stat, index) => (
-                <Grid item xs={12} md={4} key={index}>
-                  <StatsCard stat={stat} />
-                </Grid>
-              ))}
-            </Grid>
-
-            {/* Today's Schedule */}
-            <Box sx={{ mb: 4 }}>
-              <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
-                Programme d'Aujourd'hui
-              </Typography>
-              <Box
-                sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                  borderRadius: 2,
-                  overflow: 'hidden'
-                }}
-              >
-                {upcomingClasses.map((class_, index) => (
-                  <ClassItem 
-                    key={class_.id}
-                    class_={class_}
-                    onStart={() => navigate(`/teacher/live-class/${class_.id}`)}
-                  />
-                ))}
+  <Box
+    sx={{
+      position: 'relative',
+      height: '100%',
+        ...(stat.isCalendar && {
+      '&:before': {
+        content: '""',
+        position: 'absolute',
+        top: '8px',
+        left: '8px',
+        right: '-8px',
+        bottom: '-8px',
+        backgroundColor: stat.accent ? 'rgba(187, 92, 57, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+        borderRadius: '16px',
+        zIndex: 0
+      }
+        })
+    }}
+  >
+    <Paper
+      elevation={0}
+      sx={{
+        p: 3,
+        height: '100%',
+        backgroundColor: stat.accent ? '#bb5c39' : '#fff',
+        borderRadius: '16px',
+        position: 'relative',
+          zIndex: 2,
+        transition: 'all 0.2s',
+        border: '1px solid',
+        borderColor: stat.accent ? '#bb5c39' : 'rgba(0, 0, 0, 0.1)',
+        '&:hover': {
+          transform: 'translate(-4px, -4px)',
+          }
+        }}
+      >
+        {stat.isCalendar ? (
+          <>
+            {/* Calendar Header with Navigation */}
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <CalendarIcon sx={{ color: '#fff', fontSize: 24 }} />
+                <Typography variant="h6" sx={{ color: '#fff' }}>
+                  {currentWeekStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <IconButton onClick={handlePrevWeek} sx={{ color: '#fff' }}>
+                  <KeyboardArrowDownIcon sx={{ transform: 'rotate(90deg)' }} />
+                </IconButton>
+                <IconButton onClick={handleNextWeek} sx={{ color: '#fff' }}>
+                  <KeyboardArrowDownIcon sx={{ transform: 'rotate(-90deg)' }} />
+                </IconButton>
               </Box>
             </Box>
 
-            {/* Recent Activity */}
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
-                Activité Récente
-              </Typography>
-              <Box
-                sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                  borderRadius: 2,
-                  p: 3
-                }}
-              >
-                <Stack spacing={3}>
-                  {[
-                    {
-                      type: 'submission',
-                      text: '5 nouveaux devoirs rendus en Algèbre Linéaire',
-                      time: 'Il y a 10 minutes'
-                    },
-                    {
-                      type: 'question',
-                      text: 'Ahmed a posé une question sur les Dérivées',
-                      time: 'Il y a 30 minutes'
-                    },
-                    {
-                      type: 'grade',
-                      text: 'Notes mises à jour pour le devoir de Calcul',
-                      time: 'Il y a 1 heure'
-                    }
-                  ].map((activity, index) => (
-                    <Box
-                      key={index}
+            {/* Calendar Grid */}
+            <Box sx={{ mb: 2 }}>
+              {/* Weekday Headers */}
+              <Grid container spacing={1.5} sx={{ px: 1, mb: 1 }}>
+                {weekDays.map((day, index) => (
+                  <Grid item xs key={index}>
+                    <Typography
+                      align="center"
                       sx={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 2
+                        fontSize: '0.75rem',
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        fontWeight: 500
                       }}
                     >
-                      <Box
-                        sx={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          backgroundColor: '#bb5c39',
-                          mt: 1
-                        }}
-                      />
-                      <Box>
-                        <Typography variant="body1">
-                          {activity.text}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: '#666' }}>
-                          {activity.time}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  ))}
-                </Stack>
-              </Box>
-            </Box>
-          </Grid>
+                      {day}
+                    </Typography>
+                  </Grid>
+                ))}
+              </Grid>
 
-          {/* Right Column - Quick Actions and Assignments */}
-          <Grid item xs={12} md={4}>
-            <Stack spacing={4}>
-              {/* Quick Actions */}
+              {/* Calendar Days */}
+              <Grid container spacing={1.5} sx={{ px: 1 }}>
+                {weekDates.map((date, index) => {
+                  const isCurrentDay = isToday(date);
+                  const isSelectedDay = selectedDate && 
+                    date.getDate() === selectedDate.getDate() && 
+                    date.getMonth() === selectedDate.getMonth() && 
+                    date.getFullYear() === selectedDate.getFullYear();
+                  const dayHasEvents = hasEvents(date);
+                  
+                  return (
+                    <Grid item xs key={index}>
+                      <Box
+                        onClick={() => setSelectedDate(new Date(date))}
+                        sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: 0.5
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: '36px',
+                            height: '36px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            borderRadius: '50%',
+                            backgroundColor: isSelectedDay ? '#fff' : 'transparent',
+                            border: isSelectedDay ? '2px solid #fff' : 'none',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            position: 'relative',
+                            '&:hover': {
+                              backgroundColor: isSelectedDay ? '#fff' : 'rgba(255, 255, 255, 0.1)'
+                            },
+                            '&::after': dayHasEvents ? {
+                              content: '""',
+                              position: 'absolute',
+                              bottom: '2px',
+                              width: '4px',
+                              height: '4px',
+                              backgroundColor: isSelectedDay ? '#bb5c39' : '#fff',
+                              borderRadius: '50%'
+                            } : {},
+                            '&::before': isCurrentDay && !isSelectedDay ? {
+                              content: '""',
+                              position: 'absolute',
+                              top: '2px',
+                              width: '4px',
+                              height: '4px',
+                              backgroundColor: '#fff',
+                              borderRadius: '50%'
+                            } : {}
+                          }}
+                        >
+                          <Typography
+                            sx={{
+                              fontSize: '0.9rem',
+                              fontWeight: isCurrentDay || isSelectedDay ? 700 : 400,
+                              color: isSelectedDay ? '#bb5c39' : '#fff',
+                              lineHeight: 1
+                            }}
+                          >
+                            {date.getDate()}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Grid>
+                  );
+                })}
+              </Grid>
+            </Box>
+
+            {/* Today's Schedule */}
+            <Box
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                borderRadius: 2,
+                p: 2,
+                mt: 'auto'
+              }}
+            >
               <Box
+                onClick={toggleSchedule}
                 sx={{
-                  p: 3,
-                  backgroundColor: '#bb5c39',
-                  borderRadius: 2,
-                  color: 'white'
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  mb: isScheduleExpanded ? 2 : 0
                 }}
               >
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-                  Actions Rapides
+                <Typography 
+                  variant="subtitle2" 
+                  sx={{ 
+                    color: '#fff', 
+                    fontSize: '0.9rem',
+                    fontWeight: 600
+                  }}
+                >
+                  {selectedDate.toLocaleDateString('en-US', { 
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
                 </Typography>
-                <Stack spacing={2}>
-                  {[
-                    {
-                      icon: <AssignmentIcon />,
-                      text: 'Ajouter un Devoir',
-                      path: '/teacher/create-assignment'
-                    },
-                    {
-                      icon: <PeopleIcon />,
-                      text: 'Gérer les Étudiants',
-                      path: '/teacher/students'
-                    },
-                    {
-                      icon: <MenuBookIcon />,
-                      text: 'Ressources de Cours',
-                      path: '/teacher/resources'
-                    }
-                  ].map((action) => (
-                    <Button
-                      key={action.text}
-                      fullWidth
-                      startIcon={action.icon}
-                      onClick={() => navigate(action.path)}
-                      sx={{
-                        py: 1.5,
-                        px: 2,
-                        justifyContent: 'flex-start',
-                        color: 'white',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
-                        borderRadius: '8px',
-                        textTransform: 'none',
+                <IconButton 
+                  size="small" 
+                  sx={{ 
+                    color: '#fff',
+                    transform: isScheduleExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.2s'
+                  }}
+                >
+                  <KeyboardArrowDownIcon />
+                </IconButton>
+              </Box>
+
+              {isScheduleExpanded && (
+                <Stack spacing={1.5}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Typography 
+                      variant="caption" 
+                      sx={{ 
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        fontSize: '0.75rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}
+                    >
+                      Events
+                    </Typography>
+                    <IconButton
+                      size="small"
+                      onClick={() => setIsAddEventOpen(true)}
+                      sx={{ 
+                        color: '#fff',
+                        padding: 0,
                         '&:hover': {
                           backgroundColor: 'rgba(255, 255, 255, 0.1)'
                         }
                       }}
                     >
-                      {action.text}
-                    </Button>
-                  ))}
-                </Stack>
-              </Box>
+                      <AddIcon fontSize="small" />
+                    </IconButton>
+                  </Box>
 
-              {/* Assignments Overview */}
-              <Box
-                sx={{
-                  p: 3,
-                  backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                  borderRadius: 2
-                }}
-              >
-                <Box sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  mb: 3
-                }}>
-                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                    Devoirs à Évaluer
-                  </Typography>
-                  <Chip
-                    label="23 en attente"
-                    size="small"
-                    sx={{
-                      backgroundColor: '#bb5c39',
-                      color: 'white',
-                      borderRadius: '8px',
-                      fontWeight: 600
-                    }}
-                  />
-                </Box>
-                <Stack spacing={2}>
-                  {assignments.map((assignment) => (
-                    <Box
-                      key={assignment.id}
-                      sx={{
-                        p: 2,
-                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                        borderRadius: '8px',
-                        '&:hover': {
-                          backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                        }
+                  {stat.schedule && stat.schedule
+                      .filter(event => event.date === selectedDate.toISOString().split('T')[0])
+                      .map((event, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                          gap: 1.5,
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          borderRadius: '8px',
+                          p: 1.5
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: '8px',
+                              height: '8px',
+                              backgroundColor: '#fff',
+                              borderRadius: '50%',
+                              opacity: 0.8
+                            }}
+                          />
+                        <Box sx={{ flex: 1 }}>
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: 'rgba(255, 255, 255, 0.9)',
+                              fontSize: '0.85rem',
+                              fontWeight: 500,
+                              mb: 0.5
+                            }}
+                          >
+                            {event.title}
+                          </Typography>
+                          <Typography 
+                            variant="caption" 
+                            sx={{ 
+                              color: 'rgba(255, 255, 255, 0.7)',
+                              display: 'block'
+                            }}
+                          >
+                            {event.time}
+                            {event.description && (
+                              <span style={{ marginLeft: '8px', opacity: 0.8 }}>
+                                - {event.description}
+                              </span>
+                            )}
+                          </Typography>
+                        </Box>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteEvent(event.id);
+                          }}
+                          sx={{ 
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            '&:hover': {
+                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                              color: '#fff'
+                            }
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    ))}
+
+                  {(!stat.schedule || stat.schedule.filter(event => 
+                    event.date === selectedDate.toISOString().split('T')[0]
+                  ).length === 0) && (
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        fontSize: '0.85rem',
+                        textAlign: 'center',
+                        py: 1
                       }}
                     >
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
-                        {assignment.title}
+                      No events scheduled
+                    </Typography>
+                  )}
+
+                  {/* Notes Section */}
+                  <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography 
+                        variant="caption" 
+                        sx={{ 
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          fontSize: '0.75rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px'
+                        }}
+                      >
+                        Notes
                       </Typography>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <Typography variant="caption" sx={{ color: '#666' }}>
-                          {assignment.submissions} rendus sur {assignment.totalStudents}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: '#666' }}>
-                          {assignment.dueDate}
-                        </Typography>
+                      <Box sx={{ display: 'flex', gap: 1 }}>
+                        {dayNote && !isEditingNote && (
+                      <IconButton 
+                        size="small" 
+                            onClick={handleDeleteNote}
+                            disabled={loading}
+                            sx={{ 
+                              color: 'rgba(255, 255, 255, 0.7)',
+                              padding: 0,
+                              '&:hover': {
+                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                color: '#fff'
+                              },
+                              '&.Mui-disabled': {
+                                color: 'rgba(255, 255, 255, 0.5)'
+                              }
+                            }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        )}
+                        <IconButton 
+                          size="small" 
+                          onClick={() => {
+                            if (isEditingNote) {
+                              handleSaveNote();
+                            } else {
+                              setIsEditingNote(true);
+                            }
+                          }}
+                          disabled={loading}
+                          sx={{ 
+                            color: '#fff',
+                            padding: 0,
+                            '&.Mui-disabled': {
+                              color: 'rgba(255, 255, 255, 0.5)'
+                            }
+                          }}
+                        >
+                          {loading ? (
+                            <CircularProgress size={16} color="inherit" />
+                          ) : isEditingNote ? (
+                            <SaveIcon fontSize="small" />
+                          ) : (
+                            <EditIcon fontSize="small" />
+                          )}
+                      </IconButton>
                       </Box>
                     </Box>
-                  ))}
+                    {isEditingNote ? (
+                      <TextField
+                        multiline
+                        rows={2}
+                        fullWidth
+                        value={dayNote}
+                        onChange={(e) => setDayNote(e.target.value)}
+                        variant="standard"
+                        placeholder="Write your note here..."
+                        sx={{
+                          '& .MuiInputBase-input': {
+                            color: '#fff',
+                            fontSize: '0.85rem',
+                          },
+                          '& .MuiInput-underline:before': {
+                            borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+                          },
+                          '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
+                            borderBottomColor: 'rgba(255, 255, 255, 0.4)',
+                          },
+                          '& .MuiInput-underline:after': {
+                            borderBottomColor: '#fff',
+                          },
+                        }}
+                      />
+                    ) : (
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: 'rgba(255, 255, 255, 0.9)',
+                          fontSize: '0.85rem',
+                          minHeight: '40px',
+                          fontStyle: savedNotes[selectedDate.toISOString().split('T')[0]] ? 'normal' : 'italic'
+                        }}
+                      >
+                        {savedNotes[selectedDate.toISOString().split('T')[0]] || 'No notes for this day'}
+                      </Typography>
+                    )}
+                  </Box>
                 </Stack>
+              )}
+            </Box>
+          </>
+        ) : (
+          <>
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              {React.cloneElement(stat.icon, { 
+                sx: { 
+                  fontSize: 32, 
+                  color: stat.accent ? '#fff' : '#000'
+                } 
+              })}
+            </Box>
+            <Typography variant="h3" sx={{ 
+              fontWeight: 700, 
+              mb: 2,
+              color: stat.accent ? '#fff' : '#000'
+            }}>
+              {stat.value}
+            </Typography>
+            <Typography variant="body1" sx={{ 
+              color: stat.accent ? 'rgba(255, 255, 255, 0.8)' : '#666',
+              mb: 2,
+              fontSize: '1rem'
+            }}>
+              {stat.title}
+            </Typography>
+            <Typography variant="caption" sx={{ 
+              color: stat.accent ? 'rgba(255, 255, 255, 0.8)' : '#666',
+              fontSize: '0.85rem'
+            }}>
+              {stat.change}
+            </Typography>
+          </>
+        )}
+    </Paper>
+
+    {/* Add Event Dialog */}
+    <Dialog
+      open={isAddEventOpen}
+      onClose={() => setIsAddEventOpen(false)}
+        TransitionProps={{
+          enter: true,
+          exit: true
+        }}
+      PaperProps={{
+        sx: {
+          backgroundColor: '#fff',
+            borderRadius: '20px',
+          width: '100%',
+            maxWidth: '400px',
+            overflow: 'hidden',
+            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)',
+            p: 0
+          }
+        }}
+      >
+        <Box
+          sx={{
+            background: 'linear-gradient(135deg, #bb5c39 0%, #a04b2e 100%)',
+            py: 4,
+            px: 3,
+            color: '#fff',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%)',
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+            <Box>
+              <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                Add Event
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Schedule a new event in your calendar
+              </Typography>
+            </Box>
+            <IconButton 
+              onClick={() => setIsAddEventOpen(false)}
+              size="small"
+              sx={{ 
+                color: 'white',
+                '&:hover': { 
+                  backgroundColor: 'rgba(255,255,255,0.1)'
+                }
+              }}
+            >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        </Box>
+
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+          <TextField
+            label="Event Title"
+            fullWidth
+              required
+            value={newEvent.title}
+            onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+              variant="outlined"
+              error={error && !newEvent.title}
+              helperText={error && !newEvent.title ? 'Title is required' : ''}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(187, 92, 57, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#bb5c39',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#bb5c39',
+                }
+              }}
+          />
+          <TextField
+            label="Time"
+            type="time"
+            fullWidth
+              required
+            value={newEvent.time}
+            onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+              error={error && !newEvent.time}
+              helperText={error && !newEvent.time ? 'Time is required' : ''}
+            InputLabelProps={{
+              shrink: true,
+            }}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(187, 92, 57, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#bb5c39',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#bb5c39',
+                }
+            }}
+          />
+          <TextField
+            label="Description"
+            fullWidth
+            multiline
+              rows={3}
+            value={newEvent.description}
+            onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+              variant="outlined"
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(187, 92, 57, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#bb5c39',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#bb5c39',
+                }
+              }}
+            />
+            {error && !error.includes('required') && (
+              <Alert severity="error" sx={{ mt: 2 }}>
+                {error}
+              </Alert>
+            )}
+        </Stack>
+      </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
+        <Button 
+          onClick={() => setIsAddEventOpen(false)}
+            variant="outlined"
+            sx={{
+              borderColor: 'rgba(187, 92, 57, 0.5)',
+              color: '#bb5c39',
+              px: 3,
+              '&:hover': {
+                backgroundColor: 'rgba(187, 92, 57, 0.05)',
+                borderColor: '#bb5c39'
+              }
+            }}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="contained"
+          onClick={handleAddEvent}
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+          sx={{
+            backgroundColor: '#bb5c39',
+              px: 4,
+            '&:hover': {
+              backgroundColor: '#a04b2e'
+              },
+              '&.Mui-disabled': {
+                backgroundColor: 'rgba(187, 92, 57, 0.3)'
+            }
+          }}
+        >
+            {loading ? 'Adding...' : 'Add Event'}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  </Box>
+);
+};
+
+const TeacherDashboard = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // State management
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [stats, setStats] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [lessons, setLessons] = useState([]);
+  const [schedule, setSchedule] = useState([]);
+  const [newCourseDialog, setNewCourseDialog] = useState(false);
+  const [newAssignmentDialog, setNewAssignmentDialog] = useState(false);
+  const [startLiveClassDialog, setStartLiveClassDialog] = useState(false);
+  const [liveClassData, setLiveClassData] = useState({
+    title: '',
+    description: ''
+  });
+
+  // Form states
+  const [newCourseData, setNewCourseData] = useState({
+    title: '',
+    description: '',
+    schedule: [],
+    level: ''
+  });
+
+  const [newAssignmentData, setNewAssignmentData] = useState({
+    title: '',
+    description: '',
+    content: ''
+  });
+
+  const [dragActive, setDragActive] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [user]);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Get today's date range
+      const today = new Date();
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+
+      // Load all dashboard data
+      const [
+        lessonsData,
+        scheduleData,
+        coursesData,
+        assignmentsData,
+        studentsData,
+        statsData,
+        activitiesData
+      ] = await Promise.all([
+        getTeacherLessons(user.id),
+        getTeacherSchedule(user.id, startOfDay, endOfDay),
+        getTeacherCourses(user.id),
+        getTeacherAssignments(user.id),
+        getTeacherStudents(user.id),
+        getTeacherStats(user.id),
+        getRecentActivities(user.id)
+      ]);
+
+      setLessons(lessonsData);
+      setSchedule(scheduleData);
+      setCourses(coursesData);
+      setAssignments(assignmentsData);
+      setStudents(studentsData);
+      setActivities(activitiesData);
+      
+      setStats([
+        {
+          title: 'Courses',
+          value: coursesData.length.toString(),
+          icon: <MenuBookIcon />,
+          change: 'Active courses'
+        },
+        {
+          title: 'Students',
+          value: studentsData.length.toString(),
+          icon: <PeopleIcon />,
+          change: 'Total enrolled'
+        },
+        {
+          title: 'Calendar',
+          value: new Date().toLocaleDateString('en-US', { month: 'long' }),
+          icon: <CalendarIcon />,
+          schedule: schedule.map(item => ({
+            time: item.time,
+            title: item.subject
+          })),
+          accent: true,
+          isCalendar: true
+        }
+      ]);
+
+      setError(null);
+    } catch (err) {
+      console.error('Error loading dashboard:', err);
+      setError('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStartClass = async () => {
+    try {
+      if (!liveClassData.title) {
+        setError('Title is required');
+        return;
+      }
+      
+      setLoading(true);
+      const classId = await startLiveClass(user.id, {
+        ...liveClassData,
+        teacherId: user.id,
+        startTime: new Date().toISOString()
+      });
+      setStartLiveClassDialog(false);
+      navigate(`/teacher/streaming/${classId}`);
+    } catch (err) {
+      console.error('Error starting class:', err);
+      setError('Failed to start class');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateCourse = async () => {
+    try {
+      setLoading(true);
+      await createNewCourse({
+        ...newCourseData,
+        teacherId: user.id
+      });
+      setNewCourseDialog(false);
+      loadDashboardData();
+    } catch (err) {
+      setError('Failed to create course');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateAssignment = async () => {
+    try {
+      if (!newAssignmentData.title) {
+        setError('Title is required');
+        return;
+      }
+      
+      setLoading(true);
+      setError(null);
+
+      const assignmentId = await createNewAssignment({
+        ...newAssignmentData,
+        teacherId: user.id,
+        dueDate: new Date().toISOString() // You might want to add a due date field to the form
+      });
+
+      console.log('Created assignment with ID:', assignmentId);
+      setNewAssignmentDialog(false);
+      setNewAssignmentData({
+        title: '',
+        description: '',
+        content: ''
+      });
+      await loadDashboardData();
+    } catch (err) {
+      console.error('Error creating assignment:', err);
+      setError('Failed to create assignment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    setUploadError('');
+
+    const file = e.dataTransfer.files[0];
+    handleFile(file);
+  };
+
+  const handleFileInput = (e) => {
+    const file = e.target.files[0];
+    handleFile(file);
+  };
+
+  const handleFile = (file) => {
+    if (file?.type !== 'application/pdf') {
+      setUploadError('Please upload a PDF file');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      setUploadError('File size should be less than 10MB');
+      return;
+    }
+    setNewAssignmentData(prev => ({ ...prev, pdf: file }));
+    setUploadError('');
+  };
+
+  const handleRemovePdf = () => {
+    setNewAssignmentData(prev => ({ ...prev, pdf: null }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  return (
+    <Container maxWidth="xl" sx={{ py: 4, mt: { xs: 8, sm: 9 } }}>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Grid container spacing={3}>
+        {/* Stats Section with Quick Actions and Assignments */}
+        <Grid item xs={12} md={8}>
+            <Box
+              sx={{
+              position: 'relative',
+                '&:before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: '8px',
+                  left: '8px',
+                  right: '-8px',
+                  bottom: '-8px',
+                  backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                  borderRadius: '16px',
+                  zIndex: 0
+                }
+              }}
+            >
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  borderRadius: '16px',
+                  border: '1px solid rgba(0, 0, 0, 0.1)',
+                  position: 'relative',
+                  backgroundColor: '#fff',
+                zIndex: 1,
+                height: '100%',
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    transform: 'translate(-4px, -4px)'
+                  }
+                }}
+              >
+              {/* Stats Cards */}
+              <Grid container spacing={3} sx={{ mb: 3 }}>
+                {stats
+                  .filter(stat => !stat.isCalendar)
+                  .map((stat, index) => (
+                    <Grid item xs={12} md={6} key={index}>
+                      <Box>
+                        <StatsCard stat={stat} />
+                      </Box>
+                    </Grid>
+                  ))}
+              </Grid>
+
+              {/* Quick Actions */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ mb: 3 }}>Quick Actions</Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={6}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: '12px',
+                        border: '1px solid rgba(187, 92, 57, 0.2)',
+                        backgroundColor: 'rgba(187, 92, 57, 0.03)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          backgroundColor: 'rgba(187, 92, 57, 0.08)',
+                          transform: 'translateY(-2px)'
+                        }
+                      }}
+                      onClick={() => setStartLiveClassDialog(true)}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                        <Avatar
+                          sx={{
+                            bgcolor: '#bb5c39',
+                            width: 40,
+                            height: 40
+                          }}
+                        >
+                          <LiveTvIcon />
+                        </Avatar>
+                        <Box sx={{ ml: 2 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#bb5c39' }}>
+                            Start Live Class
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            Begin a new live session
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                  <Grid item xs={12} md={6}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2.5,
+                        borderRadius: '12px',
+                        border: '1px solid rgba(187, 92, 57, 0.2)',
+                        backgroundColor: 'rgba(187, 92, 57, 0.03)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          backgroundColor: 'rgba(187, 92, 57, 0.08)',
+                          transform: 'translateY(-2px)'
+                        }
+                      }}
+                      onClick={() => setNewAssignmentDialog(true)}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+                        <Avatar
+                          sx={{
+                            bgcolor: '#bb5c39',
+                            width: 40,
+                            height: 40
+                          }}
+                        >
+                          <AssignmentIcon />
+                        </Avatar>
+                        <Box sx={{ ml: 2 }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#bb5c39' }}>
+                            Create Assignment
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                            Add new homework or task
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </Paper>
+                  </Grid>
+                </Grid>
+            </Box>
+
+        {/* Assignments Overview */}
+              <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Box>
+                  <Typography variant="h6">My Assignments</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Recently created assignments
+                  </Typography>
+                </Box>
+                <Button
+                  endIcon={<ArrowForwardIcon />}
+                  onClick={() => navigate('/teacher/assignments')}
+                  sx={{
+                    color: '#bb5c39',
+                    '&:hover': { backgroundColor: 'rgba(187, 92, 57, 0.1)' }
+                  }}
+                >
+                  View All
+                </Button>
+              </Box>
+
+                <Grid container spacing={2}>
+                {assignments.slice(0, 3).map((assignment, index) => (
+                    <Grid item xs={12} key={index}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 2,
+                      borderRadius: '12px',
+                      border: '1px solid rgba(0, 0, 0, 0.1)',
+                      backgroundColor: '#fff',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                        transform: 'translateY(-2px)'
+                      }
+                    }}
+                    onClick={() => navigate(`/teacher/assignments/${assignment.id}`)}
+                  >
+                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <Box>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                        {assignment.title}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" display="block">
+                        Created {formatRelativeTime(assignment.createdAt)}
+                      </Typography>
+                    </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 0.5,
+                          color: 'text.secondary',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        <PeopleIcon sx={{ fontSize: 16 }} />
+                        {assignment.submissions?.length || 0} submissions
+                      </Box>
+                      <Chip
+                        label={assignment.status || 'Active'}
+                        size="small"
+                        sx={{
+                          backgroundColor: 'rgba(187, 92, 57, 0.1)',
+                          color: '#bb5c39',
+                          fontWeight: 500
+                        }}
+                      />
+                          </Box>
+                    </Box>
+                  </Paper>
+                    </Grid>
+                ))}
+                {assignments.length === 0 && (
+                    <Grid item xs={12}>
+                  <Box 
+                    sx={{ 
+                      textAlign: 'center', 
+                      py: 4,
+                      color: 'text.secondary'
+                    }}
+                  >
+                    <AssignmentIcon sx={{ fontSize: 48, color: 'rgba(0, 0, 0, 0.2)', mb: 1 }} />
+                    <Typography variant="body2">
+                      No assignments created yet
+                    </Typography>
+                  </Box>
+                    </Grid>
+                )}
+                </Grid>
+              </Box>
+            </Paper>
+          </Box>
+        </Grid>
+
+        {/* Calendar Card */}
+        <Grid item xs={12} md={4}>
+          {stats
+            .filter(stat => stat.isCalendar)
+            .map((stat, index) => (
+              <StatsCard key={index} stat={stat} />
+            ))}
+        </Grid>
+      </Grid>
+
+      <Grid container spacing={3} sx={{ mt: 2 }}>
+      {/* Dialogs */}
+        <Grid item xs={12}>
+      <Dialog
+        open={newCourseDialog}
+        onClose={() => setNewCourseDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '16px',
+            p: 2,
+            backgroundColor: '#fff'
+          }
+        }}
+      >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(187, 92, 57, 0.1)',
+                  color: '#bb5c39',
+                  width: 48,
+                  height: 48
+                }}
+              >
+                <MenuBookIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="h6" sx={{ color: '#2f2f2f', fontWeight: 600 }}>
+                  Create New Course
+                </Typography>
+                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+                  Add a new course to your teaching portfolio
+                </Typography>
+              </Box>
+            </Box>
+            <IconButton 
+              onClick={() => setNewCourseDialog(false)} 
+              size="small"
+              sx={{
+                '&:hover': { backgroundColor: 'rgba(187, 92, 57, 0.1)' }
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box
+            sx={{
+              mt: 2,
+              p: 3,
+              borderRadius: '12px',
+              backgroundColor: 'rgba(187, 92, 57, 0.03)',
+              border: '1px solid rgba(187, 92, 57, 0.1)'
+            }}
+          >
+            <Stack spacing={3}>
+              <Box>
+                <Typography 
+                  variant="subtitle2" 
+                  sx={{ 
+                    mb: 1, 
+                    color: '#2f2f2f',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}
+                >
+                  <MenuBookIcon sx={{ fontSize: 20, color: '#bb5c39' }} />
+                  Course Title
+                  <Typography 
+                    component="span" 
+                    variant="caption" 
+                    sx={{ 
+                      color: '#bb5c39',
+                      ml: 0.5 
+                    }}
+                  >
+                    *
+                  </Typography>
+                </Typography>
+                <TextField
+                  required
+                  fullWidth
+                  placeholder="Enter course title"
+                  value={newCourseData.title}
+                  onChange={(e) => setNewCourseData({ ...newCourseData, title: e.target.value })}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#fff',
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#bb5c39',
+                      }
+                    }
+                  }}
+                />
+              </Box>
+
+              <Box>
+                <Typography 
+                  variant="subtitle2" 
+                  sx={{ 
+                    mb: 1, 
+                    color: '#2f2f2f',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}
+                >
+                  <AssignmentIcon sx={{ fontSize: 20, color: '#bb5c39' }} />
+                  Description
+                </Typography>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  placeholder="Add course description"
+                  value={newCourseData.description}
+                  onChange={(e) => setNewCourseData({ ...newCourseData, description: e.target.value })}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#fff',
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#bb5c39',
+                      }
+                    }
+                  }}
+                />
+              </Box>
+
+              <Box>
+                <Typography 
+                  variant="subtitle2" 
+                  sx={{ 
+                    mb: 1, 
+                    color: '#2f2f2f',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}
+                >
+                  <TrendingUpIcon sx={{ fontSize: 20, color: '#bb5c39' }} />
+                  Level
+                </Typography>
+                <TextField
+                  select
+                  fullWidth
+                  placeholder="Select course level"
+                  value={newCourseData.level}
+                  onChange={(e) => setNewCourseData({ ...newCourseData, level: e.target.value })}
+                  sx={{
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: '#fff',
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#bb5c39',
+                      }
+                    }
+                  }}
+                >
+                  {[
+                    { value: 'beginner', label: 'Beginner', icon: <SchoolIcon /> },
+                    { value: 'intermediate', label: 'Intermediate', icon: <SchoolIcon /> },
+                    { value: 'advanced', label: 'Advanced', icon: <SchoolIcon /> }
+                  ].map((option) => (
+                    <MenuItem 
+                      key={option.value} 
+                      value={option.value}
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        py: 1.5
+                      }}
+                    >
+                      {React.cloneElement(option.icon, { 
+                        sx: { 
+                          fontSize: 20,
+                          color: '#bb5c39'
+                        } 
+                      })}
+                      {option.label}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Box>
             </Stack>
-          </Grid>
+          </Box>
+        </DialogContent>
+        <DialogActions 
+          sx={{ 
+            px: 3, 
+            pb: 3,
+            gap: 2
+          }}
+        >
+          <Button
+            onClick={() => setNewCourseDialog(false)}
+            variant="outlined"
+            sx={{
+              borderColor: 'rgba(187, 92, 57, 0.5)',
+              color: '#bb5c39',
+              '&:hover': { 
+                backgroundColor: 'rgba(187, 92, 57, 0.05)',
+                borderColor: '#bb5c39'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleCreateCourse}
+            disabled={loading}
+            startIcon={<SaveIcon />}
+            sx={{
+              backgroundColor: '#bb5c39',
+              '&:hover': { backgroundColor: '#a04b2e' },
+              '&.Mui-disabled': {
+                backgroundColor: 'rgba(187, 92, 57, 0.3)',
+                color: '#fff'
+              }
+            }}
+          >
+            {loading ? 'Creating...' : 'Create Course'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Create Assignment Dialog */}
+      <Dialog
+        open={newAssignmentDialog}
+        onClose={() => setNewAssignmentDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        TransitionProps={{
+          enter: true,
+          exit: true
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            p: 0,
+            backgroundColor: '#fff',
+            overflow: 'hidden',
+            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)'
+          }
+        }}
+      >
+        <Box
+                sx={{
+            background: 'linear-gradient(135deg, #bb5c39 0%, #a04b2e 100%)',
+            py: 4,
+            px: 3,
+            color: '#fff',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%)',
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+              <Box>
+              <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                  Create New Assignment
+                </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Add a new assignment for your students
+                </Typography>
+            </Box>
+            <IconButton 
+              onClick={() => setNewAssignmentDialog(false)} 
+              size="small"
+              sx={{
+                color: 'white',
+                '&:hover': { 
+                  backgroundColor: 'rgba(255,255,255,0.1)'
+                }
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </Box>
+
+        <DialogContent sx={{ p: 3 }}>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+                  required
+              fullWidth
+              label="Assignment Title"
+              variant="outlined"
+              value={newAssignmentData.title}
+              onChange={(e) => setNewAssignmentData({ ...newAssignmentData, title: e.target.value })}
+                  error={error && !newAssignmentData.title}
+                  helperText={error && !newAssignmentData.title ? 'Title is required' : ''}
+                  sx={{
+                mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                      },
+                  '&.Mui-focused fieldset': {
+                        borderColor: '#bb5c39',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#bb5c39',
+                    }
+                  }}
+                />
+
+            <TextField
+              fullWidth
+              label="Description"
+              variant="outlined"
+              multiline
+              rows={4}
+              value={newAssignmentData.description}
+              onChange={(e) => setNewAssignmentData({ ...newAssignmentData, description: e.target.value })}
+                  sx={{
+                mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                      },
+                  '&.Mui-focused fieldset': {
+                        borderColor: '#bb5c39',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#bb5c39',
+                    }
+                  }}
+                />
+
+            <TextField
+              fullWidth
+              label="Assignment Content"
+              variant="outlined"
+              multiline
+              rows={8}
+              placeholder="Write your assignment content here..."
+              value={newAssignmentData.content}
+              onChange={(e) => setNewAssignmentData({ ...newAssignmentData, content: e.target.value })}
+                  sx={{ 
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: '#fff',
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(187, 92, 57, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                      borderColor: '#bb5c39',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#bb5c39',
+                }
+              }}
+            />
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
+          <Button
+            onClick={() => setNewAssignmentDialog(false)}
+            variant="outlined"
+            sx={{
+              borderColor: 'rgba(187, 92, 57, 0.5)',
+              color: '#bb5c39',
+              px: 3,
+              '&:hover': { 
+                backgroundColor: 'rgba(187, 92, 57, 0.05)',
+                borderColor: '#bb5c39'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleCreateAssignment}
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+            sx={{
+              backgroundColor: '#bb5c39',
+              px: 4,
+              '&:hover': {
+                backgroundColor: '#a04b2e'
+              },
+              '&.Mui-disabled': {
+                backgroundColor: 'rgba(187, 92, 57, 0.3)'
+              }
+            }}
+          >
+            {loading ? 'Creating...' : 'Create Assignment'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Start Live Class Dialog */}
+      <Dialog
+        open={startLiveClassDialog}
+        onClose={() => setStartLiveClassDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        TransitionProps={{
+          enter: true,
+          exit: true
+        }}
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            p: 0,
+            backgroundColor: '#fff',
+            overflow: 'hidden',
+            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)',
+          } 
+        }}
+      >
+        <Box
+                sx={{
+            background: 'linear-gradient(135deg, #bb5c39 0%, #a04b2e 100%)',
+            py: 4,
+            px: 3,
+            color: '#fff',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%)',
+            }
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+              <Box>
+              <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                  Start Live Class
+                </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  Fill in the details to begin your live session
+                </Typography>
+            </Box>
+            <IconButton 
+              onClick={() => setStartLiveClassDialog(false)} 
+              size="small"
+              sx={{
+                color: 'white',
+                '&:hover': { 
+                  backgroundColor: 'rgba(255,255,255,0.1)'
+                }
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </Box>
+
+        <DialogContent sx={{ p: 3 }}>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Class Title"
+              variant="outlined"
+                  value={liveClassData.title}
+                  onChange={(e) => setLiveClassData({ ...liveClassData, title: e.target.value })}
+                  sx={{
+                mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                      },
+                  '&.Mui-focused fieldset': {
+                        borderColor: '#bb5c39',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#bb5c39',
+                    }
+                  }}
+                />
+            <TextField
+              fullWidth
+              label="Description"
+              variant="outlined"
+                  multiline
+                  rows={4}
+                  value={liveClassData.description}
+                  onChange={(e) => setLiveClassData({ ...liveClassData, description: e.target.value })}
+                  sx={{
+                mb: 2,
+                    '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                      },
+                  '&.Mui-focused fieldset': {
+                        borderColor: '#bb5c39',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#bb5c39',
+                    }
+                  }}
+                />
+            {error && (
+              <Alert severity="error" sx={{ mb: 2 }}>
+                {error}
+              </Alert>
+            )}
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
+          <Button
+            onClick={() => setStartLiveClassDialog(false)}
+            variant="outlined"
+            sx={{
+              borderColor: 'rgba(187, 92, 57, 0.5)',
+              color: '#bb5c39',
+              px: 3,
+              '&:hover': { 
+                backgroundColor: 'rgba(187, 92, 57, 0.05)',
+                borderColor: '#bb5c39'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleStartClass}
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <PlayIcon />}
+            sx={{
+              backgroundColor: '#bb5c39',
+              px: 4,
+              '&:hover': {
+                backgroundColor: '#a04b2e'
+              },
+              '&.Mui-disabled': {
+                backgroundColor: 'rgba(187, 92, 57, 0.3)'
+              }
+            }}
+          >
+            {loading ? 'Starting...' : 'Start Class'}
+          </Button>
+        </DialogActions>
+      </Dialog>
         </Grid>
-      </Container>
-    </Box>
+      </Grid>
+    </Container>
   );
 };
 

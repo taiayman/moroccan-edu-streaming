@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
+import { Box } from '@mui/material';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme from './utils/theme';
 import { useAuth } from './store/authStore';
@@ -18,10 +19,13 @@ import LiveClasses from './pages/student/LiveClasses';
 import AssignmentsPage from './pages/student/AssignmentsPage';
 import SchedulePage from './pages/student/SchedulePage';
 import StudentRegistration from './pages/student/StudentRegistration';
+import AssignmentDetails from './pages/student/AssignmentDetails';
 
 // Teacher Components
 import TeacherDashboard from './pages/teacher/Dashboard';
+import TeacherAssignments from './pages/teacher/Assignments';
 import Streaming from './pages/teacher/Streaming';
+import TeacherAssignmentDetails from './pages/teacher/AssignmentDetails';
 
 // Parent Components
 import ParentDashboard from './pages/parent/Dashboard';
@@ -89,6 +93,13 @@ const AppRoutes = () => {
       <Route path="/auth/login" element={<LoginForm />} />
       <Route path="/auth/register" element={<RegisterForm />} />
       <Route path="/auth/role-selection" element={<RoleSelectionPage />} />
+      <Route path="/teacher/assignments" element={
+        <Box sx={{ bgcolor: '#f5f5f5', minHeight: '100vh' }}>
+          <Navbar />
+          <TeacherAssignments />
+        </Box>
+      } />
+      <Route path="/teacher/assignments/:id" element={<TeacherAssignmentDetails />} />
 
       {/* Admin Routes */}
       <Route
@@ -115,6 +126,7 @@ const AppRoutes = () => {
         <Route path="live-classes" element={<LiveClasses />} />
         <Route path="live-class/:id" element={<LiveClass />} />
         <Route path="assignments" element={<AssignmentsPage />} />
+        <Route path="assignments/:id" element={<AssignmentDetails />} />
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="register" element={<StudentRegistration />} />
       </Route>

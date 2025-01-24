@@ -28,6 +28,19 @@ export const ROLES = {
   ADMIN: 'admin'
 };
 
+// Collections names
+export const COLLECTIONS = {
+  LESSONS: 'lessons',
+  SCHEDULES: 'schedules',
+  LIVE_CLASSES: 'liveClasses',
+  QUESTIONS: 'questions',
+  MESSAGES: 'messages',
+  ASSIGNMENTS: 'assignments',
+  USERS: 'users',
+  CALENDAR_EVENTS: 'calendar_events',
+  CALENDAR_NOTES: 'calendar_notes'
+};
+
 // API endpoints configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 

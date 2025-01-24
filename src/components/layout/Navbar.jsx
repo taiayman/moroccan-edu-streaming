@@ -51,19 +51,21 @@ const Navbar = () => {
   ];
 
   return (
-    <AppBar 
+    <AppBar
       position="fixed"
       elevation={0}
-      sx={{ 
+      sx={{
         backgroundColor: '#ffffff',
-        borderBottom: '1px solid rgba(0, 0, 0, 0.1)'
+        borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
+        // Remove any corner rounding for the AppBar
+        borderRadius: 0
       }}
     >
       <Toolbar sx={{ justifyContent: 'space-between' }}>
         {/* Logo/Brand */}
-        <Typography 
-          variant="h6" 
-          sx={{ 
+        <Typography
+          variant="h6"
+          sx={{
             color: '#000',
             fontWeight: 700,
             cursor: 'pointer'
@@ -81,10 +83,13 @@ const Navbar = () => {
             sx={{
               color: '#666',
               textTransform: 'none',
+              // Remove corner rounding
+              borderRadius: 0,
               '&:hover': {
                 color: '#bb5c39'
               }
             }}
+            onClick={() => navigate('/help')}
           >
             Aide
           </Button>
@@ -92,8 +97,9 @@ const Navbar = () => {
           {/* Notifications */}
           <IconButton
             size="large"
-            sx={{ 
+            sx={{
               color: '#666',
+              borderRadius: 0, // Remove corner rounding
               '&:hover': {
                 color: '#bb5c39'
               }
@@ -107,20 +113,22 @@ const Navbar = () => {
             <IconButton
               onClick={handleMenu}
               size="small"
-              sx={{ 
+              sx={{
                 ml: 1,
+                borderRadius: 0, // Remove corner rounding
                 '&:hover': {
                   color: '#bb5c39'
                 }
               }}
             >
-              <Avatar 
-                sx={{ 
-                  width: 32, 
+              <Avatar
+                sx={{
+                  width: 32,
                   height: 32,
                   backgroundColor: '#bb5c39',
                   fontSize: '0.9rem',
                   fontWeight: 500
+                  // Keep default rounded shape for the Avatar (remove borderRadius override)
                 }}
               >
                 {user?.displayName?.charAt(0) || 'U'}
@@ -138,6 +146,8 @@ const Navbar = () => {
                   backgroundColor: '#ffffff',
                   border: '1px solid rgba(0, 0, 0, 0.1)',
                   mt: 1.5,
+                  // Remove corner rounding for the Menu
+                  borderRadius: 0,
                   '& .MuiMenuItem-root': {
                     px: 2,
                     py: 1.5,
@@ -161,7 +171,13 @@ const Navbar = () => {
               </Box>
               <Divider sx={{ my: 1 }} />
               {menuItems.map((item, index) => (
-                <MenuItem key={index} onClick={item.action}>
+                <MenuItem
+                  key={index}
+                  onClick={item.action}
+                  sx={{
+                    borderRadius: 0 // Remove corner rounding for menu items
+                  }}
+                >
                   <ListItemIcon sx={{ color: '#666' }}>
                     {item.icon}
                   </ListItemIcon>
@@ -169,10 +185,11 @@ const Navbar = () => {
                 </MenuItem>
               ))}
               <Divider sx={{ my: 1 }} />
-              <MenuItem 
+              <MenuItem
                 onClick={handleLogout}
                 sx={{
                   color: '#bb5c39',
+                  borderRadius: 0, // Remove corner rounding
                   '&:hover': {
                     backgroundColor: 'rgba(187, 92, 57, 0.05)'
                   }

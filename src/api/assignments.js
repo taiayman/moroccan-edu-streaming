@@ -1,40 +1,43 @@
-import { db } from './config';
-import { collection, doc, getDoc, getDocs, setDoc } from 'firebase/firestore';
+import { db, COLLECTIONS } from './config';
+import { collection, doc, getDoc, getDocs, setDoc, query, where, orderBy } from 'firebase/firestore';
 
 /**
  * Get upcoming assignments for a user:
  * - We find all assignments that match the course IDs this user is enrolled in
  * - Filter by dueDate to show only upcoming ones
  */
-export const getUpcomingAssignments = async (userId) => {
+export const getUpcomingAssignments = async (studentId, teacherId) => {
   try {
-    const enrollmentsRef = collection(db, 'users', userId, 'enrollments');
-    const enrollmentsSnap = await getDocs(enrollmentsRef);
+    const assignmentsRef = collection(db, COLLECTIONS.ASSIGNMENTS);
+    let assignmentsQuery;
 
-    if (enrollmentsSnap.empty) return [];  
+    if (teacherId) {
+      assignmentsQuery = query(
+        assignmentsRef,
+        where('teacherId', '==', teacherId),
+        orderBy('createdAt', 'desc')
+      );
+    } else {
+      assignmentsQuery = query(
+        assignmentsRef,
+        orderBy('createdAt', 'desc')
+      );
+    }
 
-    const courseIds = enrollmentsSnap.docs.map((docSnap) => docSnap.id);
+    const assignmentsSnap = await getDocs(assignmentsQuery);
+    const assignments = [];
 
-    const assignmentsRef = collection(db, 'assignments');
-    const assignmentsSnap = await getDocs(assignmentsRef);
-    const now = new Date();
+    for (const doc of assignmentsSnap.docs) {
+      assignments.push({
+        id: doc.id,
+        ...doc.data()
+      });
+    }
 
-    const upcoming = [];
-    assignmentsSnap.forEach((docSnap) => {
-      const data = docSnap.data();
-      if (courseIds.includes(data.courseId)) {
-        // Compare dates properly
-        const dueDate = new Date(data.dueDate);
-        if (dueDate > now) {
-          upcoming.push({ id: docSnap.id, ...data });
-        }
-      }
-    });
-
-    return upcoming.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-  } catch (error) {
-    console.error('Error fetching upcoming assignments:', error);
-    throw error;
+    return assignments;
+  } catch (err) {
+    console.error('Error getting upcoming assignments:', err);
+    throw new Error('Failed to get upcoming assignments');
   }
 };
 
@@ -60,45 +63,54 @@ export const submitAssignment = async (userId, assignmentId, submissionData) => 
 /**
  * Get submission status and details for a specific assignment
  */
-export const getSubmissionStatus = async (userId, assignmentId) => {
+export const getSubmissionStatus = async (studentId, assignmentId) => {
   try {
-    const submissionRef = doc(db, 'assignments', assignmentId, 'submissions', userId);
-    const submissionSnap = await getDoc(submissionRef);
+    if (!studentId || !assignmentId) {
+      throw new Error('Student ID and Assignment ID are required');
+    }
     
-    if (!submissionSnap.exists()) {
-      return { status: 'not_submitted' };
+    const submissionRef = doc(db, 'assignments', assignmentId, 'submissions', studentId);
+    const submissionSnap = await getDoc(submissionRef);
+
+    if (submissionSnap.exists()) {
+      return {
+        ...submissionSnap.data(),
+        id: submissionSnap.id
+      };
     }
 
-    return submissionSnap.data();
-  } catch (error) {
-    console.error('Error fetching submission status:', error);
-    throw error;
+    return {
+      status: 'not_submitted',
+      content: '',
+      submittedAt: null,
+      grade: null
+    };
+  } catch (err) {
+    console.error('Error getting submission status:', err);
+    throw new Error('Failed to get submission status');
   }
 };
 
-export const updateAssignmentStatus = async (userId, assignmentId, newStatus) => {
+export const updateAssignmentStatus = async (studentId, assignmentId, status, submissionData) => {
   try {
-    // For now, we'll simulate an API call with a delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    if (!studentId || !assignmentId) {
+      throw new Error('Student ID and Assignment ID are required');
+    }
 
-    // In a real application, this would be an API call to update the status
-    // Example API call:
-    // const response = await fetch(`/api/assignments/${assignmentId}/status`, {
-    //   method: 'PUT',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({ userId, status: newStatus }),
-    // });
-    // return response.json();
+    const submissionRef = doc(db, 'assignments', assignmentId, 'submissions', studentId);
+    
+    await setDoc(submissionRef, {
+      studentId,
+      assignmentId,
+      status,
+      content: submissionData.content,
+      submittedAt: submissionData.submittedAt,
+      updatedAt: new Date(),
+    }, { merge: true });
 
-    // For now, just return a success response
-    return {
-      success: true,
-      message: 'Status updated successfully'
-    };
-  } catch (error) {
-    console.error('Error updating assignment status:', error);
+    return true;
+  } catch (err) {
+    console.error('Error updating assignment status:', err);
     throw new Error('Failed to update assignment status');
   }
 };
