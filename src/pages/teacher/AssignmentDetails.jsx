@@ -13,15 +13,35 @@ import {
   CircularProgress,
   Alert,
   Chip,
-  Divider
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  IconButton
 } from '@mui/material';
 import {
   Assignment as AssignmentIcon,
   ArrowBack as ArrowBackIcon,
   CalendarToday as CalendarIcon,
-  People as PeopleIcon
+  People as PeopleIcon,
+  Grade as GradeIcon,
+  CheckCircle as CheckCircleIcon,
+  Save as SaveIcon,
+  Close as CloseIcon,
+  PersonOutline as PersonOutlineIcon,
+  AccessTime as AccessTimeIcon
 } from '@mui/icons-material';
-import { doc, getDoc } from 'firebase/firestore';
+import {
+  doc,
+  getDoc,
+  collection,
+  getDocs,
+  updateDoc,
+  serverTimestamp,
+  increment
+} from 'firebase/firestore';
 import { db, COLLECTIONS } from '../../api/config';
 
 const formatDate = (timestamp) => {
@@ -41,6 +61,11 @@ const AssignmentDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [assignment, setAssignment] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [submissionDetails, setSubmissionDetails] = useState(null);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
+  const [gradeData, setGradeData] = useState({ grade: '', feedback: '' });
 
   useEffect(() => {
     loadAssignmentDetails();
@@ -50,6 +75,7 @@ const AssignmentDetails = () => {
     try {
       setLoading(true);
       setError(null);
+      
       const assignmentRef = doc(db, COLLECTIONS.ASSIGNMENTS, id);
       const assignmentDoc = await getDoc(assignmentRef);
       
@@ -63,9 +89,69 @@ const AssignmentDetails = () => {
         ...assignmentDoc.data()
       };
       setAssignment(data);
+
+      // Fetch submissions
+      const submissionsRef = collection(db, 'assignments', id, 'submissions');
+      const submissionsSnap = await getDocs(submissionsRef);
+      
+      const submissionsData = [];
+      for (const submissionDoc of submissionsSnap.docs) {
+        const submissionData = submissionDoc.data();
+        // Get student details
+        const studentRef = doc(db, COLLECTIONS.USERS, submissionData.studentId);
+        const studentSnap = await getDoc(studentRef);
+        
+        submissionsData.push({
+          id: submissionDoc.id,
+          ...submissionData,
+          student: studentSnap.exists() ? {
+            id: studentSnap.id,
+            ...studentSnap.data()
+          } : null
+        });
+      }
+
+      // Sort submissions by date
+      submissionsData.sort((a, b) => b.submittedAt - a.submittedAt);
+      setSubmissions(submissionsData);
+
     } catch (err) {
       console.error('Error loading assignment details:', err);
       setError('Failed to load assignment details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGradeSubmission = async () => {
+    try {
+      if (!selectedSubmission) return;
+
+      setLoading(true);
+      await updateDoc(
+        doc(db, 'assignments', id, 'submissions', selectedSubmission.id),
+        {
+          grade: Number(gradeData.grade),
+          feedback: gradeData.feedback,
+          gradedBy: user.id,
+          gradedAt: serverTimestamp(),
+          status: 'graded'
+        }
+      );
+
+      // Update assignment stats
+      const submissionStats = {
+        [`submissionStats.gradedCount`]: increment(1),
+      };
+      await updateDoc(doc(db, COLLECTIONS.ASSIGNMENTS, id), submissionStats);
+
+      setGradeDialogOpen(false);
+      setGradeData({ grade: '', feedback: '' });
+      await loadAssignmentDetails();
+
+    } catch (err) {
+      console.error('Error grading submission:', err);
+      setError('Failed to grade submission');
     } finally {
       setLoading(false);
     }
@@ -319,6 +405,235 @@ const AssignmentDetails = () => {
           </Box>
         </Grid>
       </Grid>
+
+      {/* Submissions Section */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h5" sx={{ mb: 3, color: '#2f2f2f', fontWeight: 600 }}>
+          Submissions ({submissions.length})
+        </Typography>
+
+        {submissions.length > 0 ? (
+          <Grid container spacing={2}>
+            {submissions.map((submission) => (
+              <Grid item xs={12} key={submission.id}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: '12px',
+                    border: '1px solid rgba(0, 0, 0, 0.1)',
+                    backgroundColor: '#fff',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                      transform: 'translateY(-2px)'
+                    }
+                  }}
+                >
+                  <Grid container spacing={2} alignItems="center">
+                    <Grid item xs={12} md={3}>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar
+                          src={submission.student?.photoURL}
+                          sx={{ width: 40, height: 40 }}
+                        >
+                          <PersonOutlineIcon />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2">
+                            {submission.student?.displayName || 'Unknown Student'}
+                          </Typography>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                            <Typography variant="caption" color="text.secondary">
+                              {formatDate(submission.submittedAt)}
+                            </Typography>
+                          </Stack>
+                        </Box>
+                      </Stack>
+                    </Grid>
+                    
+                    <Grid item xs={12} md={6}>
+                      <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+                        {submission.content.substring(0, 100)}
+                        {submission.content.length > 100 ? '...' : ''}
+                      </Typography>
+                      {submission.status === 'graded' && (
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <GradeIcon sx={{ fontSize: 16, color: '#4caf50' }} />
+                            <Typography variant="body2" color="success.main">
+                              Grade: {submission.grade}/100
+                            </Typography>
+                          </Box>
+                          {submission.feedback && (
+                            <Typography variant="body2" color="text.secondary">
+                              "{submission.feedback}"
+                            </Typography>
+                          )}
+                        </Stack>
+                      )}
+                    </Grid>
+
+                    <Grid item xs={12} md={3}>
+                      <Stack direction="row" spacing={1} justifyContent="flex-end">
+                        <Button
+                          variant="contained"
+                          onClick={() => {
+                            setSelectedSubmission(submission);
+                            setGradeData({
+                              grade: submission.grade?.toString() || '',
+                              feedback: submission.feedback || ''
+                            });
+                            setGradeDialogOpen(true);
+                          }}
+                          startIcon={submission.grade ? <GradeIcon /> : <CheckCircleIcon />}
+                          sx={{
+                            backgroundColor: '#bb5c39',
+                            '&:hover': { backgroundColor: '#a04b2e' }
+                          }}
+                        >
+                          {submission.grade ? 'Update Grade' : 'Grade'}
+                        </Button>
+                      </Stack>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        ) : (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 4,
+              borderRadius: '12px',
+              border: '1px solid rgba(0, 0, 0, 0.1)',
+              backgroundColor: '#fff',
+              textAlign: 'center'
+            }}
+          >
+            <Typography color="text.secondary">No submissions yet</Typography>
+          </Paper>
+        )}
+      </Box>
+
+      {/* Grade Submission Dialog */}
+      <Dialog
+        open={gradeDialogOpen}
+        onClose={() => setGradeDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '20px',
+            p: 0,
+            backgroundColor: '#fff',
+            overflow: 'hidden',
+            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)'
+          }
+        }}
+      >
+        <Box
+          sx={{
+            background: 'linear-gradient(135deg, #bb5c39 0%, #a04b2e 100%)',
+            py: 3,
+            px: 3,
+            color: '#fff'
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Grade Submission
+            </Typography>
+            <IconButton
+              onClick={() => setGradeDialogOpen(false)}
+              sx={{ color: 'white' }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>
+            {selectedSubmission?.student?.displayName}
+          </Typography>
+        </Box>
+
+        <DialogContent sx={{ p: 3 }}>
+          <Stack spacing={3}>
+            <TextField
+              label="Grade"
+              type="number"
+              value={gradeData.grade}
+              onChange={(e) => setGradeData({ ...gradeData, grade: e.target.value })}
+              inputProps={{ min: 0, max: 100 }}
+              fullWidth
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(187, 92, 57, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#bb5c39',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#bb5c39',
+                }
+              }}
+            />
+            <TextField
+              label="Feedback"
+              multiline
+              rows={4}
+              value={gradeData.feedback}
+              onChange={(e) => setGradeData({ ...gradeData, feedback: e.target.value })}
+              fullWidth
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(187, 92, 57, 0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#bb5c39',
+                  },
+                },
+                '& .MuiInputLabel-root.Mui-focused': {
+                  color: '#bb5c39',
+                }
+              }}
+            />
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 3, pt: 1 }}>
+          <Button
+            onClick={() => setGradeDialogOpen(false)}
+            variant="outlined"
+            sx={{
+              borderColor: 'rgba(187, 92, 57, 0.5)',
+              color: '#bb5c39',
+              '&:hover': {
+                backgroundColor: 'rgba(187, 92, 57, 0.05)',
+                borderColor: '#bb5c39'
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleGradeSubmission}
+            variant="contained"
+            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+            disabled={loading}
+            sx={{
+              backgroundColor: '#bb5c39',
+              '&:hover': { backgroundColor: '#a04b2e' }
+            }}
+          >
+            {loading ? 'Saving...' : 'Save Grade'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

@@ -64,7 +64,7 @@ export const getTeacherCourses = async (teacherId) => {
   }
 };
 
-// Get teacher's assignments
+// Get teacher's assignments with submission details
 export const getTeacherAssignments = async (teacherId) => {
   try {
     if (!teacherId) {
@@ -81,15 +81,92 @@ export const getTeacherAssignments = async (teacherId) => {
     );
     
     const snapshot = await getDocs(q);
-    const assignments = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    const assignments = [];
 
-    console.log('Fetched assignments:', assignments);
+    // Get submissions for each assignment
+    for (const doc of snapshot.docs) {
+      const assignmentData = doc.data();
+      const submissionsQuery = collection(db, 'assignments', doc.id, 'submissions');
+      const submissionsSnapshot = await getDocs(submissionsQuery);
+      
+      const submissions = submissionsSnapshot.docs.map(subDoc => ({
+        id: subDoc.id,
+        ...subDoc.data()
+      }));
+
+      assignments.push({
+        id: doc.id,
+        ...assignmentData,
+        submissions,
+        submissionCount: submissions.length,
+        lastSubmission: submissions.length > 0
+          ? submissions.reduce((latest, sub) =>
+              latest.submittedAt > sub.submittedAt ? latest : sub
+            ).submittedAt
+          : null
+      });
+    }
+
+    console.log('Fetched assignments with submissions:', assignments);
     return assignments;
   } catch (error) {
     console.error('Error fetching teacher assignments:', error);
+    throw error;
+  }
+};
+
+// Get detailed submission information for a specific assignment
+export const getAssignmentSubmissions = async (assignmentId) => {
+  try {
+    if (!assignmentId) {
+      throw new Error('Assignment ID is required');
+    }
+
+    const submissionsRef = collection(db, 'assignments', assignmentId, 'submissions');
+    const submissionsSnap = await getDocs(submissionsRef);
+    
+    const submissions = [];
+    for (const doc of submissionsSnap.docs) {
+      const submissionData = doc.data();
+      // Get student details
+      const studentRef = doc(db, COLLECTIONS.USERS, submissionData.studentId);
+      const studentSnap = await getDoc(studentRef);
+      
+      submissions.push({
+        id: doc.id,
+        ...submissionData,
+        student: studentSnap.exists() ? {
+          id: studentSnap.id,
+          ...studentSnap.data()
+        } : null
+      });
+    }
+
+    // Sort by submission date
+    submissions.sort((a, b) => b.submittedAt - a.submittedAt);
+    
+    return submissions;
+  } catch (error) {
+    console.error('Error fetching assignment submissions:', error);
+    throw error;
+  }
+};
+
+// Grade a submission
+export const gradeSubmission = async (assignmentId, submissionId, gradeData) => {
+  try {
+    const submissionRef = doc(db, 'assignments', assignmentId, 'submissions', submissionId);
+    await updateDoc(submissionRef, {
+      grade: gradeData.grade,
+      feedback: gradeData.feedback,
+      gradedBy: gradeData.teacherId,
+      gradedAt: serverTimestamp(),
+      status: 'graded'
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error grading submission:', error);
     throw error;
   }
 };

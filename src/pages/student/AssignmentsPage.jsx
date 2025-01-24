@@ -34,7 +34,7 @@ import {
   Person as PersonIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
-import { getUpcomingAssignments, getSubmissionStatus, updateAssignmentStatus } from '../../api/assignments';
+import { getUpcomingAssignments, getSubmissionStatus, submitAssignment } from '../../api/assignments';
 import { getAllTeachers } from '../../api/teacher';
 
 const formatDate = (timestamp) => {
@@ -126,9 +126,8 @@ const AssignmentsPage = () => {
       setSubmitting(true);
       setError(null);
 
-      await updateAssignmentStatus(user.id, selectedAssignment.id, 'submitted', {
-        content: submissionContent,
-        submittedAt: new Date()
+      await submitAssignment(user.id, selectedAssignment.id, {
+        content: submissionContent
       });
 
       setSubmissionDialog(false);
@@ -136,7 +135,18 @@ const AssignmentsPage = () => {
       await loadAssignments();
     } catch (err) {
       console.error('Error submitting assignment:', err);
-      setError('Failed to submit assignment');
+      // Show specific error message for already submitted assignments
+      if (err.message === 'You have already submitted this assignment') {
+        setError('You have already submitted this assignment. Multiple submissions are not allowed.');
+      } else {
+        setError('Failed to submit assignment. Please try again.');
+      }
+      
+      // Close dialog if it was an already submitted error
+      if (err.message === 'You have already submitted this assignment') {
+        setSubmissionDialog(false);
+        await loadAssignments(); // Refresh to update status
+      }
     } finally {
       setSubmitting(false);
     }
@@ -392,23 +402,32 @@ const AssignmentsPage = () => {
                       </Grid>
                       <Grid item xs={12} md={4}>
                         <Stack direction="row" spacing={1} justifyContent="flex-end">
-                          {assignment.status !== 'submitted' && (
-                            <Button
-                              variant="contained"
-                              startIcon={<UploadIcon />}
-                              onClick={(e) => {
-                                e.stopPropagation();
+                          <Button
+                            variant="contained"
+                            startIcon={<UploadIcon />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!['submitted', 'graded'].includes(assignment.status)) {
                                 setSelectedAssignment(assignment);
                                 setSubmissionDialog(true);
-                              }}
-                              sx={{
-                                backgroundColor: '#bb5c39',
-                                '&:hover': { backgroundColor: '#a04b2e' }
-                              }}
-                            >
-                              Submit Assignment
-                            </Button>
-                          )}
+                              }
+                            }}
+                            disabled={['submitted', 'graded'].includes(assignment.status)}
+                            sx={{
+                              backgroundColor: ['submitted', 'graded'].includes(assignment.status) ? '#ccc' : '#bb5c39',
+                              '&:hover': {
+                                backgroundColor: ['submitted', 'graded'].includes(assignment.status) ? '#ccc' : '#a04b2e'
+                              },
+                              '&.Mui-disabled': {
+                                backgroundColor: '#ccc',
+                                color: '#666'
+                              }
+                            }}
+                          >
+                            {assignment.status === 'graded' ? 'Submission Graded' :
+                             assignment.status === 'submitted' ? 'Already Submitted' :
+                             'Submit Assignment'}
+                          </Button>
                           <Button
                             variant="outlined"
                             onClick={(e) => {

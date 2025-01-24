@@ -54,7 +54,11 @@ const AssignmentDetails = () => {
 
   useEffect(() => {
     loadAssignment();
-  }, [id]);
+    // Close submission dialog if assignment is already submitted or graded
+    if (['submitted', 'graded'].includes(submission?.status)) {
+      setSubmissionDialog(false);
+    }
+  }, [id, submission?.status]);
 
   const loadAssignment = async () => {
     try {
@@ -367,7 +371,7 @@ const AssignmentDetails = () => {
                 <Typography variant="h6" sx={{ mb: 2 }}>
                   Your Submission
                 </Typography>
-                {submission?.status === 'submitted' ? (
+                {['submitted', 'graded'].includes(submission?.status) ? (
                   <Box>
                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                       Submitted on {formatDate(submission.submittedAt)}
@@ -390,18 +394,37 @@ const AssignmentDetails = () => {
                   <Box sx={{ textAlign: 'center', py: 4 }}>
                     <UploadIcon sx={{ fontSize: 48, color: 'rgba(0, 0, 0, 0.2)', mb: 2 }} />
                     <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
-                      You haven't submitted this assignment yet
+                      {submission?.status === 'graded'
+                        ? 'This assignment has already been graded'
+                        : submission?.status === 'submitted'
+                        ? 'You have already submitted this assignment'
+                        : 'You haven\'t submitted this assignment yet'
+                      }
                     </Typography>
                     <Button
                       variant="contained"
                       startIcon={<UploadIcon />}
-                      onClick={() => setSubmissionDialog(true)}
+                      onClick={() => !['submitted', 'graded'].includes(submission?.status) && setSubmissionDialog(true)}
+                      disabled={['submitted', 'graded'].includes(submission?.status)}
                       sx={{
-                        backgroundColor: '#bb5c39',
-                        '&:hover': { backgroundColor: '#a04b2e' }
+                        backgroundColor: ['submitted', 'graded'].includes(submission?.status) ? '#ccc' : '#bb5c39',
+                        '&:hover': {
+                          backgroundColor: ['submitted', 'graded'].includes(submission?.status)
+                            ? '#ccc'
+                            : '#a04b2e'
+                        },
+                        '&.Mui-disabled': {
+                          backgroundColor: '#ccc',
+                          color: '#666'
+                        }
                       }}
                     >
-                      Submit Now
+                      {submission?.status === 'graded'
+                        ? 'Assignment Graded'
+                        : submission?.status === 'submitted'
+                        ? 'Already Submitted'
+                        : 'Submit Now'
+                      }
                     </Button>
                   </Box>
                 )}
