@@ -233,16 +233,16 @@ const Streaming = () => {
         {/* Main Content */}
         <Grid item xs={12} sx={{ height: '100%', position: 'relative' }}>
           {/* Video Grid */}
-          <Box sx={{ height: 'calc(100% - 80px)', p: 2 }}>
-            <Grid container spacing={2} sx={{ height: '100%' }}>
+          <Box sx={{ height: { xs: 'calc(100% - 60px)', md: 'calc(100% - 80px)' }, p: { xs: 1, md: 2 } }}>
+            <Grid container spacing={{ xs: 1, md: 2 }} sx={{ height: '100%' }}>
               {/* Local Video */}
-              <Grid item xs={12} md={isScreenSharing ? 3 : 6}>
+              <Grid item xs={12} sm={isScreenSharing ? 6 : 12} md={isScreenSharing ? 3 : 6}>
                 <Paper
                   elevation={0}
                   sx={{
                     height: '100%',
                     backgroundColor: '#2f2f2f',
-                    borderRadius: '12px',
+                    borderRadius: { xs: '8px', md: '12px' },
                     overflow: 'hidden',
                     position: 'relative'
                   }}
@@ -258,24 +258,20 @@ const Streaming = () => {
                   <Box
                     sx={{
                       position: 'absolute',
-                      bottom: 16,
-                      left: 16,
+                      bottom: { xs: 8, md: 16 },
+                      left: { xs: 8, md: 16 },
                       color: '#fff',
                       backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                      padding: '4px 12px',
+                      padding: { xs: '2px 8px', md: '4px 12px' },
                       borderRadius: '16px',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 1
+                      gap: 1,
+                      fontSize: { xs: '0.875rem', md: '1rem' }
                     }}
                   >
-                    <Avatar
-                      sx={{ width: 24, height: 24, fontSize: '0.875rem' }}
-                    >
-                      {user?.displayName?.[0]}
-                    </Avatar>
-                    <Typography variant="body2">
-                      {user?.displayName} (Host)
+                    <Typography variant="body2" sx={{ fontSize: 'inherit' }}>
+                      {user?.name || 'Teacher'} (You)
                     </Typography>
                   </Box>
                 </Paper>
@@ -320,150 +316,163 @@ const Streaming = () => {
               bottom: 0,
               left: 0,
               right: 0,
-              height: 80,
-              backgroundColor: '#2f2f2f',
+              height: { xs: '60px', md: '80px' },
+              backgroundColor: '#1a1a1a',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 2,
-              px: 3
+              px: { xs: 1, md: 3 }
             }}
           >
-            <Tooltip title={isAudioEnabled ? 'Mute' : 'Unmute'}>
-              <IconButton
-                onClick={toggleAudio}
-                sx={{
-                  color: isAudioEnabled ? '#fff' : '#ff4d4d',
-                  backgroundColor: isAudioEnabled ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 77, 77, 0.1)',
-                  '&:hover': {
-                    backgroundColor: isAudioEnabled ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 77, 77, 0.2)'
-                  }
-                }}
-              >
-                {isAudioEnabled ? <MicIcon /> : <MicOffIcon />}
-              </IconButton>
-            </Tooltip>
+            <Stack
+              direction="row"
+              spacing={{ xs: 1, md: 2 }}
+              alignItems="center"
+              justifyContent="center"
+              sx={{ width: '100%' }}
+            >
+              {/* Left Controls */}
+              <Stack direction="row" spacing={{ xs: 1, md: 2 }}>
+                <Tooltip title={isAudioEnabled ? t('stream.muteAudio') : t('stream.unmuteAudio')}>
+                  <IconButton
+                    onClick={toggleAudio}
+                    sx={{
+                      backgroundColor: isAudioEnabled ? 'primary.main' : 'error.main',
+                      '&:hover': {
+                        backgroundColor: isAudioEnabled ? 'primary.dark' : 'error.dark'
+                      },
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                      color: '#fff'
+                    }}
+                  >
+                    {isAudioEnabled ? <MicIcon /> : <MicOffIcon />}
+                  </IconButton>
+                </Tooltip>
 
-            <Tooltip title={isVideoEnabled ? 'Stop Video' : 'Start Video'}>
-              <IconButton
-                onClick={toggleVideo}
-                sx={{
-                  color: isVideoEnabled ? '#fff' : '#ff4d4d',
-                  backgroundColor: isVideoEnabled ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 77, 77, 0.1)',
-                  '&:hover': {
-                    backgroundColor: isVideoEnabled ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 77, 77, 0.2)'
-                  }
-                }}
-              >
-                {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
-              </IconButton>
-            </Tooltip>
+                <Tooltip title={isVideoEnabled ? t('stream.stopVideo') : t('stream.startVideo')}>
+                  <IconButton
+                    onClick={toggleVideo}
+                    sx={{
+                      backgroundColor: isVideoEnabled ? 'primary.main' : 'error.main',
+                      '&:hover': {
+                        backgroundColor: isVideoEnabled ? 'primary.dark' : 'error.dark'
+                      },
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                      color: '#fff'
+                    }}
+                  >
+                    {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
+                  </IconButton>
+                </Tooltip>
+              </Stack>
 
-            <Tooltip title={isScreenSharing ? 'Stop Sharing' : 'Share Screen'}>
-              <IconButton
-                onClick={toggleScreenShare}
-                sx={{
-                  color: isScreenSharing ? '#ff4d4d' : '#fff',
-                  backgroundColor: isScreenSharing ? 'rgba(255, 77, 77, 0.1)' : 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': {
-                    backgroundColor: isScreenSharing ? 'rgba(255, 77, 77, 0.2)' : 'rgba(255, 255, 255, 0.2)'
-                  }
-                }}
-              >
-                {isScreenSharing ? <StopScreenShareIcon /> : <ScreenShareIcon />}
-              </IconButton>
-            </Tooltip>
+              {/* Center Controls */}
+              <Stack direction="row" spacing={{ xs: 1, md: 2 }}>
+                <Tooltip title={isScreenSharing ? t('stream.stopSharing') : t('stream.startSharing')}>
+                  <IconButton
+                    onClick={toggleScreenShare}
+                    sx={{
+                      backgroundColor: isScreenSharing ? 'warning.main' : 'primary.main',
+                      '&:hover': {
+                        backgroundColor: isScreenSharing ? 'warning.dark' : 'primary.dark'
+                      },
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                      color: '#fff'
+                    }}
+                  >
+                    {isScreenSharing ? <StopScreenShareIcon /> : <ScreenShareIcon />}
+                  </IconButton>
+                </Tooltip>
 
-            <Tooltip title={isPresentationMode ? 'Exit Presentation Mode' : 'Enter Presentation Mode'}>
-              <IconButton
-                onClick={togglePresentationMode}
-                sx={{
-                  color: isPresentationMode ? '#4caf50' : '#fff',
-                  backgroundColor: isPresentationMode ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': {
-                    backgroundColor: isPresentationMode ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 255, 255, 0.2)'
-                  }
-                }}
-              >
-                <PresentIcon />
-              </IconButton>
-            </Tooltip>
+                <Tooltip title={t('stream.presentationMode')}>
+                  <IconButton
+                    onClick={togglePresentationMode}
+                    sx={{
+                      backgroundColor: isPresentationMode ? 'warning.main' : 'primary.main',
+                      '&:hover': {
+                        backgroundColor: isPresentationMode ? 'warning.dark' : 'primary.dark'
+                      },
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                      display: { xs: 'none', sm: 'flex' },
+                      color: '#fff'
+                    }}
+                  >
+                    <PresentIcon />
+                  </IconButton>
+                </Tooltip>
+              </Stack>
 
-            <Tooltip title={isQuestionMode ? 'Disable Q&A' : 'Enable Q&A'}>
-              <IconButton
-                onClick={toggleQuestionMode}
-                sx={{
-                  color: isQuestionMode ? '#2196f3' : '#fff',
-                  backgroundColor: isQuestionMode ? 'rgba(33, 150, 243, 0.1)' : 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': {
-                    backgroundColor: isQuestionMode ? 'rgba(33, 150, 243, 0.2)' : 'rgba(255, 255, 255, 0.2)'
-                  }
-                }}
-              >
-                <QuestionIcon />
-              </IconButton>
-            </Tooltip>
+              {/* Right Controls */}
+              <Stack direction="row" spacing={{ xs: 1, md: 2 }}>
+                <Tooltip title={t('stream.chat')}>
+                  <IconButton
+                    onClick={() => setIsChatOpen(true)}
+                    sx={{
+                      backgroundColor: 'primary.main',
+                      '&:hover': { backgroundColor: 'primary.dark' },
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                      color: '#fff'
+                    }}
+                  >
+                    <ChatIcon />
+                  </IconButton>
+                </Tooltip>
 
-            <Box sx={{ flex: 1 }} />
+                <Tooltip title={t('stream.participants')}>
+                  <IconButton
+                    onClick={() => setIsParticipantsOpen(true)}
+                    sx={{
+                      backgroundColor: 'primary.main',
+                      '&:hover': { backgroundColor: 'primary.dark' },
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                      color: '#fff'
+                    }}
+                  >
+                    <PeopleIcon />
+                  </IconButton>
+                </Tooltip>
 
-            <Tooltip title="Settings">
-              <IconButton
-                onClick={() => setIsSettingsOpen(true)}
-                sx={{
-                  color: '#fff',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)'
-                  }
-                }}
-              >
-                <SettingsIcon />
-              </IconButton>
-            </Tooltip>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={handleEndClass}
+                  sx={{
+                    height: { xs: 40, md: 48 },
+                    minWidth: { xs: 100, md: 120 },
+                    display: { xs: 'none', sm: 'flex' }
+                  }}
+                >
+                  {t('stream.endClass')}
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
 
-            <Tooltip title="Participants">
-              <IconButton
-                onClick={() => setIsParticipantsOpen(true)}
-                sx={{
-                  color: '#fff',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)'
-                  }
-                }}
-              >
-                <PeopleIcon />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title="Chat">
-              <IconButton
-                onClick={() => setIsChatOpen(true)}
-                sx={{
-                  color: '#fff',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)'
-                  }
-                }}
-              >
-                <ChatIcon />
-              </IconButton>
-            </Tooltip>
-
-            <Button
-              variant="contained"
+          {/* Mobile End Class Button */}
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 16,
+              right: 16,
+              display: { xs: 'block', sm: 'none' }
+            }}
+          >
+            <IconButton
+              color="error"
               onClick={handleEndClass}
               sx={{
-                backgroundColor: '#ff4d4d',
-                color: '#fff',
-                '&:hover': {
-                  backgroundColor: '#ff3333'
-                }
+                backgroundColor: 'error.main',
+                '&:hover': { backgroundColor: 'error.dark' }
               }}
             >
-              End Class
-            </Button>
+              <CloseIcon />
+            </IconButton>
           </Box>
         </Grid>
       </Grid>
@@ -475,8 +484,8 @@ const Streaming = () => {
         onClose={() => setIsChatOpen(false)}
         PaperProps={{
           sx: {
-            width: 320,
-            backgroundColor: '#2f2f2f',
+            width: { xs: '100%', sm: 350 },
+            backgroundColor: '#1a1a1a',
             color: '#fff'
           }
         }}
@@ -553,8 +562,8 @@ const Streaming = () => {
         onClose={() => setIsParticipantsOpen(false)}
         PaperProps={{
           sx: {
-            width: 320,
-            backgroundColor: '#2f2f2f',
+            width: { xs: '100%', sm: 350 },
+            backgroundColor: '#1a1a1a',
             color: '#fff'
           }
         }}

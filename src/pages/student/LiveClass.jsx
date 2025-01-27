@@ -211,26 +211,26 @@ const LiveClass = () => {
   return (
     <StreamLayout>
       <Grid container sx={{ height: '100%' }}>
-      {/* Main Content */}
+        {/* Main Content */}
         <Grid item xs={12} sx={{ height: '100%', position: 'relative' }}>
           {/* Video Grid */}
-          <Box sx={{ height: 'calc(100% - 80px)', p: 2 }}>
-            <Grid container spacing={2} sx={{ height: '100%' }}>
+          <Box sx={{ height: { xs: 'calc(100% - 60px)', md: 'calc(100% - 80px)' }, p: { xs: 1, md: 2 } }}>
+            <Grid container spacing={{ xs: 1, md: 2 }} sx={{ height: '100%' }}>
               {/* Local Video */}
-              <Grid item xs={12} md={isScreenSharing ? 3 : 6}>
-          <Paper
-            elevation={0}
-            sx={{
+              <Grid item xs={12} sm={isScreenSharing ? 6 : 12} md={isScreenSharing ? 3 : 6}>
+                <Paper
+                  elevation={0}
+                  sx={{
                     height: '100%',
                     backgroundColor: '#2f2f2f',
-                    borderRadius: '12px',
-              overflow: 'hidden',
-              position: 'relative'
-            }}
-          >
+                    borderRadius: { xs: '8px', md: '12px' },
+                    overflow: 'hidden',
+                    position: 'relative'
+                  }}
+                >
                   <Box
                     ref={localVideoRef}
-                sx={{
+                    sx={{
                       width: '100%',
                       height: '100%',
                       objectFit: 'cover'
@@ -238,28 +238,24 @@ const LiveClass = () => {
                   />
                   <Box
                     sx={{
-              position: 'absolute',
-              bottom: 16,
-              left: 16,
+                      position: 'absolute',
+                      bottom: { xs: 8, md: 16 },
+                      left: { xs: 8, md: 16 },
                       color: '#fff',
                       backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                      padding: '4px 12px',
+                      padding: { xs: '2px 8px', md: '4px 12px' },
                       borderRadius: '16px',
-              display: 'flex',
-              alignItems: 'center',
-                      gap: 1
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      fontSize: { xs: '0.875rem', md: '1rem' }
                     }}
                   >
-                    <Avatar
-                      sx={{ width: 24, height: 24, fontSize: '0.875rem' }}
-                    >
-                      {user?.displayName?.[0]}
-                    </Avatar>
-                    <Typography variant="body2">
-                      {user?.displayName} (You)
+                    <Typography variant="body2" sx={{ fontSize: 'inherit' }}>
+                      {user?.name || 'Student'} (You)
                     </Typography>
-            </Box>
-          </Paper>
+                  </Box>
+                </Paper>
               </Grid>
             </Grid>
           </Box>
@@ -271,197 +267,269 @@ const LiveClass = () => {
               bottom: 0,
               left: 0,
               right: 0,
-              backgroundColor: '#2f2f2f',
-              p: 2
+              height: { xs: '60px', md: '80px' },
+              backgroundColor: '#1a1a1a',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              px: { xs: 1, md: 3 }
             }}
           >
-          <Stack
-            direction="row"
-              spacing={2}
-            justifyContent="center"
-            alignItems="center"
+            <Stack
+              direction="row"
+              spacing={{ xs: 1, md: 2 }}
+              alignItems="center"
+              justifyContent="center"
+              sx={{ width: '100%' }}
+            >
+              {/* Left Controls */}
+              <Stack direction="row" spacing={{ xs: 1, md: 2 }}>
+                <Tooltip title={isAudioEnabled ? t('stream.muteAudio') : t('stream.unmuteAudio')}>
+                  <IconButton
+                    onClick={toggleAudio}
+                    sx={{
+                      backgroundColor: isAudioEnabled ? 'primary.main' : 'error.main',
+                      '&:hover': {
+                        backgroundColor: isAudioEnabled ? 'primary.dark' : 'error.dark'
+                      },
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 }
+                    }}
+                  >
+                    {isAudioEnabled ? <MicIcon /> : <MicOffIcon />}
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title={isVideoEnabled ? t('stream.stopVideo') : t('stream.startVideo')}>
+                  <IconButton
+                    onClick={toggleVideo}
+                    sx={{
+                      backgroundColor: isVideoEnabled ? 'primary.main' : 'error.main',
+                      '&:hover': {
+                        backgroundColor: isVideoEnabled ? 'primary.dark' : 'error.dark'
+                      },
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 }
+                    }}
+                  >
+                    {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+
+              {/* Center Controls */}
+              <Stack direction="row" spacing={{ xs: 1, md: 2 }}>
+                <Tooltip title={isScreenSharing ? t('stream.stopSharing') : t('stream.startSharing')}>
+                  <IconButton
+                    onClick={toggleScreenShare}
+                    sx={{
+                      backgroundColor: isScreenSharing ? 'warning.main' : 'primary.main',
+                      '&:hover': {
+                        backgroundColor: isScreenSharing ? 'warning.dark' : 'primary.dark'
+                      },
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 },
+                      display: { xs: 'none', sm: 'flex' }
+                    }}
+                  >
+                    {isScreenSharing ? <StopScreenShareIcon /> : <ScreenShareIcon />}
+                  </IconButton>
+                </Tooltip>
+              </Stack>
+
+              {/* Right Controls */}
+              <Stack direction="row" spacing={{ xs: 1, md: 2 }}>
+                <Tooltip title={t('stream.chat')}>
+                  <IconButton
+                    onClick={() => setIsChatOpen(true)}
+                    sx={{
+                      backgroundColor: 'primary.main',
+                      '&:hover': { backgroundColor: 'primary.dark' },
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 }
+                    }}
+                  >
+                    <ChatIcon />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title={t('stream.participants')}>
+                  <IconButton
+                    onClick={() => setIsParticipantsOpen(true)}
+                    sx={{
+                      backgroundColor: 'primary.main',
+                      '&:hover': { backgroundColor: 'primary.dark' },
+                      width: { xs: 40, md: 48 },
+                      height: { xs: 40, md: 48 }
+                    }}
+                  >
+                    <PeopleIcon />
+                  </IconButton>
+                </Tooltip>
+
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={handleLeaveClass}
+                  sx={{
+                    height: { xs: 40, md: 48 },
+                    minWidth: { xs: 100, md: 120 },
+                    display: { xs: 'none', sm: 'flex' }
+                  }}
+                >
+                  {t('stream.leaveClass')}
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+
+          {/* Mobile Leave Class Button */}
+          <Box
+            sx={{
+              position: 'fixed',
+              top: 16,
+              right: 16,
+              display: { xs: 'block', sm: 'none' }
+            }}
           >
             <IconButton
-                onClick={toggleAudio}
-              sx={{
-                color: '#fff',
-                  backgroundColor: !isAudioEnabled ? 'rgba(255, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
-                '&:hover': {
-                    backgroundColor: !isAudioEnabled ? 'rgba(255, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
-                }
-              }}
-            >
-                {isAudioEnabled ? <MicIcon /> : <MicOffIcon />}
-            </IconButton>
-            <IconButton
-                onClick={toggleVideo}
-              sx={{
-                color: '#fff',
-                  backgroundColor: !isVideoEnabled ? 'rgba(255, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
-                '&:hover': {
-                    backgroundColor: !isVideoEnabled ? 'rgba(255, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
-                }
-              }}
-            >
-                {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
-            </IconButton>
-            <IconButton
-                onClick={toggleScreenShare}
-              sx={{
-                color: '#fff',
-                  backgroundColor: isScreenSharing ? 'rgba(255, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
-                '&:hover': {
-                    backgroundColor: isScreenSharing ? 'rgba(255, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
-                }
-              }}
-            >
-              {isScreenSharing ? <StopScreenShareIcon /> : <ScreenShareIcon />}
-            </IconButton>
-            <Button
-              variant="contained"
               color="error"
-                onClick={handleLeaveClass}
-                sx={{ px: 3 }}
-              >
-                Leave Class
-            </Button>
+              onClick={handleLeaveClass}
+              sx={{
+                backgroundColor: 'error.main',
+                '&:hover': { backgroundColor: 'error.dark' }
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </Grid>
+      </Grid>
+
+      {/* Chat Drawer */}
+      <Drawer
+        anchor="right"
+        open={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        PaperProps={{
+          sx: {
+            width: { xs: '100%', sm: 350 },
+            backgroundColor: '#1a1a1a',
+            color: '#fff'
+          }
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6">Chat</Typography>
+          <IconButton onClick={() => setIsChatOpen(false)} sx={{ color: '#fff' }}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+        <Box sx={{ flex: 1, p: 2, overflowY: 'auto' }}>
+          <Stack spacing={2}>
+            {messages.map((message) => (
+              <Box key={message.id}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <Avatar sx={{ width: 24, height: 24 }}>
+                    {message.sender.displayName[0]}
+                  </Avatar>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    {message.sender.displayName}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                  </Typography>
+                </Box>
+                <Typography variant="body1">{message.content}</Typography>
+              </Box>
+            ))}
           </Stack>
         </Box>
-        </Grid>
-
-        {/* Chat Drawer */}
-        <Drawer
-          anchor="right"
-          open={isChatOpen}
-          onClose={() => setIsChatOpen(false)}
-          variant="persistent"
-          sx={{
-            width: 350,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
-              width: 350,
-              backgroundColor: '#2f2f2f',
-                color: '#fff',
-              border: 'none'
-            }
-          }}
-        >
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">Chat</Typography>
-            <IconButton onClick={() => setIsChatOpen(false)} sx={{ color: '#fff' }}>
-              <CloseIcon />
+        <Box sx={{ p: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <Stack direction="row" spacing={1}>
+            <TextField
+              fullWidth
+              size="small"
+              placeholder="Type a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  color: '#fff',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  '& fieldset': {
+                    borderColor: 'transparent'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)'
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#fff'
+                  }
+                }
+              }}
+            />
+            <IconButton onClick={sendMessage} sx={{ color: '#fff' }}>
+              <SendIcon />
             </IconButton>
-          </Box>
-          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
-          <Box sx={{ flex: 1, p: 2, overflowY: 'auto' }}>
-              <Stack spacing={2}>
-              {messages.map((message) => (
-                <Box key={message.id}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                    <Avatar sx={{ width: 24, height: 24 }}>
-                      {message.sender.displayName[0]}
-                      </Avatar>
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      {message.sender.displayName}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                      {new Date(message.timestamp).toLocaleTimeString()}
-                        </Typography>
-                      </Box>
-                  <Typography variant="body1">{message.content}</Typography>
-                  </Box>
-                ))}
-              </Stack>
-          </Box>
-            <Box sx={{ p: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              <Stack direction="row" spacing={1}>
-                <TextField
-                  fullWidth
-                  size="small"
-                placeholder="Type a message..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                    color: '#fff',
-                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      '& fieldset': {
-                        borderColor: 'transparent'
-                      },
-                      '&:hover fieldset': {
-                        borderColor: 'rgba(255, 255, 255, 0.2)'
-                      },
-                      '&.Mui-focused fieldset': {
-                        borderColor: '#fff'
-                      }
-                    }
-                  }}
-                />
-              <IconButton onClick={sendMessage} sx={{ color: '#fff' }}>
-                  <SendIcon />
-                </IconButton>
-              </Stack>
-            </Box>
-        </Drawer>
+          </Stack>
+        </Box>
+      </Drawer>
 
-        {/* Participants Drawer */}
-        <Drawer
-          anchor="right"
-          open={isParticipantsOpen}
-          onClose={() => setIsParticipantsOpen(false)}
-          variant="persistent"
-          sx={{
-            width: 350,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
-              width: 350,
-              backgroundColor: '#2f2f2f',
-              color: '#fff',
-              border: 'none'
-            }
-          }}
-        >
-          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">Participants ({participants.length + 1})</Typography>
-            <IconButton onClick={() => setIsParticipantsOpen(false)} sx={{ color: '#fff' }}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
-          <List>
-            {/* Host */}
-            <ListItem>
+      {/* Participants Drawer */}
+      <Drawer
+        anchor="right"
+        open={isParticipantsOpen}
+        onClose={() => setIsParticipantsOpen(false)}
+        PaperProps={{
+          sx: {
+            width: { xs: '100%', sm: 350 },
+            backgroundColor: '#1a1a1a',
+            color: '#fff'
+          }
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6">Participants ({participants.length + 1})</Typography>
+          <IconButton onClick={() => setIsParticipantsOpen(false)} sx={{ color: '#fff' }}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+        <List>
+          {/* Host */}
+          <ListItem>
+            <ListItemAvatar>
+              <Avatar sx={{ backgroundColor: '#bb5c39' }}>
+                {user?.displayName?.[0]}
+              </Avatar>
+            </ListItemAvatar>
+            <ListItemText
+              primary={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography>{user?.displayName}</Typography>
+                  <Typography variant="caption" sx={{ color: '#bb5c39' }}>
+                    (Student)
+                  </Typography>
+                </Box>
+              }
+            />
+          </ListItem>
+          {/* Participants */}
+          {participants.map((participant) => (
+            <ListItem key={participant.id}>
               <ListItemAvatar>
-                <Avatar sx={{ backgroundColor: '#bb5c39' }}>
-                  {user?.displayName?.[0]}
+                <Avatar>
+                  {participant.displayName[0]}
                 </Avatar>
               </ListItemAvatar>
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography>{user?.displayName}</Typography>
-                    <Typography variant="caption" sx={{ color: '#bb5c39' }}>
-                      (Student)
-                    </Typography>
-      </Box>
-                }
-              />
+              <ListItemText primary={participant.displayName} />
             </ListItem>
-            {/* Participants */}
-            {participants.map((participant) => (
-              <ListItem key={participant.id}>
-                <ListItemAvatar>
-                  <Avatar>
-                    {participant.displayName[0]}
-                  </Avatar>
-                </ListItemAvatar>
-                <ListItemText primary={participant.displayName} />
-              </ListItem>
-            ))}
-          </List>
-        </Drawer>
-      </Grid>
+          ))}
+        </List>
+      </Drawer>
     </StreamLayout>
   );
 };
