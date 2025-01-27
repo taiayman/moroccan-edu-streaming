@@ -1,0 +1,529 @@
+{
+  "routes": {
+    "auth": {
+      "login": "/:lang/auth/login",
+      "register": "/:lang/auth/register"
+    }
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "assignments": "Devoirs",
+    "liveClasses": "Cours en direct",
+    "schedule": "Emploi du temps",
+    "profile": "Profil",
+    "login": "Connexion",
+    "register": "S'inscrire",
+    "logout": "Déconnexion",
+    "brand": "Plateforme Éducative",
+    "settings": "Paramètres",
+    "help": "Aide",
+    "notifications": "Notifications",
+    "openUserMenu": "Ouvrir le menu utilisateur",
+    "defaultUserInitial": "U",
+    "defaultUserName": "Utilisateur"
+  },
+  "common": {
+    "submit": "Soumettre",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "loading": "Chargement...",
+      "assignments": {
+        "title": "Devoirs",
+        "subtitle": "Gérer les devoirs des étudiants",
+        "submissions": "soumission",
+        "submissions_plural": "soumissions",
+        "empty": "Aucun devoir disponible"
+      },
+    "error": {
+      "default": "Une erreur est survenue",
+      "failed": "L'opération a échoué"
+    },
+    "success": "Opération réussie",
+    "student": "Étudiant",
+    "day": "Jour",
+    "weekDays": {
+      "sun": "Dim",
+      "mon": "Lun",
+      "tue": "Mar",
+      "wed": "Mer",
+      "thu": "Jeu",
+      "fri": "Ven",
+      "sat": "Sam"
+    },
+    "time": {
+      "justNow": "À l'instant",
+      "minutesAgo": "Il y a {{count}} minute",
+      "minutesAgo_plural": "Il y a {{count}} minutes",
+      "hoursAgo": "Il y a {{count}} heure",
+      "hoursAgo_plural": "Il y a {{count}} heures",
+      "daysAgo": "Il y a {{count}} jour",
+      "daysAgo_plural": "Il y a {{count}} jours",
+      "unknown": "Heure inconnue"
+    },
+    "actions": {
+      "viewAll": "Voir tout",
+      "cancel": "Annuler"
+    }
+  },
+  "auth": {
+    "signIn": "Se connecter",
+    "welcomeBack": "Bienvenue ! Veuillez saisir vos identifiants pour continuer",
+    "emailAddress": "Adresse e-mail",
+    "password": "Mot de passe",
+    "rememberMe": "Se souvenir de moi",
+    "forgotPassword": "Mot de passe oublié ?",
+    "continueWithGoogle": "Continuer avec Google",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "signUpFree": "Inscrivez-vous gratuitement",
+    "enterCredentials": "Veuillez saisir votre email et mot de passe",
+    "loginFailed": "Échec de la connexion. Veuillez vérifier vos identifiants.",
+    "incompleteProfile": "Le profil utilisateur est incomplet. Veuillez contacter le support.",
+    "createAccount": "Créer un compte",
+    "createAccountDesc": "Veuillez remplir vos informations pour créer un compte",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "creatingAccount": "Création du compte...",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "allFieldsRequired": "Tous les champs sont obligatoires",
+    "passwordLength": "Le mot de passe doit contenir au moins 6 caractères"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "welcome": "Bienvenue, {{name}}! 👋",
+    "welcomeSubtitle": "Suivez vos progrès et gérez votre parcours d'apprentissage",
+    "teacher": {
+      "dashboard": {
+        "schedule": {
+          "viewAll": "Voir tout"
+        }
+      }
+    },
+    "stats": {
+      "courses": "Cours",
+      "activeCourses": "{{count}} cours actifs",
+      "upcomingAssignments": "Devoirs à venir",
+      "dueSoon": "Bientôt dû",
+      "globalProgress": "Progrès global",
+      "courseAverage": "Moyenne de tous les cours"
+    },
+    "quickActions": {
+      "title": "Actions rapides",
+      "browseLiveClasses": "Parcourir les cours en direct",
+      "viewAssignments": "Voir les devoirs",
+      "viewSchedule": "Voir l'emploi du temps"
+    },
+    "teachers": {
+      "title": "Enseignants",
+      "schedule": "Emploi du temps de {{name}}"
+    },
+    "teacher": {
+      "title": "Tableau de bord de l'enseignant",
+      "stats": {
+        "courses": {
+          "title": "Cours",
+          "subtitle": "Cours actifs"
+        },
+        "students": {
+          "title": "Étudiants",
+          "subtitle": "Étudiants inscrits"
+        },
+        "calendar": {
+          "title": "Calendrier",
+          "noEvents": "Aucun événement pour ce jour",
+          "addEvent": "Ajouter un événement",
+          "eventDetails": "Détails de l'événement"
+        }
+      },
+      "schedule": {
+        "viewAll": "Voir tout"
+      },
+      "quickActions": {
+        "title": "Actions rapides",
+        "liveClass": {
+          "title": "Démarrer un cours en direct",
+          "subtitle": "Créer une nouvelle session en direct"
+        },
+        "assignment": {
+          "title": "Créer un devoir",
+          "subtitle": "Ajouter un nouveau devoir"
+        }
+      },
+      "assignments": {
+        "title": "Devoirs",
+        "subtitle": "Gérer les devoirs des étudiants",
+        "empty": "Aucun devoir disponible",
+        "created": "Créé le",
+        "submissions": "soumission",
+        "submissions_plural": "soumissions",
+        "status": {
+          "active": "Actif",
+          "completed": "Terminé",
+          "draft": "Brouillon"
+        }
+      },
+      "dialogs": {
+        "course": {
+          "title": "Créer un nouveau cours",
+          "subtitle": "Entrez les détails du cours",
+          "form": {
+            "title": "Titre du cours",
+            "description": "Description du cours",
+            "level": "Niveau du cours",
+            "levelPlaceholder": "Sélectionnez le niveau du cours",
+            "levels": {
+              "beginner": "Débutant",
+              "intermediate": "Intermédiaire",
+              "advanced": "Avancé"
+            }
+          },
+          "actions": {
+            "create": "Créer le cours",
+            "cancel": "Annuler",
+            "creating": "Création en cours..."
+          }
+        },
+        "assignment": {
+          "title": "Créer un nouveau devoir",
+          "subtitle": "Entrez les détails du devoir",
+          "form": {
+            "title": "Titre du devoir",
+            "description": "Description du devoir",
+            "content": "Contenu du devoir",
+            "placeholder": {
+              "title": "Entrez le titre du devoir",
+              "description": "Entrez la description du devoir ici...",
+              "content": "Écrivez le contenu du devoir ici..."
+            }
+          },
+          "actions": {
+            "create": "Créer le devoir",
+            "cancel": "Annuler",
+            "creating": "Création en cours..."
+          }
+        },
+        "liveClass": {
+          "title": "Démarrer un cours en direct",
+          "subtitle": "Créer une nouvelle session en direct pour vos étudiants",
+          "form": {
+            "title": "Titre du cours",
+            "titleRequired": "Le titre est requis",
+            "description": "Description du cours",
+            "placeholder": {
+              "title": "Entrez le titre du cours",
+              "description": "Écrivez la description de votre cours ici..."
+            }
+          },
+          "actions": {
+            "start": "Démarrer le cours",
+            "cancel": "Annuler",
+            "starting": "Démarrage en cours..."
+          }
+        }
+      }
+    }
+  },
+  "roleSelection": {
+    "title": "Choisissez votre rôle",
+    "description": "Sélectionnez votre rôle pour personnaliser votre expérience",
+    "student": {
+      "title": "Étudiant",
+      "description": "Accédez aux cours et participez aux classes"
+    },
+    "teacher": {
+      "title": "Enseignant",
+      "description": "Créez et gérez des cours, donnez des cours en direct"
+    },
+    "parent": {
+      "title": "Parent",
+      "description": "Suivez les progrès et les performances de votre enfant"
+    },
+    "errors": {
+      "noSession": "Session utilisateur non trouvée. Veuillez vous reconnecter.",
+      "invalidSession": "Session utilisateur invalide. Veuillez vous reconnecter.",
+      "roleFailed": "Échec de la définition du rôle. Veuillez réessayer."
+    }
+  },
+  "liveClass": {
+    "live": "EN DIRECT",
+    "leave": "Quitter",
+    "chat": "Chat",
+    "participants": "Participants",
+    "sendMessage": "Envoyer un message...",
+    "teaching": "Enseigne",
+    "student": "étudiant",
+    "teacher": "enseignant",
+    "welcomeMessage": "Bonjour à tous ! Commençons le cours.",
+    "controls": {
+      "toggleMic": "Activer/Désactiver le microphone",
+      "toggleCamera": "Activer/Désactiver la caméra",
+      "toggleScreen": "Activer/Désactiver le partage d'écran",
+      "pipMode": "Mode picture-in-picture",
+      "settings": "Paramètres",
+      "fullscreen": "Plein écran"
+    }
+  },
+  "assignment": {
+    "backToAssignments": "Retour aux devoirs",
+    "due": "À rendre le",
+    "description": "Description",
+    "noDescription": "Aucune description disponible.",
+    "content": "Contenu du devoir",
+    "noContent": "Aucun contenu disponible.",
+    "yourSubmission": "Votre soumission",
+    "submittedOn": "Soumis le",
+    "grade": "Note",
+    "notSubmitted": "Vous n'avez pas encore soumis ce devoir",
+    "alreadySubmitted": "Vous avez déjà soumis ce devoir",
+    "alreadyGraded": "Ce devoir a déjà été noté",
+    "submitNow": "Soumettre maintenant",
+    "submitAssignment": "Soumettre le devoir",
+    "yourAnswer": "Votre réponse",
+    "writeAnswer": "Écrivez votre réponse ici...",
+    "submitting": "Soumission en cours...",
+    "submit": "Soumettre",
+    "status": {
+      "submitted": "Soumis",
+      "notSubmitted": "Non soumis",
+      "not_submitted": "Non soumis",
+      "graded": "Noté"
+    },
+    "myAssignments": "Mes devoirs",
+    "viewAndSubmit": "Voir et soumettre vos devoirs",
+    "selectTeacher": "Sélectionner un professeur",
+    "searchAssignments": "Rechercher des devoirs",
+    "failedToLoad": "Échec du chargement des devoirs",
+    "failedToLoadTeachers": "Échec du chargement des professeurs",
+    "authRequired": "Authentification requise",
+    "multipleSubmissionsNotAllowed": "Vous avez déjà soumis ce devoir. Les soumissions multiples ne sont pas autorisées.",
+    "failedToSubmit": "Échec de la soumission du devoir. Veuillez réessayer.",
+    "assignmentNotFound": "Devoir non trouvé"
+  },
+  "profile": {
+    "editProfile": "Modifier le profil",
+    "level": "Niveau",
+    "notSpecified": "Non spécifié",
+    "enrollmentDate": "Date d'inscription",
+    "academicProgress": "Progression Académique",
+    "enrolledCourses": "Cours Inscrits",
+    "currentAssignments": "Devoirs en cours",
+    "attendanceRate": "Taux de présence",
+    "noCourses": "Aucun cours inscrit",
+    "coursesCount": "{{count}} Cours",
+    "assignmentsCount": "{{count}} Devoirs"
+  },
+  "schedule": {
+    "title": "Emploi du temps",
+    "daysOfWeek": {
+      "monday": "Lundi",
+      "tuesday": "Mardi",
+      "wednesday": "Mercredi",
+      "thursday": "Jeudi",
+      "friday": "Vendredi",
+      "saturday": "Samedi",
+      "sunday": "Dimanche"
+    },
+    "noClassesScheduled": "Aucun cours prévu",
+    "noCoursesFound": "Aucun cours trouvé dans l'emploi du temps.",
+    "professor": "Prof.",
+    "teacherPrefix": "Prof."
+  },
+  "calendar": {
+    "events": "Événements",
+    "noEvents": "Aucun événement prévu",
+    "notes": "Notes",
+    "noNotes": "Aucune note pour ce jour",
+    "weekDays": {
+      "monday": "Lundi",
+      "tuesday": "Mardi",
+      "wednesday": "Mercredi",
+      "thursday": "Jeudi",
+      "friday": "Vendredi",
+      "saturday": "Samedi",
+      "sunday": "Dimanche"
+    },
+    "addEvent": {
+      "title": "Ajouter un événement",
+      "subtitle": "Planifier un nouvel événement dans le calendrier",
+      "form": {
+        "title": "Titre de l'événement",
+        "titleRequired": "Le titre est requis",
+        "time": "Heure",
+        "timeRequired": "L'heure est requise",
+        "description": "Description",
+        "placeholder": {
+          "title": "Entrez le titre de l'événement",
+          "time": "Sélectionnez l'heure",
+          "description": "Écrivez la description de l'événement ici..."
+        }
+      },
+      "actions": {
+        "add": "Ajouter l'événement",
+        "adding": "Ajout en cours...",
+        "cancel": "Annuler"
+      }
+    },
+    "notes": {
+      "title": "Notes",
+      "placeholder": "Écrivez votre note ici...",
+      "noNotes": "Aucune note pour ce jour"
+    }
+  },
+  "teacherPages": {
+    "assignments": {
+      "title": "Devoirs",
+      "description": "Gérer les devoirs des étudiants",
+      "backToDashboard": "Retour au tableau de bord",
+      "createNew": "Créer un nouveau devoir",
+      "search": "Rechercher des devoirs...",
+      "noAssignments": "Aucun devoir trouvé",
+      "empty": "Vous n'avez pas encore créé de devoirs",
+      "created": "Créé le",
+      "submissions": "soumission",
+      "submissions_plural": "soumissions",
+      "viewDetails": "Voir les détails",
+      "errors": {
+        "loadFailed": "Échec du chargement des devoirs",
+        "createFailed": "Échec de la création du devoir",
+        "titleRequired": "Le titre du devoir est requis"
+      },
+      "dialogs": {
+        "assignment": {
+          "title": "Créer un nouveau devoir",
+          "form": {
+            "title": "Titre du devoir",
+            "description": "Description du devoir",
+            "content": "Contenu du devoir"
+          },
+          "actions": {
+            "cancel": "Annuler",
+            "create": "Créer",
+            "creating": "Création en cours..."
+          }
+        }
+      },
+      "status": {
+        "active": "Actif",
+        "completed": "Terminé",
+        "draft": "Brouillon",
+        "pending": "En attente"
+      }
+    },
+    "assignmentDetails": {
+      "back": "Retour aux devoirs",
+      "created": "Créé le",
+      "submissionCount": "{{count}} soumission",
+      "submissionCount_plural": "{{count}} soumissions",
+      "description": "Description",
+      "noDescription": "Aucune description fournie",
+      "content": "Contenu du devoir",
+      "noContent": "Aucun contenu fourni",
+      "submissions": "Soumissions",
+      "unknownStudent": "Étudiant inconnu",
+      "submissionStats": {
+        "title": "Statistiques du devoir",
+        "total": "Total des étudiants",
+        "submitted": "Soumissions",
+        "graded": "Notées",
+        "pending": "En attente"
+      },
+      "status": {
+        "label": "Statut",
+        "active": "Actif",
+        "completed": "Terminé",
+        "draft": "Brouillon"
+      },
+      "grading": {
+        "title": "Noter la soumission",
+        "grade": "Note",
+        "feedback": "Commentaire",
+        "update": "Mettre à jour la note",
+        "grade": "Noter",
+        "save": "Enregistrer la note",
+        "saving": "Enregistrement..."
+      },
+      "errors": {
+        "notFound": "Devoir non trouvé",
+        "loadFailed": "Échec du chargement des détails du devoir",
+        "gradingFailed": "Échec de la notation de la soumission"
+      },
+      "noSubmissions": "Aucune soumission pour le moment"
+    },
+    "streaming": {
+      "title": "Cours en direct",
+      "status": {
+        "live": "EN DIRECT",
+        "ended": "TERMINÉ",
+        "notStarted": "NON COMMENCÉ"
+      },
+      "controls": {
+        "startStream": "Démarrer le direct",
+        "endStream": "Terminer le direct",
+        "toggleMic": "Activer/Désactiver le micro",
+        "toggleCamera": "Activer/Désactiver la caméra",
+        "toggleScreen": "Activer/Désactiver le partage d'écran",
+        "settings": "Paramètres"
+      },
+      "chat": {
+        "title": "Chat de classe",
+        "placeholder": "Tapez un message...",
+        "send": "Envoyer",
+        "empty": "Aucun message pour le moment"
+      },
+      "participants": {
+        "title": "Participants",
+        "teacher": "Enseignant",
+        "students": "Étudiants",
+        "noStudents": "Aucun étudiant n'a encore rejoint"
+      },
+      "settings": {
+        "title": "Paramètres du direct",
+        "videoSource": "Source vidéo",
+        "audioSource": "Source audio",
+        "quality": "Qualité du direct",
+        "apply": "Appliquer les paramètres"
+      },
+      "errors": {
+        "deviceAccess": "Impossible d'accéder à la caméra/micro",
+        "streamFailed": "Échec du démarrage du direct",
+        "connectionLost": "Connexion perdue"
+      },
+      "startStream": {
+        "title": "Démarrer un nouveau direct",
+        "streamTitle": "Titre du direct",
+        "start": "Démarrer le direct"
+      }
+    }
+  },
+  "studentPages": {
+    "assignments": {
+      "title": "Mes Devoirs",
+      "description": "Voir et gérer vos devoirs",
+      "backToDashboard": "Retour au tableau de bord",
+      "filter": {
+        "all": "Tous",
+        "pending": "En attente",
+        "submitted": "Soumis",
+        "graded": "Noté"
+      },
+      "search": "Rechercher des devoirs...",
+      "table": {
+        "title": "Titre",
+        "course": "Cours",
+        "dueDate": "Date limite",
+        "status": "Statut",
+        "grade": "Note",
+        "actions": "Actions"
+      },
+      "noAssignments": "Aucun devoir trouvé",
+      "viewDetails": "Voir les détails",
+      "status": {
+        "pending": "En attente",
+        "submitted": "Soumis",
+        "graded": "Noté",
+        "late": "En retard"
+      }
+    }
+  }
+}

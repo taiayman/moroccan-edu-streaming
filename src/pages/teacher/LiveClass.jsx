@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import AgoraRTC from 'agora-rtc-sdk-ng';
 import {
   Box,
   Typography,
@@ -20,12 +19,7 @@ import {
   ListItem,
   ListItemText,
   ListItemAvatar,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  MenuItem
+  Divider
 } from '@mui/material';
 import {
   Mic as MicIcon,
@@ -37,19 +31,14 @@ import {
   Chat as ChatIcon,
   People as PeopleIcon,
   Close as CloseIcon,
-  Send as SendIcon,
-  Settings as SettingsIcon,
-  PresentToAll as PresentIcon,
-  QuestionAnswer as QuestionIcon
+  Send as SendIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
-import { createAgoraClient } from '../../utils/agora';
+import { createAgoraClient, generateToken } from '../../utils/agora';
 import { getCurrentLanguage } from '../../utils/navigation';
-import StreamLayout from '../../components/layout/StreamLayout';
 
-const Streaming = () => {
+const LiveClass = () => {
   const { classId } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -66,17 +55,10 @@ const Streaming = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isPresentationMode, setIsPresentationMode] = useState(false);
-  const [isQuestionMode, setIsQuestionMode] = useState(false);
   const localVideoRef = useRef(null);
   const remoteVideosRef = useRef({});
 
   useEffect(() => {
-    if (!location.state?.channelName) {
-      setError('Invalid class session');
-      return;
-    }
     initializeAgora();
     return () => {
       cleanup();
@@ -86,34 +68,27 @@ const Streaming = () => {
   const initializeAgora = async () => {
     try {
       setLoading(true);
-      const agoraClientInstance = createAgoraClient();
-      const { channelName } = location.state;
+      const client = createAgoraClient();
+      const token = await generateToken(classId, 'host');
       
-      // Generate a random UID between 1 and 999999
-      const uid = Math.floor(Math.random() * 999999) + 1;
-      
-      const { client, localTracks } = await agoraClientInstance.join(channelName, null, uid);
-      
+      const { localTracks: tracks } = await client.join(classId, token, user.id);
       setAgoraClient(client);
-      setLocalTracks(localTracks);
+      setLocalTracks(tracks);
       
-      // Wait for a short moment to ensure DOM is ready
-      setTimeout(() => {
-        if (localTracks.videoTrack && localVideoRef.current) {
-        localTracks.videoTrack.play(localVideoRef.current);
+      // Play local video
+      if (tracks.videoTrack) {
+        tracks.videoTrack.play(localVideoRef.current);
       }
-      }, 100);
 
       setLoading(false);
     } catch (err) {
       console.error('Error initializing Agora:', err);
-      setError('Failed to initialize live class: ' + err.message);
+      setError('Failed to initialize live class');
       setLoading(false);
     }
   };
 
   const cleanup = async () => {
-    try {
     if (agoraClient) {
       await agoraClient.leave();
     }
@@ -127,9 +102,6 @@ const Streaming = () => {
         track.close();
       }
     });
-    } catch (err) {
-      console.error('Error during cleanup:', err);
-    }
   };
 
   const toggleAudio = async () => {
@@ -177,14 +149,6 @@ const Streaming = () => {
     }
   };
 
-  const togglePresentationMode = () => {
-    setIsPresentationMode(!isPresentationMode);
-  };
-
-  const toggleQuestionMode = () => {
-    setIsQuestionMode(!isQuestionMode);
-  };
-
   const sendMessage = () => {
     if (newMessage.trim()) {
       const message = {
@@ -209,26 +173,22 @@ const Streaming = () => {
 
   if (loading) {
     return (
-      <StreamLayout>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          <CircularProgress />
-        </Box>
-      </StreamLayout>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
     );
   }
 
   if (error) {
     return (
-      <StreamLayout>
-        <Box sx={{ p: 3 }}>
-          <Alert severity="error">{error}</Alert>
-        </Box>
-      </StreamLayout>
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error">{error}</Alert>
+      </Box>
     );
   }
 
   return (
-    <StreamLayout>
+    <Box sx={{ height: '100vh', backgroundColor: '#1a1a1a' }}>
       <Grid container sx={{ height: '100%' }}>
         {/* Main Content */}
         <Grid item xs={12} sx={{ height: '100%', position: 'relative' }}>
@@ -275,7 +235,7 @@ const Streaming = () => {
                       {user?.displayName?.[0]}
                     </Avatar>
                     <Typography variant="body2">
-                      {user?.displayName} (Host)
+                      {user?.displayName} (You)
                     </Typography>
                   </Box>
                 </Paper>
@@ -374,52 +334,7 @@ const Streaming = () => {
               </IconButton>
             </Tooltip>
 
-            <Tooltip title={isPresentationMode ? 'Exit Presentation Mode' : 'Enter Presentation Mode'}>
-              <IconButton
-                onClick={togglePresentationMode}
-                sx={{
-                  color: isPresentationMode ? '#4caf50' : '#fff',
-                  backgroundColor: isPresentationMode ? 'rgba(76, 175, 80, 0.1)' : 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': {
-                    backgroundColor: isPresentationMode ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 255, 255, 0.2)'
-                  }
-                }}
-              >
-                <PresentIcon />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title={isQuestionMode ? 'Disable Q&A' : 'Enable Q&A'}>
-              <IconButton
-                onClick={toggleQuestionMode}
-                sx={{
-                  color: isQuestionMode ? '#2196f3' : '#fff',
-                  backgroundColor: isQuestionMode ? 'rgba(33, 150, 243, 0.1)' : 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': {
-                    backgroundColor: isQuestionMode ? 'rgba(33, 150, 243, 0.2)' : 'rgba(255, 255, 255, 0.2)'
-                  }
-                }}
-              >
-                <QuestionIcon />
-              </IconButton>
-            </Tooltip>
-
             <Box sx={{ flex: 1 }} />
-
-            <Tooltip title="Settings">
-              <IconButton
-                onClick={() => setIsSettingsOpen(true)}
-                sx={{
-                  color: '#fff',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)'
-                  }
-                }}
-              >
-                <SettingsIcon />
-              </IconButton>
-            </Tooltip>
 
             <Tooltip title="Participants">
               <IconButton
@@ -598,108 +513,8 @@ const Streaming = () => {
           ))}
         </List>
       </Drawer>
-
-      {/* Settings Dialog */}
-      <Dialog
-        open={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            backgroundColor: '#2f2f2f',
-            color: '#fff'
-          }
-        }}
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">Settings</Typography>
-            <IconButton onClick={() => setIsSettingsOpen(false)} sx={{ color: '#fff' }}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={3}>
-            {/* Audio Settings */}
-            <Box>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>Audio</Typography>
-              <TextField
-                select
-                fullWidth
-                label="Microphone"
-                variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    color: '#fff',
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.23)'
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.5)'
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#bb5c39'
-                    }
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: 'rgba(255, 255, 255, 0.7)'
-                  }
-                }}
-              >
-                <MenuItem value="default">Default Microphone</MenuItem>
-              </TextField>
-            </Box>
-
-            {/* Video Settings */}
-            <Box>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>Video</Typography>
-              <TextField
-                select
-                fullWidth
-                label="Camera"
-                variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    color: '#fff',
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.23)'
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.5)'
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#bb5c39'
-                    }
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: 'rgba(255, 255, 255, 0.7)'
-                  }
-                }}
-              >
-                <MenuItem value="default">Default Camera</MenuItem>
-              </TextField>
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button
-            variant="contained"
-            onClick={() => setIsSettingsOpen(false)}
-            sx={{
-              backgroundColor: '#bb5c39',
-              '&:hover': {
-                backgroundColor: '#a04b2e'
-              }
-            }}
-          >
-            Done
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </StreamLayout>
+    </Box>
   );
 };
 
-export default Streaming;
+export default LiveClass; 

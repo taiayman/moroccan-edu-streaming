@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from 'react-i18next';
+import { getCurrentLanguage } from '../../utils/navigation';
 import authService from '../../api/auth';
 import {
   Box,
@@ -34,6 +36,7 @@ const LoginForm = () => {
   });
 
   const { login } = useAuth();
+  const { t } = useTranslation();
 
   const handleLogin = async () => {
     setLoading(true);
@@ -41,7 +44,7 @@ const LoginForm = () => {
     
     try {
       if (!formData.email || !formData.password) {
-        throw new Error('Please enter email and password');
+        throw new Error(t('auth.enterCredentials'));
       }
 
       const response = await authService.login(formData.email, formData.password);
@@ -49,7 +52,7 @@ const LoginForm = () => {
       navigateByRole(navigate, response.user.role);
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Failed to login. Please check your credentials.');
+      setError(err.message || t('auth.loginFailed'));
       localStorage.removeItem('token');
       localStorage.removeItem('user');
     } finally {
@@ -108,7 +111,7 @@ const LoginForm = () => {
       } else if (userProfile.role) {
         navigateByRole(navigate, userProfile.role);
       } else {
-        setError('User profile is incomplete. Please contact support.');
+        setError(t('auth.incompleteProfile'));
       }
     } catch (err) {
       setError(err.message);
@@ -154,16 +157,16 @@ const LoginForm = () => {
               color: '#000'
             }}
           >
-            Sign in
+            {t('auth.signIn')}
           </Typography>
-          <Typography 
-            variant="body1" 
-            sx={{ 
+          <Typography
+            variant="body1"
+            sx={{
               color: '#666',
               fontSize: '1.1rem'
             }}
           >
-            Welcome back! Please enter your credentials to continue
+            {t('auth.welcomeBack')}
           </Typography>
         </Box>
 
@@ -187,7 +190,7 @@ const LoginForm = () => {
           margin="normal"
           required
           fullWidth
-          label="Email address"
+          label={t('auth.emailAddress')}
           name="email"
           autoComplete="email"
           autoFocus
@@ -218,7 +221,7 @@ const LoginForm = () => {
           required
           fullWidth
           name="password"
-          label="Password"
+          label={t('auth.password')}
           type={showPassword ? 'text' : 'password'}
           autoComplete="current-password"
           value={formData.password}
@@ -277,7 +280,7 @@ const LoginForm = () => {
             }
             label={
               <Typography sx={{ color: '#666' }}>
-                Remember me
+                {t('auth.rememberMe')}
               </Typography>
             }
           />
@@ -289,7 +292,7 @@ const LoginForm = () => {
               fontWeight: 500
             }}
           >
-            Forgot password?
+            {t('auth.forgotPassword')}
           </Link>
         </Box>
 
@@ -336,7 +339,7 @@ const LoginForm = () => {
             {loading ? (
               <CircularProgress size={24} sx={{ color: '#fff' }} />
             ) : (
-              'Sign in'
+              t('auth.signIn')
             )}
           </Button>
         </Box>
@@ -363,22 +366,22 @@ const LoginForm = () => {
               }
             }}
           >
-            Continue with Google
+            {t('auth.continueWithGoogle')}
           </Button>
         </Box>
 
         <Box sx={{ textAlign: 'center' }}>
           <Typography sx={{ color: '#666' }}>
-            Don't have an account?{' '}
-            <Link 
-              to="/auth/register" 
-              style={{ 
+            {t('auth.noAccount')}{' '}
+            <Link
+              to={`/${getCurrentLanguage()}/auth/register`}
+              style={{
                 textDecoration: 'none',
                 color: '#bb5c39',
                 fontWeight: 500
               }}
             >
-              Sign up for free
+              {t('auth.signUpFree')}
             </Link>
           </Typography>
         </Box>

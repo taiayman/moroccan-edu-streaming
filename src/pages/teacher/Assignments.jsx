@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from 'react-i18next';
 import {
   Box,
   Container,
@@ -39,11 +40,13 @@ import {
 import { getTeacherAssignments, createNewAssignment } from '../../api/teacher';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../../api/config';
+import { getCurrentLanguage } from '../../utils/navigation';
 
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-  return date.toLocaleDateString('en-US', {
+  const lang = getCurrentLanguage();
+  return date.toLocaleDateString(lang === 'ar' ? 'ar-SA' : lang === 'fr' ? 'fr-FR' : 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -53,6 +56,7 @@ const formatDate = (timestamp) => {
 const TeacherAssignments = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -84,7 +88,7 @@ const TeacherAssignments = () => {
 
       if (!user) {
         console.error('No user found');
-        setError('Authentication required');
+        setError(t('common.error.authRequired'));
         return;
       }
 
@@ -97,7 +101,7 @@ const TeacherAssignments = () => {
       }
     } catch (err) {
       console.error('Error loading assignments:', err);
-      setError('Failed to load assignments');
+      setError(t('teacherPages.assignments.errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -106,7 +110,7 @@ const TeacherAssignments = () => {
   const handleCreateAssignment = async () => {
     try {
       if (!newAssignmentData.title) {
-        setError('Title is required');
+        setError(t('teacherPages.assignments.errors.titleRequired'));
         return;
       }
       
@@ -129,7 +133,7 @@ const TeacherAssignments = () => {
       await loadAssignments();
     } catch (err) {
       console.error('Error creating assignment:', err);
-      setError('Failed to create assignment');
+      setError(t('teacherPages.assignments.errors.createFailed'));
     } finally {
       setLoading(false);
     }
@@ -202,18 +206,18 @@ const TeacherAssignments = () => {
       <Box sx={{ mb: 4 }}>
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/teacher/dashboard')}
+          onClick={() => navigate(`/${getCurrentLanguage()}/teacher/dashboard`)}
           sx={{ mb: 2 }}
         >
-          Back to Dashboard
+          {t('teacherPages.assignments.backToDashboard')}
         </Button>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 600, color: '#2f2f2f', mb: 1 }}>
-              My Assignments
+              {t('teacherPages.assignments.title')}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Manage and track your assignments and student submissions
+              {t('teacherPages.assignments.description')}
             </Typography>
           </Box>
           <Button
@@ -225,7 +229,7 @@ const TeacherAssignments = () => {
               '&:hover': { backgroundColor: '#a04b2e' }
             }}
           >
-            Create Assignment
+            {t('teacherPages.assignments.createNew')}
           </Button>
         </Box>
       </Box>
@@ -253,8 +257,6 @@ const TeacherAssignments = () => {
           sx={{
             p: 3,
             borderRadius: '16px',
-            border: '1px solid rgba(0, 0, 0, 0.1)',
-            backgroundColor: '#fff',
             position: 'relative',
             zIndex: 1,
             transition: 'all 0.2s',
@@ -267,7 +269,7 @@ const TeacherAssignments = () => {
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                placeholder="Search assignments..."
+                placeholder={t('teacherPages.assignments.search')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 InputProps={{
@@ -275,20 +277,11 @@ const TeacherAssignments = () => {
                     <InputAdornment position="start">
                       <SearchIcon sx={{ color: 'text.secondary' }} />
                     </InputAdornment>
-                  )
+                  ),
                 }}
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.04)'
-                    },
-                    '&:hover .MuiOutlinedInput-notchedOutline': {
-                      borderColor: 'rgba(187, 92, 57, 0.5)',
-                    },
-                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                      borderColor: '#bb5c39',
-                    }
+                    backgroundColor: '#fff'
                   }
                 }}
               />
@@ -298,199 +291,101 @@ const TeacherAssignments = () => {
       </Box>
 
       {/* Assignments List */}
-      <Box
-        sx={{
-          position: 'relative',
-          '&:before': {
-            content: '""',
-            position: 'absolute',
-            top: '8px',
-            left: '8px',
-            right: '-8px',
-            bottom: '-8px',
-            backgroundColor: 'rgba(0, 0, 0, 0.1)',
-            borderRadius: '16px',
-            zIndex: 0
-          }
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            borderRadius: '16px',
-            border: '1px solid rgba(0, 0, 0, 0.1)',
-            backgroundColor: '#fff',
-            position: 'relative',
-            zIndex: 1,
-            transition: 'all 0.2s',
-            '&:hover': {
-              transform: 'translate(-4px, -4px)'
-            }
-          }}
-        >
-          <Grid container spacing={2}>
-            {filteredAssignments.map((assignment) => (
-              <Grid item xs={12} key={assignment.id}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    p: 3,
-                    borderRadius: '12px',
-                    border: '1px solid rgba(0, 0, 0, 0.1)',
-                    backgroundColor: '#fff',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                      transform: 'translateY(-2px)'
-                    }
-                  }}
-                  onClick={() => navigate(`/teacher/assignments/${assignment.id}`)}
-                >
-                  <Grid container spacing={3} alignItems="center">
-                    <Grid item xs={12} md={6}>
-                      <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                        <Avatar
-                          sx={{
-                            bgcolor: 'rgba(187, 92, 57, 0.1)',
-                            color: '#bb5c39',
-                            width: 48,
-                            height: 48
-                          }}
-                        >
-                          <AssignmentIcon />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="h6" sx={{ mb: 0.5, color: '#2f2f2f' }}>
-                            {assignment.title}
-                          </Typography>
-                          <Stack direction="row" spacing={2} alignItems="center">
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <CalendarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography variant="caption" color="text.secondary">
-                                Created {formatDate(assignment.createdAt)}
-                              </Typography>
-                            </Box>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                              <PeopleIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                              <Typography variant="caption" color="text.secondary">
-                                {assignment.submissions?.length || 0} submissions
-                              </Typography>
-                            </Box>
-                            <Chip
-                              label={assignment.status || 'Active'}
-                              size="small"
-                              sx={{
-                                backgroundColor: 'rgba(187, 92, 57, 0.1)',
-                                color: '#bb5c39',
-                                fontWeight: 500
-                              }}
-                            />
-                          </Stack>
-                        </Box>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      {assignment.submissions?.length > 0 && (
-                        <Box>
-                          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-                            Recent Submissions
-                          </Typography>
-                          <AvatarGroup max={4} sx={{ justifyContent: 'flex-start' }}>
-                            {assignment.submissions.map((submission, index) => (
-                              <Tooltip key={index} title={submission.studentName}>
-                                <Avatar
-                                  alt={submission.studentName}
-                                  src={submission.studentAvatar}
-                                  sx={{ width: 32, height: 32 }}
-                                />
-                              </Tooltip>
-                            ))}
-                          </AvatarGroup>
-                        </Box>
-                      )}
-                    </Grid>
-                    <Grid item xs={12} md={3}>
-                      <Stack direction="row" spacing={1} justifyContent="flex-end">
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditData({
-                              id: assignment.id,
-                              title: assignment.title,
-                              description: assignment.description || '',
-                              content: assignment.content || ''
-                            });
-                            setEditDialogOpen(true);
-                          }}
-                          sx={{ 
-                            color: '#bb5c39',
-                            '&:hover': { backgroundColor: 'rgba(187, 92, 57, 0.1)' }
-                          }}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedAssignment(assignment);
-                            setDeleteDialogOpen(true);
-                          }}
-                          sx={{ 
-                            color: '#bb5c39',
-                            '&:hover': { backgroundColor: 'rgba(187, 92, 57, 0.1)' }
-                          }}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                        <Button
-                          variant="outlined"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/teacher/assignments/${assignment.id}`);
-                          }}
-                          sx={{
-                            borderColor: 'rgba(187, 92, 57, 0.5)',
-                            color: '#bb5c39',
-                            '&:hover': { 
-                              backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                              borderColor: '#bb5c39'
-                            }
-                          }}
-                        >
-                          View Details
-                        </Button>
-                      </Stack>
-                    </Grid>
-                  </Grid>
-                </Paper>
+      <Grid container spacing={3}>
+        {filteredAssignments.map((assignment) => (
+          <Grid item xs={12} key={assignment.id}>
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: '16px',
+                border: '1px solid rgba(0, 0, 0, 0.1)',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+                }
+              }}
+            >
+              <Grid container spacing={3} alignItems="center">
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Avatar
+                      sx={{
+                        bgcolor: 'rgba(187, 92, 57, 0.1)',
+                        color: '#bb5c39'
+                      }}
+                    >
+                      <AssignmentIcon />
+                    </Avatar>
+                    <Box>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                        {assignment.title}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {t('teacherPages.assignments.created')} {formatDate(assignment.createdAt)}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <PeopleIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
+                    <Typography variant="body2" color="text.secondary">
+                      {assignment.submissions?.length || 0} {t('teacherPages.assignments.submissions', { count: assignment.submissions?.length || 0 })}
+                    </Typography>
+                  </Stack>
+                </Grid>
+                <Grid item xs={12} md={3}>
+                  <Stack direction="row" spacing={1} justifyContent="flex-end">
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={() => navigate(`/${getCurrentLanguage()}/teacher/assignments/${assignment.id}`)}
+                      sx={{
+                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                        color: '#bb5c39',
+                        '&:hover': {
+                          borderColor: '#bb5c39',
+                          backgroundColor: 'rgba(187, 92, 57, 0.05)'
+                        }
+                      }}
+                    >
+                      {t('teacherPages.assignments.viewDetails')}
+                    </Button>
+                  </Stack>
+                </Grid>
               </Grid>
-            ))}
-
-            {filteredAssignments.length === 0 && (
-              <Grid item xs={12}>
-                <Box 
-                  sx={{ 
-                    textAlign: 'center', 
-                    py: 8,
-                    backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                    borderRadius: '12px'
-                  }}
-                >
-                  <AssignmentIcon sx={{ fontSize: 64, color: 'rgba(0, 0, 0, 0.2)', mb: 2 }} />
-                  <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
-                    No assignments found
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {searchQuery ? 'Try adjusting your search' : 'Create your first assignment to get started'}
-                  </Typography>
-                </Box>
-              </Grid>
-            )}
+            </Paper>
           </Grid>
-        </Paper>
-      </Box>
+        ))}
+
+        {filteredAssignments.length === 0 && (
+          <Grid item xs={12}>
+            <Box
+              sx={{
+                textAlign: 'center',
+                py: 8,
+                px: 3
+              }}
+            >
+              <AssignmentIcon
+                sx={{
+                  fontSize: 48,
+                  color: 'rgba(0, 0, 0, 0.2)',
+                  mb: 2
+                }}
+              />
+              <Typography variant="h6" color="text.secondary" gutterBottom>
+                {t('teacherPages.assignments.noAssignments')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('teacherPages.assignments.empty')}
+              </Typography>
+            </Box>
+          </Grid>
+        )}
+      </Grid>
 
       {/* Create Assignment Dialog */}
       <Dialog
@@ -498,174 +393,66 @@ const TeacherAssignments = () => {
         onClose={() => setNewAssignmentDialog(false)}
         maxWidth="sm"
         fullWidth
-        TransitionProps={{
-          enter: true,
-          exit: true
-        }}
         PaperProps={{
           sx: {
-            borderRadius: '20px',
-            p: 0,
-            backgroundColor: '#fff',
-            overflow: 'hidden',
-            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)'
+            borderRadius: '16px'
           }
         }}
       >
-        <Box
-          sx={{
-            background: 'linear-gradient(135deg, #bb5c39 0%, #a04b2e 100%)',
-            py: 4,
-            px: 3,
-            color: '#fff',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%)',
-            }
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-                Create New Assignment
-              </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                Add a new assignment for your students
-              </Typography>
-            </Box>
-            <IconButton 
-              onClick={() => setNewAssignmentDialog(false)}
-              size="small"
-              sx={{
-                color: 'white',
-                '&:hover': { 
-                  backgroundColor: 'rgba(255,255,255,0.1)'
-                }
-              }}
-            >
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">{t('teacherPages.assignments.dialogs.assignment.title')}</Typography>
+            <IconButton onClick={() => setNewAssignmentDialog(false)}>
               <CloseIcon />
             </IconButton>
           </Box>
-        </Box>
-
-        <DialogContent sx={{ p: 3 }}>
+        </DialogTitle>
+        <DialogContent>
           <Box sx={{ mt: 2 }}>
             <TextField
-              required
               fullWidth
-              label="Assignment Title"
-              variant="outlined"
+              label={t('teacherPages.assignments.dialogs.assignment.form.title')}
               value={newAssignmentData.title}
               onChange={(e) => setNewAssignmentData({ ...newAssignmentData, title: e.target.value })}
-              error={error && !newAssignmentData.title}
-              helperText={error && !newAssignmentData.title ? 'Title is required' : ''}
-              sx={{
-                mb: 3,
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
-              }}
+              sx={{ mb: 3 }}
             />
-
             <TextField
               fullWidth
-              label="Description"
-              variant="outlined"
               multiline
               rows={4}
+              label={t('teacherPages.assignments.dialogs.assignment.form.description')}
               value={newAssignmentData.description}
               onChange={(e) => setNewAssignmentData({ ...newAssignmentData, description: e.target.value })}
-              sx={{
-                mb: 3,
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
-              }}
+              sx={{ mb: 3 }}
             />
-
             <TextField
               fullWidth
-              label="Assignment Content"
-              variant="outlined"
               multiline
               rows={8}
-              placeholder="Write your assignment content here..."
+              label={t('teacherPages.assignments.dialogs.assignment.form.content')}
               value={newAssignmentData.content}
               onChange={(e) => setNewAssignmentData({ ...newAssignmentData, content: e.target.value })}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: '#fff',
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
-              }}
             />
           </Box>
         </DialogContent>
-
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
+        <DialogActions sx={{ p: 3 }}>
           <Button
             onClick={() => setNewAssignmentDialog(false)}
-            variant="outlined"
-            sx={{
-              borderColor: 'rgba(187, 92, 57, 0.5)',
-              color: '#bb5c39',
-              px: 3,
-              '&:hover': { 
-                backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                borderColor: '#bb5c39'
-              }
-            }}
+            sx={{ color: 'text.secondary' }}
           >
-            Cancel
+            {t('teacherPages.assignments.dialogs.assignment.actions.cancel')}
           </Button>
           <Button
             variant="contained"
             onClick={handleCreateAssignment}
             disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+            startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
             sx={{
               backgroundColor: '#bb5c39',
-              px: 4,
-              '&:hover': {
-                backgroundColor: '#a04b2e'
-              },
-              '&.Mui-disabled': {
-                backgroundColor: 'rgba(187, 92, 57, 0.3)'
-              }
+              '&:hover': { backgroundColor: '#a04b2e' }
             }}
           >
-            {loading ? 'Creating...' : 'Create Assignment'}
+            {loading ? t('teacherPages.assignments.dialogs.assignment.actions.creating') : t('teacherPages.assignments.dialogs.assignment.actions.create')}
           </Button>
         </DialogActions>
       </Dialog>

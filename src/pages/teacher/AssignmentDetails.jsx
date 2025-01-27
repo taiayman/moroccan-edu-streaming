@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Box,
@@ -43,11 +44,13 @@ import {
   increment
 } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../../api/config';
+import { getCurrentLanguage } from '../../utils/navigation';
 
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-  return date.toLocaleDateString('en-US', {
+  const lang = getCurrentLanguage();
+  return date.toLocaleDateString(lang === 'ar' ? 'ar-SA' : lang === 'fr' ? 'fr-FR' : 'en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
@@ -58,6 +61,7 @@ const AssignmentDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [assignment, setAssignment] = useState(null);
@@ -80,7 +84,7 @@ const AssignmentDetails = () => {
       const assignmentDoc = await getDoc(assignmentRef);
       
       if (!assignmentDoc.exists()) {
-        setError('Assignment not found');
+        setError(t('teacherPages.assignmentDetails.errors.notFound'));
         return;
       }
 
@@ -117,7 +121,7 @@ const AssignmentDetails = () => {
 
     } catch (err) {
       console.error('Error loading assignment details:', err);
-      setError('Failed to load assignment details');
+      setError(t('teacherPages.assignmentDetails.errors.loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -151,7 +155,7 @@ const AssignmentDetails = () => {
 
     } catch (err) {
       console.error('Error grading submission:', err);
-      setError('Failed to grade submission');
+      setError(t('teacherPages.assignmentDetails.errors.gradingFailed'));
     } finally {
       setLoading(false);
     }
@@ -170,12 +174,12 @@ const AssignmentDetails = () => {
       <Container maxWidth="xl" sx={{ py: 4, mt: { xs: 8, sm: 9 } }}>
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/teacher/assignments')}
+          onClick={() => navigate(`/${getCurrentLanguage()}/teacher/assignments`)}
           sx={{ mb: 2 }}
         >
-          Back to Assignments
+          {t('teacherPages.assignmentDetails.back')}
         </Button>
-        <Alert severity="error">{error || 'Assignment not found'}</Alert>
+        <Alert severity="error">{error || t('teacherPages.assignmentDetails.errors.notFound')}</Alert>
       </Container>
     );
   }
@@ -192,10 +196,10 @@ const AssignmentDetails = () => {
       <Box sx={{ mb: 4 }}>
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate('/teacher/assignments')}
+          onClick={() => navigate(`/${getCurrentLanguage()}/teacher/assignments`)}
           sx={{ mb: 2 }}
         >
-          Back to Assignments
+          {t('teacherPages.assignmentDetails.back')}
         </Button>
 
         <Grid container spacing={3}>
@@ -221,17 +225,17 @@ const AssignmentDetails = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <CalendarIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
                     <Typography variant="body2" color="text.secondary">
-                      Created {formatDate(assignment.createdAt)}
+                      {t('teacherPages.assignmentDetails.created')} {formatDate(assignment.createdAt)}
                     </Typography>
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                     <PeopleIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
                     <Typography variant="body2" color="text.secondary">
-                      {assignment.submissions?.length || 0} submissions
+                      {t('teacherPages.assignmentDetails.submissionCount', { count: assignment.submissions?.length || 0 })}
                     </Typography>
                   </Box>
                   <Chip
-                    label={assignment.status || 'Active'}
+                    label={t(`teacherPages.assignmentDetails.status.${assignment.status || 'active'}`)}
                     size="small"
                     sx={{
                       backgroundColor: 'rgba(187, 92, 57, 0.1)',
@@ -282,10 +286,10 @@ const AssignmentDetails = () => {
               }}
             >
               <Typography variant="h6" sx={{ mb: 2, color: '#2f2f2f' }}>
-                Description
+                {t('teacherPages.assignmentDetails.description')}
               </Typography>
               <Typography variant="body1" sx={{ color: '#666', whiteSpace: 'pre-wrap' }}>
-                {assignment.description || 'No description provided'}
+                {assignment.description || t('teacherPages.assignmentDetails.noDescription')}
               </Typography>
             </Paper>
           </Box>
@@ -322,10 +326,10 @@ const AssignmentDetails = () => {
               }}
             >
               <Typography variant="h6" sx={{ mb: 2, color: '#2f2f2f' }}>
-                Assignment Content
+                {t('teacherPages.assignmentDetails.content')}
               </Typography>
               <Typography variant="body1" sx={{ color: '#666', whiteSpace: 'pre-wrap' }}>
-                {assignment.content || 'No content provided'}
+                {assignment.content || t('teacherPages.assignmentDetails.noContent')}
               </Typography>
             </Paper>
           </Box>
@@ -366,12 +370,12 @@ const AssignmentDetails = () => {
               }}
             >
               <Typography variant="h6" sx={{ mb: 3, color: '#2f2f2f' }}>
-                Assignment Stats
+                {t('teacherPages.assignmentDetails.submissionStats.title')}
               </Typography>
               <Stack spacing={2}>
                 <Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                    Total Students
+                    {t('teacherPages.assignmentDetails.submissionStats.total')}
                   </Typography>
                   <Typography variant="h5" sx={{ color: '#2f2f2f', fontWeight: 600 }}>
                     {assignment.totalStudents || 0}
@@ -380,7 +384,7 @@ const AssignmentDetails = () => {
                 <Divider />
                 <Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                    Submissions
+                    {t('teacherPages.assignmentDetails.submissionStats.submitted')}
                   </Typography>
                   <Typography variant="h5" sx={{ color: '#2f2f2f', fontWeight: 600 }}>
                     {assignment.submissions?.length || 0}
@@ -389,10 +393,10 @@ const AssignmentDetails = () => {
                 <Divider />
                 <Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                    Status
+                    {t('teacherPages.assignmentDetails.status.label')}
                   </Typography>
                   <Chip
-                    label={assignment.status || 'Active'}
+                    label={t(`teacherPages.assignmentDetails.status.${assignment.status || 'active'}`)}
                     sx={{
                       backgroundColor: 'rgba(187, 92, 57, 0.1)',
                       color: '#bb5c39',
@@ -409,7 +413,7 @@ const AssignmentDetails = () => {
       {/* Submissions Section */}
       <Box sx={{ mt: 4 }}>
         <Typography variant="h5" sx={{ mb: 3, color: '#2f2f2f', fontWeight: 600 }}>
-          Submissions ({submissions.length})
+          {t('teacherPages.assignmentDetails.submissions')} ({submissions.length})
         </Typography>
 
         {submissions.length > 0 ? (
@@ -441,7 +445,7 @@ const AssignmentDetails = () => {
                         </Avatar>
                         <Box>
                           <Typography variant="subtitle2">
-                            {submission.student?.displayName || 'Unknown Student'}
+                            {submission.student?.displayName || t('teacherPages.assignmentDetails.unknownStudent')}
                           </Typography>
                           <Stack direction="row" spacing={1} alignItems="center">
                             <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
@@ -463,7 +467,7 @@ const AssignmentDetails = () => {
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <GradeIcon sx={{ fontSize: 16, color: '#4caf50' }} />
                             <Typography variant="body2" color="success.main">
-                              Grade: {submission.grade}/100
+                              {t('teacherPages.assignmentDetails.grading.grade')}: {submission.grade}/100
                             </Typography>
                           </Box>
                           {submission.feedback && (
@@ -493,7 +497,7 @@ const AssignmentDetails = () => {
                             '&:hover': { backgroundColor: '#a04b2e' }
                           }}
                         >
-                          {submission.grade ? 'Update Grade' : 'Grade'}
+                          {submission.grade ? t('teacherPages.assignmentDetails.grading.update') : t('teacherPages.assignmentDetails.grading.grade')}
                         </Button>
                       </Stack>
                     </Grid>
@@ -513,7 +517,9 @@ const AssignmentDetails = () => {
               textAlign: 'center'
             }}
           >
-            <Typography color="text.secondary">No submissions yet</Typography>
+            <Typography color="text.secondary">
+              {t('teacherPages.assignmentDetails.noSubmissions')}
+            </Typography>
           </Paper>
         )}
       </Box>
@@ -544,7 +550,7 @@ const AssignmentDetails = () => {
         >
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Grade Submission
+              {t('teacherPages.assignmentDetails.grading.title')}
             </Typography>
             <IconButton
               onClick={() => setGradeDialogOpen(false)}
@@ -561,7 +567,7 @@ const AssignmentDetails = () => {
         <DialogContent sx={{ p: 3 }}>
           <Stack spacing={3}>
             <TextField
-              label="Grade"
+              label={t('teacherPages.assignmentDetails.grading.grade')}
               type="number"
               value={gradeData.grade}
               onChange={(e) => setGradeData({ ...gradeData, grade: e.target.value })}
@@ -582,7 +588,7 @@ const AssignmentDetails = () => {
               }}
             />
             <TextField
-              label="Feedback"
+              label={t('teacherPages.assignmentDetails.grading.feedback')}
               multiline
               rows={4}
               value={gradeData.feedback}
@@ -618,7 +624,7 @@ const AssignmentDetails = () => {
               }
             }}
           >
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleGradeSubmission}
@@ -630,7 +636,7 @@ const AssignmentDetails = () => {
               '&:hover': { backgroundColor: '#a04b2e' }
             }}
           >
-            {loading ? 'Saving...' : 'Save Grade'}
+            {loading ? t('teacherPages.assignmentDetails.grading.saving') : t('teacherPages.assignmentDetails.grading.save')}
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,16 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import AgoraRTC from 'agora-rtc-sdk-ng';
 import {
   Box,
   Typography,
+  Grid,
   Paper,
   IconButton,
+  Button,
   Stack,
   Avatar,
-  Chip,
-  Divider,
+  Tooltip,
+  CircularProgress,
+  Alert,
   TextField,
-  Button,
-  Container,
+  Drawer,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  Divider
 } from '@mui/material';
 import {
   Mic as MicIcon,
@@ -22,332 +32,360 @@ import {
   Chat as ChatIcon,
   People as PeopleIcon,
   Close as CloseIcon,
-  Send as SendIcon,
-  EmojiEmotions as EmojiIcon,
-  MoreVert as MoreVertIcon,
-  PictureInPicture as PictureInPictureIcon,
-  Settings as SettingsIcon,
-  Fullscreen as FullscreenIcon,
+  Send as SendIcon
 } from '@mui/icons-material';
+import { useAuth } from '../../hooks/useAuth';
+import { createAgoraClient } from '../../utils/agora';
+import { getCurrentLanguage } from '../../utils/navigation';
+import StreamLayout from '../../components/layout/StreamLayout';
 
 const LiveClass = () => {
-  const [isMuted, setIsMuted] = useState(false);
-  const [isVideoOff, setIsVideoOff] = useState(false);
+  const { classId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [agoraClient, setAgoraClient] = useState(null);
+  const [localTracks, setLocalTracks] = useState({ audioTrack: null, videoTrack: null });
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(true);
-  const [isPeopleOpen, setIsPeopleOpen] = useState(false);
-  const [message, setMessage] = useState('');
+  const [screenTrack, setScreenTrack] = useState(null);
+  const [participants, setParticipants] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState('');
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
+  const localVideoRef = useRef(null);
+  const remoteVideosRef = useRef({});
 
-  // Dummy data for demonstration
-  const participants = [
-    { id: 1, name: 'Prof. Mohammed', role: 'teacher', isTeaching: true },
-    { id: 2, name: 'Sarah Ahmed', role: 'student', isRaisingHand: true },
-    { id: 3, name: 'Youssef Alami', role: 'student' },
-    // ... more participants
-  ];
+  useEffect(() => {
+    if (!location.state?.channelName) {
+      setError('Invalid class session');
+      return;
+    }
+    initializeAgora();
+    return () => {
+      cleanup();
+    };
+  }, []);
 
-  const messages = [
-    { id: 1, sender: 'Prof. Mohammed', message: 'Bonjour à tous! Nous allons commencer le cours.', time: '10:00' },
-    { id: 2, sender: 'Sarah Ahmed', message: 'Bonjour Professeur!', time: '10:01' },
-    // ... more messages
-  ];
+  const initializeAgora = async () => {
+    try {
+      setLoading(true);
+      const agoraClientInstance = createAgoraClient();
+      const { channelName } = location.state;
+      
+      // Generate a random UID between 1 and 999999
+      const uid = Math.floor(Math.random() * 999999) + 1;
+      
+      const { client, localTracks } = await agoraClientInstance.join(channelName, null, uid);
+      
+      setAgoraClient(client);
+      setLocalTracks(localTracks);
+      
+      // Wait for a short moment to ensure DOM is ready
+      setTimeout(() => {
+        if (localTracks.videoTrack && localVideoRef.current) {
+          localTracks.videoTrack.play(localVideoRef.current);
+        }
+      }, 100);
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      // Add message handling logic here
-      setMessage('');
+      setLoading(false);
+    } catch (err) {
+      console.error('Error initializing Agora:', err);
+      setError('Failed to initialize live class: ' + err.message);
+      setLoading(false);
     }
   };
 
+  const cleanup = async () => {
+    try {
+      if (agoraClient) {
+        await agoraClient.leave();
+      }
+      if (screenTrack) {
+        screenTrack.stop();
+        screenTrack.close();
+      }
+      Object.values(localTracks).forEach((track) => {
+        if (track) {
+          track.stop();
+          track.close();
+        }
+      });
+    } catch (err) {
+      console.error('Error during cleanup:', err);
+    }
+  };
+
+  const toggleAudio = async () => {
+    if (localTracks.audioTrack) {
+      if (isAudioEnabled) {
+        await localTracks.audioTrack.setEnabled(false);
+      } else {
+        await localTracks.audioTrack.setEnabled(true);
+      }
+      setIsAudioEnabled(!isAudioEnabled);
+    }
+  };
+
+  const toggleVideo = async () => {
+    if (localTracks.videoTrack) {
+      if (isVideoEnabled) {
+        await localTracks.videoTrack.setEnabled(false);
+      } else {
+        await localTracks.videoTrack.setEnabled(true);
+      }
+      setIsVideoEnabled(!isVideoEnabled);
+    }
+  };
+
+  const toggleScreenShare = async () => {
+    if (!isScreenSharing) {
+      try {
+        const screenTrack = await AgoraRTC.createScreenVideoTrack();
+        await agoraClient.unpublish(localTracks.videoTrack);
+        await agoraClient.publish(screenTrack);
+        setScreenTrack(screenTrack);
+        setIsScreenSharing(true);
+      } catch (err) {
+        console.error('Error sharing screen:', err);
+      }
+    } else {
+      if (screenTrack) {
+        await agoraClient.unpublish(screenTrack);
+        screenTrack.stop();
+        screenTrack.close();
+        setScreenTrack(null);
+        await agoraClient.publish(localTracks.videoTrack);
+        setIsScreenSharing(false);
+      }
+    }
+  };
+
+  const sendMessage = () => {
+    if (newMessage.trim()) {
+      const message = {
+        id: Date.now(),
+        sender: user,
+        content: newMessage,
+        timestamp: new Date()
+      };
+      setMessages([...messages, message]);
+      setNewMessage('');
+    }
+  };
+
+  const handleLeaveClass = async () => {
+    try {
+      await cleanup();
+      navigate(`/${getCurrentLanguage()}/student/live-classes`);
+    } catch (err) {
+      console.error('Error leaving class:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <StreamLayout>
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <CircularProgress />
+        </Box>
+      </StreamLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <StreamLayout>
+        <Box sx={{ p: 3 }}>
+          <Alert severity="error">{error}</Alert>
+        </Box>
+      </StreamLayout>
+    );
+  }
+
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      backgroundColor: '#000',
-      color: '#fff'
-    }}>
+    <StreamLayout>
+      <Grid container sx={{ height: '100%' }}>
       {/* Main Content */}
-      <Box sx={{ display: 'flex', height: '100vh' }}>
-        {/* Video Area */}
-        <Box sx={{ flex: 1, p: 2, position: 'relative' }}>
-          {/* Main Video */}
+        <Grid item xs={12} sx={{ height: '100%', position: 'relative' }}>
+          {/* Video Grid */}
+          <Box sx={{ height: 'calc(100% - 80px)', p: 2 }}>
+            <Grid container spacing={2} sx={{ height: '100%' }}>
+              {/* Local Video */}
+              <Grid item xs={12} md={isScreenSharing ? 3 : 6}>
           <Paper
             elevation={0}
             sx={{
-              width: '100%',
-              height: 'calc(100vh - 100px)',
-              backgroundColor: '#1a1a1a',
-              borderRadius: '16px',
+                    height: '100%',
+                    backgroundColor: '#2f2f2f',
+                    borderRadius: '12px',
               overflow: 'hidden',
               position: 'relative'
             }}
           >
-            {/* Video Content */}
-            <Box sx={{ 
-              position: 'absolute',
-              top: 16,
-              left: 16,
-              right: 16,
-              display: 'flex',
-              justifyContent: 'space-between',
-              zIndex: 2
-            }}>
-              {/* Live Indicator */}
-              <Chip
-                label="EN DIRECT"
+                  <Box
+                    ref={localVideoRef}
                 sx={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                  color: '#fff',
-                  '& .MuiChip-label': {
-                    px: 2,
-                  },
-                  '&::before': {
-                    content: '""',
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    backgroundColor: '#f44336',
-                    display: 'inline-block',
-                    marginRight: 1
-                  }
-                }}
-              />
-              
-              {/* Video Controls */}
-              <Stack direction="row" spacing={1}>
-                <IconButton size="small" sx={{ color: '#fff', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-                  <PictureInPictureIcon />
-                </IconButton>
-                <IconButton size="small" sx={{ color: '#fff', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-                  <SettingsIcon />
-                </IconButton>
-                <IconButton size="small" sx={{ color: '#fff', backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
-                  <FullscreenIcon />
-                </IconButton>
-              </Stack>
-            </Box>
-
-            {/* Teacher Name Overlay */}
-            <Box sx={{ 
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover'
+                    }}
+                  />
+                  <Box
+                    sx={{
               position: 'absolute',
               bottom: 16,
               left: 16,
+                      color: '#fff',
+                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      padding: '4px 12px',
+                      borderRadius: '16px',
               display: 'flex',
               alignItems: 'center',
-              gap: 1,
-              backgroundColor: 'rgba(0, 0, 0, 0.5)',
-              padding: '4px 12px',
-              borderRadius: '20px'
-            }}>
-              <Avatar sx={{ width: 24, height: 24 }}>M</Avatar>
-              <Typography variant="body2">Prof. Mohammed</Typography>
+                      gap: 1
+                    }}
+                  >
+                    <Avatar
+                      sx={{ width: 24, height: 24, fontSize: '0.875rem' }}
+                    >
+                      {user?.displayName?.[0]}
+                    </Avatar>
+                    <Typography variant="body2">
+                      {user?.displayName} (You)
+                    </Typography>
             </Box>
           </Paper>
+              </Grid>
+            </Grid>
+          </Box>
 
           {/* Control Bar */}
-          <Stack
-            direction="row"
-            justifyContent="center"
-            alignItems="center"
-            spacing={2}
+          <Box
             sx={{
-              mt: 2,
-              p: 2,
-              backgroundColor: '#1a1a1a',
-              borderRadius: '16px'
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: '#2f2f2f',
+              p: 2
             }}
           >
+          <Stack
+            direction="row"
+              spacing={2}
+            justifyContent="center"
+            alignItems="center"
+          >
             <IconButton
-              onClick={() => setIsMuted(!isMuted)}
+                onClick={toggleAudio}
               sx={{
-                backgroundColor: isMuted ? '#f44336' : 'rgba(255, 255, 255, 0.1)',
                 color: '#fff',
+                  backgroundColor: !isAudioEnabled ? 'rgba(255, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
                 '&:hover': {
-                  backgroundColor: isMuted ? '#d32f2f' : 'rgba(255, 255, 255, 0.2)'
+                    backgroundColor: !isAudioEnabled ? 'rgba(255, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
                 }
               }}
             >
-              {isMuted ? <MicOffIcon /> : <MicIcon />}
+                {isAudioEnabled ? <MicIcon /> : <MicOffIcon />}
             </IconButton>
-            
             <IconButton
-              onClick={() => setIsVideoOff(!isVideoOff)}
+                onClick={toggleVideo}
               sx={{
-                backgroundColor: isVideoOff ? '#f44336' : 'rgba(255, 255, 255, 0.1)',
                 color: '#fff',
+                  backgroundColor: !isVideoEnabled ? 'rgba(255, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
                 '&:hover': {
-                  backgroundColor: isVideoOff ? '#d32f2f' : 'rgba(255, 255, 255, 0.2)'
+                    backgroundColor: !isVideoEnabled ? 'rgba(255, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
                 }
               }}
             >
-              {isVideoOff ? <VideocamOffIcon /> : <VideocamIcon />}
+                {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
             </IconButton>
-
             <IconButton
-              onClick={() => setIsScreenSharing(!isScreenSharing)}
+                onClick={toggleScreenShare}
               sx={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
                 color: '#fff',
+                  backgroundColor: isScreenSharing ? 'rgba(255, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)',
                 '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)'
+                    backgroundColor: isScreenSharing ? 'rgba(255, 0, 0, 0.2)' : 'rgba(255, 255, 255, 0.2)'
                 }
               }}
             >
               {isScreenSharing ? <StopScreenShareIcon /> : <ScreenShareIcon />}
             </IconButton>
-
             <Button
               variant="contained"
               color="error"
-              startIcon={<CloseIcon />}
-              sx={{
-                borderRadius: '20px',
-                px: 3
-              }}
-            >
-              Quitter
+                onClick={handleLeaveClass}
+                sx={{ px: 3 }}
+              >
+                Leave Class
             </Button>
           </Stack>
         </Box>
+        </Grid>
 
-        {/* Sidebar */}
-        <Paper
-          elevation={0}
+        {/* Chat Drawer */}
+        <Drawer
+          anchor="right"
+          open={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          variant="persistent"
           sx={{
             width: 350,
-            backgroundColor: '#1a1a1a',
-            borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
-            display: 'flex',
-            flexDirection: 'column'
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
+              width: 350,
+              backgroundColor: '#2f2f2f',
+                color: '#fff',
+              border: 'none'
+            }
           }}
         >
-          {/* Tabs */}
-          <Stack
-            direction="row"
-            spacing={1}
-            sx={{ p: 2, borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}
-          >
-            <Button
-              variant={isChatOpen ? 'contained' : 'text'}
-              startIcon={<ChatIcon />}
-              onClick={() => {
-                setIsChatOpen(true);
-                setIsPeopleOpen(false);
-              }}
-              sx={{
-                backgroundColor: isChatOpen ? '#000' : 'transparent',
-                color: '#fff',
-                '&:hover': {
-                  backgroundColor: isChatOpen ? '#000' : 'rgba(255, 255, 255, 0.1)'
-                }
-              }}
-            >
-              Chat
-            </Button>
-            <Button
-              variant={isPeopleOpen ? 'contained' : 'text'}
-              startIcon={<PeopleIcon />}
-              onClick={() => {
-                setIsPeopleOpen(true);
-                setIsChatOpen(false);
-              }}
-              sx={{
-                backgroundColor: isPeopleOpen ? '#000' : 'transparent',
-                color: '#fff',
-                '&:hover': {
-                  backgroundColor: isPeopleOpen ? '#000' : 'rgba(255, 255, 255, 0.1)'
-                }
-              }}
-            >
-              Participants
-            </Button>
-          </Stack>
-
-          {/* Content Area */}
-          <Box sx={{ flex: 1, overflow: 'auto', p: 2 }}>
-            {isChatOpen ? (
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Chat</Typography>
+            <IconButton onClick={() => setIsChatOpen(false)} sx={{ color: '#fff' }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+          <Box sx={{ flex: 1, p: 2, overflowY: 'auto' }}>
               <Stack spacing={2}>
-                {messages.map((msg) => (
-                  <Box key={msg.id}>
+              {messages.map((message) => (
+                <Box key={message.id}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                      <Typography variant="caption" sx={{ fontWeight: 600 }}>
-                        {msg.sender}
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                        {msg.time}
-                      </Typography>
-                    </Box>
-                    <Typography variant="body2">{msg.message}</Typography>
-                  </Box>
-                ))}
-              </Stack>
-            ) : (
-              <Stack spacing={2}>
-                {participants.map((participant) => (
-                  <Box
-                    key={participant.id}
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between'
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Avatar sx={{ width: 32, height: 32 }}>
-                        {participant.name[0]}
+                    <Avatar sx={{ width: 24, height: 24 }}>
+                      {message.sender.displayName[0]}
                       </Avatar>
-                      <Box>
-                        <Typography variant="body2">
-                          {participant.name}
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      {message.sender.displayName}
                         </Typography>
                         <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                          {participant.role}
+                      {new Date(message.timestamp).toLocaleTimeString()}
                         </Typography>
                       </Box>
-                    </Box>
-                    {participant.isTeaching && (
-                      <Chip
-                        label="Enseigne"
-                        size="small"
-                        sx={{
-                          backgroundColor: '#2196f3',
-                          color: '#fff'
-                        }}
-                      />
-                    )}
-                    {participant.isRaisingHand && (
-                      <Chip
-                        label="✋"
-                        size="small"
-                        sx={{
-                          backgroundColor: '#4caf50',
-                          color: '#fff'
-                        }}
-                      />
-                    )}
+                  <Typography variant="body1">{message.content}</Typography>
                   </Box>
                 ))}
               </Stack>
-            )}
           </Box>
-
-          {/* Chat Input */}
-          {isChatOpen && (
             <Box sx={{ p: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
               <Stack direction="row" spacing={1}>
-                <IconButton size="small" sx={{ color: '#fff' }}>
-                  <EmojiIcon />
-                </IconButton>
                 <TextField
                   fullWidth
                   size="small"
-                  placeholder="Envoyer un message..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Type a message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                   sx={{
                     '& .MuiOutlinedInput-root': {
+                    color: '#fff',
                       backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                      color: '#fff',
                       '& fieldset': {
                         borderColor: 'transparent'
                       },
@@ -360,25 +398,71 @@ const LiveClass = () => {
                     }
                   }}
                 />
-                <IconButton
-                  size="small"
-                  onClick={handleSendMessage}
-                  sx={{
-                    color: '#fff',
-                    backgroundColor: message.trim() ? '#2196f3' : 'rgba(255, 255, 255, 0.1)',
-                    '&:hover': {
-                      backgroundColor: message.trim() ? '#1976d2' : 'rgba(255, 255, 255, 0.2)'
-                    }
-                  }}
-                >
+              <IconButton onClick={sendMessage} sx={{ color: '#fff' }}>
                   <SendIcon />
                 </IconButton>
               </Stack>
             </Box>
-          )}
-        </Paper>
+        </Drawer>
+
+        {/* Participants Drawer */}
+        <Drawer
+          anchor="right"
+          open={isParticipantsOpen}
+          onClose={() => setIsParticipantsOpen(false)}
+          variant="persistent"
+          sx={{
+            width: 350,
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
+              width: 350,
+              backgroundColor: '#2f2f2f',
+              color: '#fff',
+              border: 'none'
+            }
+          }}
+        >
+          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Participants ({participants.length + 1})</Typography>
+            <IconButton onClick={() => setIsParticipantsOpen(false)} sx={{ color: '#fff' }}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+          <List>
+            {/* Host */}
+            <ListItem>
+              <ListItemAvatar>
+                <Avatar sx={{ backgroundColor: '#bb5c39' }}>
+                  {user?.displayName?.[0]}
+                </Avatar>
+              </ListItemAvatar>
+              <ListItemText
+                primary={
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography>{user?.displayName}</Typography>
+                    <Typography variant="caption" sx={{ color: '#bb5c39' }}>
+                      (Student)
+                    </Typography>
       </Box>
-    </Box>
+                }
+              />
+            </ListItem>
+            {/* Participants */}
+            {participants.map((participant) => (
+              <ListItem key={participant.id}>
+                <ListItemAvatar>
+                  <Avatar>
+                    {participant.displayName[0]}
+                  </Avatar>
+                </ListItemAvatar>
+                <ListItemText primary={participant.displayName} />
+              </ListItem>
+            ))}
+          </List>
+        </Drawer>
+      </Grid>
+    </StreamLayout>
   );
 };
 

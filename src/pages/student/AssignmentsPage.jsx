@@ -36,6 +36,8 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { getUpcomingAssignments, getSubmissionStatus, submitAssignment } from '../../api/assignments';
 import { getAllTeachers } from '../../api/teacher';
+import { getCurrentLanguage } from '../../i18n';
+import { useTranslation } from 'react-i18next';
 
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
@@ -50,6 +52,7 @@ const formatDate = (timestamp) => {
 const AssignmentsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [assignments, setAssignments] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState('');
@@ -91,33 +94,33 @@ const AssignmentsPage = () => {
 
       if (!user) {
         console.error('No user found');
-        setError('Authentication required');
+        setError(t('assignment.authRequired'));
         return;
       }
 
       const assignmentsData = await getUpcomingAssignments(user.id, selectedTeacher);
-        
-        // Get submission status for each assignment
-        const assignmentsWithStatus = await Promise.all(
-          assignmentsData.map(async (assignment) => {
-            const status = await getSubmissionStatus(user.id, assignment.id);
-            return {
-              ...assignment,
-              status: status.status || 'not_submitted',
-              submittedAt: status.submittedAt,
-              grade: status.grade
-            };
-          })
-        );
+      
+      // Get submission status for each assignment
+      const assignmentsWithStatus = await Promise.all(
+        assignmentsData.map(async (assignment) => {
+          const status = await getSubmissionStatus(user.id, assignment.id);
+          return {
+            ...assignment,
+            status: status.status || 'not_submitted',
+            submittedAt: status.submittedAt,
+            grade: status.grade
+          };
+        })
+      );
 
-        setAssignments(assignmentsWithStatus);
+      setAssignments(assignmentsWithStatus);
     } catch (err) {
       console.error('Error loading assignments:', err);
-      setError('Failed to load assignments');
-      } finally {
-        setLoading(false);
-      }
-    };
+      setError(t('assignment.failedToLoad'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!selectedAssignment || !submissionContent.trim()) return;
@@ -135,17 +138,15 @@ const AssignmentsPage = () => {
       await loadAssignments();
     } catch (err) {
       console.error('Error submitting assignment:', err);
-      // Show specific error message for already submitted assignments
       if (err.message === 'You have already submitted this assignment') {
-        setError('You have already submitted this assignment. Multiple submissions are not allowed.');
+        setError(t('assignment.multipleSubmissionsNotAllowed'));
       } else {
-        setError('Failed to submit assignment. Please try again.');
+        setError(t('assignment.failedToSubmit'));
       }
       
-      // Close dialog if it was an already submitted error
       if (err.message === 'You have already submitted this assignment') {
         setSubmissionDialog(false);
-        await loadAssignments(); // Refresh to update status
+        await loadAssignments();
       }
     } finally {
       setSubmitting(false);
@@ -181,10 +182,10 @@ const AssignmentsPage = () => {
         {/* Header */}
         <Box sx={{ mb: 4 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-            My Assignments
+            {t('assignment.myAssignments')}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            View and submit your assignments
+            {t('assignment.viewAndSubmit')}
           </Typography>
         </Box>
 
@@ -224,12 +225,12 @@ const AssignmentsPage = () => {
             <Grid container spacing={2} alignItems="center">
               <Grid item xs={12} md={4}>
                 <FormControl fullWidth>
-                  <InputLabel id="teacher-select-label">Select Teacher</InputLabel>
+                  <InputLabel id="teacher-select-label">{t('assignment.selectTeacher')}</InputLabel>
                   <Select
                     labelId="teacher-select-label"
                     value={selectedTeacher}
                     onChange={(e) => setSelectedTeacher(e.target.value)}
-                    label="Select Teacher"
+                    label={t('assignment.selectTeacher')}
                     startAdornment={
                       <InputAdornment position="start">
                         <PersonIcon sx={{ color: 'text.secondary' }} />
@@ -267,7 +268,7 @@ const AssignmentsPage = () => {
               <Grid item xs={12} md={8}>
                 <TextField
                   fullWidth
-                  placeholder="Search assignments..."
+                  placeholder={t('assignment.searchAssignments')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   InputProps={{
@@ -298,8 +299,8 @@ const AssignmentsPage = () => {
         </Box>
 
         {/* Assignments List */}
-            <Box
-              sx={{
+        <Box
+          sx={{
             position: 'relative',
             '&:before': {
               content: '""',
@@ -346,7 +347,7 @@ const AssignmentsPage = () => {
                         transform: 'translateY(-2px)'
                       }
                     }}
-                    onClick={() => navigate(`/student/assignments/${assignment.id}`)}
+                    onClick={() => navigate(`/${getCurrentLanguage()}/student/assignments/${assignment.id}`)}
                   >
                     <Grid container spacing={3} alignItems="center">
                       <Grid item xs={12} md={8}>
@@ -369,11 +370,11 @@ const AssignmentsPage = () => {
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                 <CalendarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
                                 <Typography variant="caption" color="text.secondary">
-                                  Due {formatDate(assignment.dueDate)}
+                                  {t('assignment.due')} {formatDate(assignment.dueDate)}
                                 </Typography>
                               </Box>
                               <Chip
-                                label={assignment.status === 'submitted' ? 'Submitted' : 'Not Submitted'}
+                                label={t(`assignment.status.${assignment.status}`)}
                                 size="small"
                                 sx={{
                                   backgroundColor: assignment.status === 'submitted' 
@@ -432,7 +433,7 @@ const AssignmentsPage = () => {
                             variant="outlined"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(`/student/assignments/${assignment.id}`);
+                              navigate(`/${getCurrentLanguage()}/student/assignments/${assignment.id}`);
                             }}
                             sx={{
                               borderColor: 'rgba(187, 92, 57, 0.5)',

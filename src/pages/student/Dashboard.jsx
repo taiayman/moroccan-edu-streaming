@@ -31,74 +31,17 @@ import { getEnrolledCourses } from '../../api/courses';
 import { getUpcomingAssignments } from '../../api/assignments';
 import { getDashboardStats } from '../../api/users';
 import { getAllTeachers, getTeacherCalendarEvents, getTeacherCalendarNotes } from '../../api/teacher';
-import ShimmerCard from '../../components/common/ShimmerCard';
-
-const StatCardShimmer = () => (
-  <Box
-    sx={{
-      position: 'relative',
-      height: '100%',
-      '&:before': {
-        content: '""',
-        position: 'absolute',
-        top: '8px',
-        left: '8px',
-        right: '-8px',
-        bottom: '-8px',
-        backgroundColor: 'rgba(0, 0, 0, 0.1)',
-        borderRadius: '16px',
-        zIndex: 0
-      }
-    }}
-  >
-    <Paper
-      elevation={0}
-      sx={{
-        p: 3,
-        height: '100%',
-        backgroundColor: '#fff',
-        borderRadius: '16px',
-        position: 'relative',
-        zIndex: 1,
-        border: '1px solid',
-        borderColor: 'rgba(0, 0, 0, 0.1)',
-        overflow: 'hidden',
-        '&::after': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: `linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0.6) 50%,
-            rgba(255, 255, 255, 0) 100%
-          )`,
-          animation: 'shimmer 1.5s infinite',
-        }
-      }}
-    >
-      <Box sx={{ width: 28, height: 28, backgroundColor: '#f0f0f0', borderRadius: 1, mb: 2 }} />
-      <Box sx={{ width: '60%', height: 32, backgroundColor: '#f0f0f0', borderRadius: 1, mb: 1 }} />
-      <Box sx={{ width: '40%', height: 20, backgroundColor: '#f0f0f0', borderRadius: 1, mb: 1 }} />
-      <Box sx={{ width: '80%', height: 16, backgroundColor: '#f0f0f0', borderRadius: 1 }} />
-    </Paper>
-  </Box>
-);
+import { useTranslation } from 'react-i18next';
+import { getCurrentLanguage } from '../../utils/navigation';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const currentLang = getCurrentLanguage();
 
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [upcomingAssignments, setUpcomingAssignments] = useState([]);
-  const [dashboardStats, setDashboardStats] = useState({
-    totalCourses: 0,
-    avgProgress: 0,
-    upcomingCount: 0
-  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [teachers, setTeachers] = useState([]);
@@ -120,7 +63,6 @@ const StudentDashboard = () => {
         getTeacherCalendarNotes(teacherId, startOfWeek, endOfWeek)
       ]);
 
-      // Events from API will be filtered by time slot in the UI
       setCalendarData({
         events: events || [],
         notes: notes || {}
@@ -140,25 +82,18 @@ const StudentDashboard = () => {
 
       try {
         console.log('Fetching data for user:', user.id);
-        const [courses, assignments, stats, teachersList] = await Promise.all([
+        const [courses, assignments, teachersList] = await Promise.all([
           getEnrolledCourses(user.id),
           getUpcomingAssignments(user.id),
-          getDashboardStats(user.id),
           getAllTeachers()
         ]);
 
         console.log('Fetched courses:', courses);
         console.log('Fetched assignments:', assignments);
-        console.log('Fetched stats:', stats);
         console.log('Fetched teachers:', teachersList);
 
         setEnrolledCourses(courses || []);
         setUpcomingAssignments(assignments || []);
-        setDashboardStats(stats || {
-          totalCourses: 0,
-          avgProgress: 0,
-          upcomingCount: 0
-        });
         setTeachers(teachersList || []);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -183,91 +118,35 @@ const StudentDashboard = () => {
   const assignments = upcomingAssignments.map(assignment => (
     {
       id: assignment.id,
-      subject: assignment.courseId, // Ideally, we would map this to course title
+      subject: assignment.courseId,
       title: assignment.title,
       dueDate: new Date(assignment.dueDate).toLocaleDateString('fr-FR', {
         weekday: 'long',
         month: 'long',
         day: 'numeric'
       }),
-      progress: 0 // You might want to add this to your assignment submission tracking
+      progress: 0
     }
   ));
 
-  const stats = [
+  // Quick Actions Section
+  const quickActions = [
     {
-      title: 'Cours',
-      value: dashboardStats.totalCourses?.toString() || '0',
-      icon: <MenuBookIcon sx={{ fontSize: 28, color: '#000' }} />,
-      change: `${enrolledCourses.length} cours actifs`
+      icon: <LiveTvIcon />,
+      text: t('dashboard.quickActions.browseLiveClasses'),
+      path: `/${currentLang}/student/live-classes`
     },
     {
-      title: 'Devoirs à venir',
-      value: dashboardStats.upcomingCount?.toString() || '0',
-      icon: <AssignmentIcon sx={{ fontSize: 28, color: '#000' }} />,
-      change: 'À rendre prochainement'
+      icon: <AssignmentIcon />,
+      text: t('dashboard.quickActions.viewAssignments'),
+      path: `/${currentLang}/student/assignments`
     },
     {
-      title: 'Progression Globale',
-      value: `${dashboardStats.avgProgress || 0}%`,
-      icon: <TrendingUpIcon sx={{ fontSize: 28, color: '#000' }} />,
-      change: 'Moyenne sur tous les cours'
+      icon: <CalendarIcon />,
+      text: t('dashboard.quickActions.viewSchedule'),
+      path: `/${currentLang}/student/schedule`
     }
   ];
-
-  const StatCard = ({ stat }) => (
-    <Box
-      sx={{
-        position: 'relative',
-        height: '100%',
-        '&:before': {
-          content: '""',
-          position: 'absolute',
-          top: '8px',
-          left: '8px',
-          right: '-8px',
-          bottom: '-8px',
-          backgroundColor: 'rgba(0, 0, 0, 0.1)',
-          borderRadius: '16px',
-          zIndex: 0
-        }
-      }}
-    >
-      <Paper
-        elevation={0}
-        sx={{
-          p: 3,
-          height: '100%',
-          backgroundColor: '#fff',
-          borderRadius: '16px',
-          position: 'relative',
-          zIndex: 1,
-          transition: 'all 0.2s',
-          border: '1px solid',
-          borderColor: 'rgba(0, 0, 0, 0.1)',
-          '&:hover': {
-            transform: 'translate(-4px, -4px)',
-            '& + .glass-shadow': {
-              transform: 'translate(4px, 4px)'
-            }
-          }
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-          {stat.icon}
-        </Box>
-        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-          {stat.value}
-        </Typography>
-        <Typography variant="body1" sx={{ color: '#666', mb: 1 }}>
-          {stat.title}
-        </Typography>
-        <Typography variant="caption" sx={{ color: '#666' }}>
-          {stat.change}
-        </Typography>
-      </Paper>
-    </Box>
-  );
 
   return (
     <Box sx={{ 
@@ -279,7 +158,7 @@ const StudentDashboard = () => {
       <Container maxWidth="xl">
         <Box sx={{ mb: 3 }}>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>
-            Tableau de Bord
+            {t('dashboard.title')}
           </Typography>
         </Box>
 
@@ -294,34 +173,17 @@ const StudentDashboard = () => {
           <Grid item xs={12} md={8}>
             <Box sx={{ mb: 4 }}>
               <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-                Bienvenue, {user?.displayName || 'Étudiant'}! 👋
+                {t('dashboard.welcome', { name: user?.displayName || t('common.student') })}
               </Typography>
               <Typography variant="body1" sx={{ color: '#666' }}>
-                Suivez votre progression et gérez votre parcours d'apprentissage
+                {t('dashboard.welcomeSubtitle')}
               </Typography>
             </Box>
-
-            {/* Stats Section */}
-            <Grid container spacing={3} sx={{ mb: 4 }}>
-              {loading ? (
-                [1, 2, 3].map((index) => (
-                  <Grid item xs={12} md={4} key={index}>
-                    <StatCardShimmer />
-                  </Grid>
-                ))
-              ) : (
-                stats.map((stat, index) => (
-                  <Grid item xs={12} md={4} key={index}>
-                    <StatCard stat={stat} />
-                  </Grid>
-                ))
-              )}
-            </Grid>
 
             {/* Teachers Section */}
             <Box sx={{ mb: 4 }}>
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-                Professeurs
+                {t('dashboard.teachers.title')}
               </Typography>
               <Grid container spacing={2}>
                 {teachers.map((teacher) => (
@@ -511,7 +373,7 @@ const StudentDashboard = () => {
                 }}
               >
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
-                  Actions Rapides
+                  {t('dashboard.quickActions.title')}
                 </Typography>
                 <Stack spacing={2.5}>
                   {loading ? (
@@ -551,23 +413,7 @@ const StudentDashboard = () => {
                       </Box>
                     ))
                   ) : (
-                    [
-                      {
-                        icon: <LiveTvIcon />,
-                        text: 'Parcourir les Cours en Direct',
-                        path: '/student/live-classes'
-                      },
-                      {
-                        icon: <AssignmentIcon />,
-                        text: 'Voir les Devoirs',
-                        path: '/student/assignments'
-                      },
-                      {
-                        icon: <CalendarIcon />,
-                        text: 'Consulter l\'Emploi du Temps',
-                        path: '/student/schedule'
-                      }
-                    ].map((action) => (
+                    quickActions.map((action) => (
                       <Box
                         key={action.text}
                         sx={{

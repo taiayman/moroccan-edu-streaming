@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   AppBar,
   Box,
@@ -11,21 +12,26 @@ import {
   Avatar,
   Button,
   Divider,
-  ListItemIcon
+  ListItemIcon,
+  Select
 } from '@mui/material';
 import {
   AccountCircle as AccountIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
   Notifications as NotificationsIcon,
-  Help as HelpIcon
+  Help as HelpIcon,
+  Language as LanguageIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../store/authStore';
+import { getCurrentLanguage } from '../../utils/navigation';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { t, i18n } = useTranslation();
   const [anchorEl, setAnchorEl] = React.useState(null);
+  const [languageAnchorEl, setLanguageAnchorEl] = React.useState(null);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -35,10 +41,23 @@ const Navbar = () => {
     setAnchorEl(null);
   };
 
+  const handleLanguageMenu = (event) => {
+    setLanguageAnchorEl(event.currentTarget);
+  };
+
+  const handleLanguageClose = () => {
+    setLanguageAnchorEl(null);
+  };
+
+  const handleLanguageChange = (lang) => {
+    i18n.changeLanguage(lang);
+    handleLanguageClose();
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/auth/login');
+      navigate(`/${getCurrentLanguage()}/auth/login`);
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -47,11 +66,19 @@ const Navbar = () => {
   const menuItems = [
     {
       icon: <AccountIcon fontSize="small" />,
-      text: 'Profile',
-      action: () => navigate(`/${user?.role || 'student'}/profile`)
+      text: t('nav.profile'),
+      action: () => navigate(`/${getCurrentLanguage()}/${user?.role || 'student'}/profile`)
     },
-    { icon: <SettingsIcon fontSize="small" />, text: 'Paramètres', action: () => navigate('/settings') },
-    { icon: <HelpIcon fontSize="small" />, text: 'Aide', action: () => navigate('/help') }
+    { 
+      icon: <SettingsIcon fontSize="small" />, 
+      text: t('nav.settings'), 
+      action: () => navigate(`/${getCurrentLanguage()}/settings`) 
+    },
+    { 
+      icon: <HelpIcon fontSize="small" />, 
+      text: t('nav.help'), 
+      action: () => navigate(`/${getCurrentLanguage()}/help`) 
+    }
   ];
 
   return (
@@ -74,13 +101,54 @@ const Navbar = () => {
             fontWeight: 700,
             cursor: 'pointer'
           }}
-          onClick={() => navigate('/')}
+          onClick={() => navigate(`/${getCurrentLanguage()}`)}
         >
-          EduPlatform
+          {t('nav.brand')}
         </Typography>
 
         {/* Right Section */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Language Switcher */}
+          <IconButton
+            onClick={handleLanguageMenu}
+            size="large"
+            aria-label={t('nav.language')}
+            sx={{
+              color: '#666',
+              borderRadius: 0,
+              '&:hover': {
+                color: '#bb5c39'
+              }
+            }}
+          >
+            <LanguageIcon />
+          </IconButton>
+          <Menu
+            anchorEl={languageAnchorEl}
+            open={Boolean(languageAnchorEl)}
+            onClose={handleLanguageClose}
+            PaperProps={{
+              elevation: 0,
+              sx: {
+                minWidth: 120,
+                backgroundColor: '#ffffff',
+                border: '1px solid rgba(0, 0, 0, 0.1)',
+                mt: 1.5,
+                borderRadius: 0
+              }
+            }}
+          >
+            <MenuItem onClick={() => handleLanguageChange('ar')} selected={i18n.language === 'ar'}>
+              العربية
+            </MenuItem>
+            <MenuItem onClick={() => handleLanguageChange('en')} selected={i18n.language === 'en'}>
+              English
+            </MenuItem>
+            <MenuItem onClick={() => handleLanguageChange('fr')} selected={i18n.language === 'fr'}>
+              Français
+            </MenuItem>
+          </Menu>
+
           {/* Help Button */}
           <Button
             startIcon={<HelpIcon />}
@@ -93,14 +161,15 @@ const Navbar = () => {
                 color: '#bb5c39'
               }
             }}
-            onClick={() => navigate('/help')}
+            onClick={() => navigate(`/${getCurrentLanguage()}/help`)}
           >
-            Aide
+            {t('nav.help')}
           </Button>
 
           {/* Notifications */}
           <IconButton
             size="large"
+            aria-label={t('nav.notifications')}
             sx={{
               color: '#666',
               borderRadius: 0, // Remove corner rounding
@@ -117,6 +186,7 @@ const Navbar = () => {
             <IconButton
               onClick={handleMenu}
               size="small"
+              aria-label={t('nav.openUserMenu')}
               sx={{
                 ml: 1,
                 borderRadius: 0, // Remove corner rounding
@@ -135,7 +205,7 @@ const Navbar = () => {
                   // Keep default rounded shape for the Avatar (remove borderRadius override)
                 }}
               >
-                {user?.displayName?.charAt(0) || 'U'}
+                {user?.displayName?.charAt(0) || t('nav.defaultUserInitial')}
               </Avatar>
             </IconButton>
             <Menu
@@ -167,7 +237,7 @@ const Navbar = () => {
             >
               <Box sx={{ px: 2, py: 1.5 }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                  {user?.displayName || 'User'}
+                  {user?.displayName || t('nav.defaultUserName')}
                 </Typography>
                 <Typography variant="caption" sx={{ color: '#666' }}>
                   {user?.email}
@@ -202,7 +272,7 @@ const Navbar = () => {
                 <ListItemIcon sx={{ color: '#bb5c39' }}>
                   <LogoutIcon fontSize="small" />
                 </ListItemIcon>
-                Se déconnecter
+                {t('nav.logout')}
               </MenuItem>
             </Menu>
           </Box>

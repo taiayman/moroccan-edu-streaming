@@ -1,0 +1,530 @@
+{
+  "routes": {
+    "auth": {
+      "login": "/:lang/auth/login",
+      "register": "/:lang/auth/register"
+    }
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "assignments": "Assignments",
+    "liveClasses": "Live Classes",
+    "schedule": "Schedule",
+    "profile": "Profile",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "brand": "Educational Platform",
+    "settings": "Settings",
+    "help": "Help",
+    "notifications": "Notifications",
+    "openUserMenu": "Open user menu",
+    "defaultUserInitial": "U",
+    "defaultUserName": "User"
+  },
+  "common": {
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "loading": "Loading...",
+    "created": "Created",
+      "assignments": {
+        "title": "Assignments",
+        "subtitle": "Manage student assignments",
+        "submissions": "submission",
+        "submissions_plural": "submissions",
+        "empty": "No assignments available"
+      },
+    "error": {
+      "default": "An error occurred",
+      "failed": "Operation failed"
+    },
+    "success": "Operation successful",
+    "student": "Student",
+    "day": "Day",
+    "weekDays": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}} minute ago",
+      "minutesAgo_plural": "{{count}} minutes ago",
+      "hoursAgo": "{{count}} hour ago",
+      "hoursAgo_plural": "{{count}} hours ago",
+      "daysAgo": "{{count}} day ago",
+      "daysAgo_plural": "{{count}} days ago",
+      "unknown": "Unknown time"
+    },
+    "actions": {
+      "viewAll": "View All",
+      "cancel": "Cancel"
+    }
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "welcomeBack": "Welcome back! Please enter your credentials to continue",
+    "emailAddress": "Email address",
+    "password": "Password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "continueWithGoogle": "Continue with Google",
+    "noAccount": "Don't have an account?",
+    "signUpFree": "Sign up for free",
+    "enterCredentials": "Please enter email and password",
+    "loginFailed": "Failed to login. Please check your credentials.",
+    "incompleteProfile": "User profile is incomplete. Please contact support.",
+    "createAccount": "Create Account",
+    "createAccountDesc": "Please fill in your details to create an account",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "creatingAccount": "Creating Account...",
+    "haveAccount": "Already have an account?",
+    "allFieldsRequired": "All fields are required",
+    "passwordLength": "Password must be at least 6 characters long"
+  },
+  "roleSelection": {
+    "title": "Choose Your Role",
+    "description": "Select your role to customize your experience",
+    "student": {
+      "title": "Student",
+      "description": "Access course materials and participate in classes"
+    },
+    "teacher": {
+      "title": "Teacher",
+      "description": "Create and manage courses, conduct live classes"
+    },
+    "parent": {
+      "title": "Parent",
+      "description": "Monitor your child's progress and performance"
+    },
+    "errors": {
+      "noSession": "User session not found. Please try logging in again.",
+      "invalidSession": "Invalid user session. Please try logging in again.",
+      "roleFailed": "Failed to set role. Please try again."
+    }
+  },
+  "liveClass": {
+    "live": "LIVE",
+    "leave": "Leave",
+    "chat": "Chat",
+    "participants": "Participants",
+    "sendMessage": "Send a message...",
+    "teaching": "Teaching",
+    "student": "student",
+    "teacher": "teacher",
+    "welcomeMessage": "Hello everyone! Let's start the class.",
+    "controls": {
+      "toggleMic": "Toggle microphone",
+      "toggleCamera": "Toggle camera",
+      "toggleScreen": "Toggle screen sharing",
+      "pipMode": "Picture in picture",
+      "settings": "Settings",
+      "fullscreen": "Fullscreen"
+    }
+  },
+  "assignment": {
+    "backToAssignments": "Back to Assignments",
+    "due": "Due",
+    "description": "Description",
+    "noDescription": "No description available.",
+    "content": "Assignment Content",
+    "noContent": "No content available.",
+    "yourSubmission": "Your Submission",
+    "submittedOn": "Submitted on",
+    "grade": "Grade",
+    "notSubmitted": "You haven't submitted this assignment yet",
+    "alreadySubmitted": "You have already submitted this assignment",
+    "alreadyGraded": "This assignment has already been graded",
+    "submitNow": "Submit Now",
+    "submitAssignment": "Submit Assignment",
+    "yourAnswer": "Your Answer",
+    "writeAnswer": "Write your answer here...",
+    "submitting": "Submitting...",
+    "submit": "Submit",
+    "status": {
+      "submitted": "Submitted",
+      "notSubmitted": "Not Submitted",
+      "not_submitted": "Not Submitted",
+      "graded": "Graded"
+    },
+    "myAssignments": "My Assignments",
+    "viewAndSubmit": "View and submit your assignments",
+    "selectTeacher": "Select Teacher",
+    "searchAssignments": "Search assignments",
+    "failedToLoad": "Failed to load assignments",
+    "failedToLoadTeachers": "Failed to load teachers",
+    "authRequired": "Authentication required",
+    "multipleSubmissionsNotAllowed": "You have already submitted this assignment. Multiple submissions are not allowed.",
+    "failedToSubmit": "Failed to submit assignment. Please try again.",
+    "assignmentNotFound": "Assignment not found"
+  },
+  "profile": {
+    "editProfile": "Edit Profile",
+    "level": "Level",
+    "notSpecified": "Not specified",
+    "enrollmentDate": "Enrollment Date",
+    "academicProgress": "Academic Progress",
+    "enrolledCourses": "Enrolled Courses",
+    "currentAssignments": "Current Assignments",
+    "attendanceRate": "Attendance Rate",
+    "noCourses": "No enrolled courses",
+    "coursesCount": "{{count}} Courses",
+    "assignmentsCount": "{{count}} Assignments"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome, {{name}}! 👋",
+    "welcomeSubtitle": "Track your progress and manage your learning journey",
+    "teacher": {
+      "dashboard": {
+        "schedule": {
+          "viewAll": "View All"
+        }
+      }
+    },
+    "stats": {
+      "courses": "Courses",
+      "activeCourses": "{{count}} active courses",
+      "upcomingAssignments": "Upcoming Assignments",
+      "dueSoon": "Due soon",
+      "globalProgress": "Overall Progress",
+      "courseAverage": "Average across all courses"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "browseLiveClasses": "Browse Live Classes",
+      "viewAssignments": "View Assignments",
+      "viewSchedule": "View Schedule"
+    },
+    "teachers": {
+      "title": "Teachers",
+      "schedule": "Schedule for {{name}}"
+    },
+    "teacher": {
+      "title": "Teacher Dashboard",
+      "stats": {
+        "courses": {
+          "title": "Courses",
+          "subtitle": "Active Courses"
+        },
+        "students": {
+          "title": "Students",
+          "subtitle": "Enrolled Students"
+        },
+        "calendar": {
+          "title": "Calendar",
+          "noEvents": "No events for this day",
+          "addEvent": "Add Event",
+          "eventDetails": "Event Details"
+        }
+      },
+      "schedule": {
+        "viewAll": "View All"
+      },
+      "quickActions": {
+        "title": "Quick Actions",
+        "liveClass": {
+          "title": "Start Live Class",
+          "subtitle": "Create a new live session"
+        },
+        "assignment": {
+          "title": "Create Assignment",
+          "subtitle": "Add a new assignment"
+        }
+      },
+      "assignments": {
+        "title": "Assignments",
+        "subtitle": "Manage student assignments",
+        "empty": "No assignments available",
+        "created": "Created on",
+        "submissions": "submission",
+        "submissions_plural": "submissions",
+        "status": {
+          "active": "Active",
+          "completed": "Completed",
+          "draft": "Draft"
+        }
+      },
+      "dialogs": {
+        "course": {
+          "title": "Create New Course",
+          "subtitle": "Enter course details",
+          "form": {
+            "title": "Course Title",
+            "description": "Course Description",
+            "level": "Course Level",
+            "levelPlaceholder": "Select course level",
+            "levels": {
+              "beginner": "Beginner",
+              "intermediate": "Intermediate",
+              "advanced": "Advanced"
+            }
+          },
+          "actions": {
+            "create": "Create Course",
+            "cancel": "Cancel",
+            "creating": "Creating..."
+          }
+        },
+        "assignment": {
+          "title": "Create New Assignment",
+          "subtitle": "Enter assignment details",
+          "form": {
+            "title": "Assignment Title",
+            "description": "Assignment Description",
+            "content": "Assignment Content",
+            "placeholder": {
+              "title": "Enter assignment title",
+              "description": "Enter assignment description here...",
+              "content": "Write your assignment content here..."
+            }
+          },
+          "actions": {
+            "create": "Create Assignment",
+            "cancel": "Cancel",
+            "creating": "Creating..."
+          }
+        },
+        "liveClass": {
+          "title": "Start Live Class",
+          "subtitle": "Create a new live session for your students",
+          "form": {
+            "title": "Class Title",
+            "titleRequired": "Title is required",
+            "description": "Class Description",
+            "placeholder": {
+              "title": "Enter class title",
+              "description": "Write your class description here..."
+            }
+          },
+          "actions": {
+            "start": "Start Class",
+            "cancel": "Cancel",
+            "starting": "Starting..."
+          }
+        }
+      }
+    }
+  },
+  "schedule": {
+    "title": "Schedule",
+    "daysOfWeek": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    },
+    "noClassesScheduled": "No classes scheduled",
+    "noCoursesFound": "No courses found in the schedule.",
+    "professor": "Prof.",
+    "teacherPrefix": "Prof."
+  },
+  "calendar": {
+    "events": "Events",
+    "noEvents": "No events scheduled",
+    "notes": "Notes",
+    "noNotes": "No notes for this day",
+    "weekDays": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    },
+    "addEvent": {
+      "title": "Add Event",
+      "subtitle": "Schedule a new event in your calendar",
+      "form": {
+        "title": "Event Title",
+        "titleRequired": "Title is required",
+        "time": "Time",
+        "timeRequired": "Time is required",
+        "description": "Description",
+        "placeholder": {
+          "title": "Enter event title",
+          "time": "Select time",
+          "description": "Write your event description here..."
+        }
+      },
+      "actions": {
+        "add": "Add Event",
+        "adding": "Adding...",
+        "cancel": "Cancel"
+      }
+    },
+    "notes": {
+      "title": "Notes",
+      "placeholder": "Write your note here...",
+      "noNotes": "No notes for this day"
+    }
+  },
+  "teacherPages": {
+    "assignments": {
+      "title": "Assignments",
+      "description": "Manage student assignments",
+      "backToDashboard": "Back to Dashboard",
+      "createNew": "Create New Assignment",
+      "search": "Search assignments...",
+      "noAssignments": "No assignments found",
+      "empty": "You haven't created any assignments yet",
+      "created": "Created on",
+      "submissions": "submission",
+      "submissions_plural": "submissions",
+      "viewDetails": "View Details",
+      "errors": {
+        "loadFailed": "Failed to load assignments",
+        "createFailed": "Failed to create assignment",
+        "titleRequired": "Assignment title is required"
+      },
+      "dialogs": {
+        "assignment": {
+          "title": "Create New Assignment",
+          "form": {
+            "title": "Assignment Title",
+            "description": "Assignment Description",
+            "content": "Assignment Content"
+          },
+          "actions": {
+            "cancel": "Cancel",
+            "create": "Create",
+            "creating": "Creating..."
+          }
+        }
+      },
+      "status": {
+        "active": "Active",
+        "completed": "Completed",
+        "draft": "Draft",
+        "pending": "Pending"
+      }
+    },
+    "assignmentDetails": {
+      "back": "Back to Assignments",
+      "created": "Created on",
+      "submissionCount": "{{count}} submission",
+      "submissionCount_plural": "{{count}} submissions",
+      "description": "Description",
+      "noDescription": "No description provided",
+      "content": "Assignment Content",
+      "noContent": "No content provided",
+      "submissions": "Submissions",
+      "unknownStudent": "Unknown Student",
+      "submissionStats": {
+        "title": "Assignment Stats",
+        "total": "Total Students",
+        "submitted": "Submissions",
+        "graded": "Graded",
+        "pending": "Pending"
+      },
+      "status": {
+        "label": "Status",
+        "active": "Active",
+        "completed": "Completed",
+        "draft": "Draft"
+      },
+      "grading": {
+        "title": "Grade Submission",
+        "grade": "Grade",
+        "feedback": "Feedback",
+        "update": "Update Grade",
+        "grade": "Grade",
+        "save": "Save Grade",
+        "saving": "Saving..."
+      },
+      "errors": {
+        "notFound": "Assignment not found",
+        "loadFailed": "Failed to load assignment details",
+        "gradingFailed": "Failed to grade submission"
+      },
+      "noSubmissions": "No submissions yet"
+    },
+    "streaming": {
+      "title": "Live Class",
+      "status": {
+        "live": "LIVE",
+        "ended": "ENDED",
+        "notStarted": "NOT STARTED"
+      },
+      "controls": {
+        "startStream": "Start Stream",
+        "endStream": "End Stream",
+        "toggleMic": "Toggle Microphone",
+        "toggleCamera": "Toggle Camera",
+        "toggleScreen": "Toggle Screen Share",
+        "settings": "Settings"
+      },
+      "chat": {
+        "title": "Class Chat",
+        "placeholder": "Type a message...",
+        "send": "Send",
+        "empty": "No messages yet"
+      },
+      "participants": {
+        "title": "Participants",
+        "teacher": "Teacher",
+        "students": "Students",
+        "noStudents": "No students joined yet"
+      },
+      "settings": {
+        "title": "Stream Settings",
+        "videoSource": "Video Source",
+        "audioSource": "Audio Source",
+        "quality": "Stream Quality",
+        "apply": "Apply Settings"
+      },
+      "errors": {
+        "deviceAccess": "Could not access camera/microphone",
+        "streamFailed": "Failed to start stream",
+        "connectionLost": "Connection lost"
+      },
+      "startStream": {
+        "title": "Start New Stream",
+        "streamTitle": "Stream Title",
+        "start": "Start Stream"
+      }
+    }
+  },
+  "studentPages": {
+    "assignments": {
+      "title": "My Assignments",
+      "description": "View and manage your assignments",
+      "backToDashboard": "Back to Dashboard",
+      "filter": {
+        "all": "All",
+        "pending": "Pending",
+        "submitted": "Submitted",
+        "graded": "Graded"
+      },
+      "search": "Search assignments...",
+      "table": {
+        "title": "Title",
+        "course": "Course",
+        "dueDate": "Due Date",
+        "status": "Status",
+        "grade": "Grade",
+        "actions": "Actions"
+      },
+      "noAssignments": "No assignments found",
+      "viewDetails": "View Details",
+      "status": {
+        "pending": "Pending",
+        "submitted": "Submitted",
+        "graded": "Graded",
+        "late": "Late"
+      }
+    }
+  }
+}

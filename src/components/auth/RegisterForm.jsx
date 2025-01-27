@@ -16,7 +16,8 @@ import {
   VisibilityOff,
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
-import { navigateByRole } from '../../utils/navigation';
+import { navigateByRole, getCurrentLanguage } from '../../utils/navigation';
+import { useTranslation } from 'react-i18next';
 
 const RegisterForm = () => {
   const navigate = useNavigate();
@@ -29,6 +30,7 @@ const RegisterForm = () => {
     firstName: '',
     lastName: '',
   });
+  const { t } = useTranslation();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,11 +42,11 @@ const RegisterForm = () => {
 
   const validateForm = () => {
     if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
-      setError('All fields are required');
+      setError(t('auth.errors.allFieldsRequired'));
       return false;
     }
     if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError(t('auth.errors.passwordLength'));
       return false;
     }
     return true;
@@ -108,16 +110,16 @@ const RegisterForm = () => {
               color: '#000'
             }}
           >
-            Create Account
+            {t('auth.createAccount')}
           </Typography>
-          <Typography 
-            variant="body1" 
-            sx={{ 
+          <Typography
+            variant="body1"
+            sx={{
               color: '#666',
               fontSize: '1.1rem'
             }}
           >
-            Please fill in your details to create an account
+            {t('auth.createAccountDesc')}
           </Typography>
         </Box>
 
@@ -142,7 +144,7 @@ const RegisterForm = () => {
             <TextField
               required
               fullWidth
-              label="First Name"
+              label={t('auth.firstName')}
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
@@ -169,7 +171,7 @@ const RegisterForm = () => {
             <TextField
               required
               fullWidth
-              label="Last Name"
+              label={t('auth.lastName')}
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
@@ -196,7 +198,7 @@ const RegisterForm = () => {
             <TextField
               required
               fullWidth
-              label="Email Address"
+              label={t('auth.emailAddress')}
               name="email"
               type="email"
               value={formData.email}
@@ -225,7 +227,7 @@ const RegisterForm = () => {
               required
               fullWidth
               name="password"
-              label="Password"
+              label={t('auth.password')}
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={handleChange}
@@ -233,7 +235,7 @@ const RegisterForm = () => {
                 endAdornment: (
                   <InputAdornment position="end">
                     <IconButton
-                      aria-label="toggle password visibility"
+                      aria-label={t('auth.togglePasswordVisibility')}
                       onClick={() => setShowPassword(!showPassword)}
                       edge="end"
                     >
@@ -263,67 +265,37 @@ const RegisterForm = () => {
           </Grid>
         </Grid>
 
-        <Box
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleRegister}
+          disabled={loading}
           sx={{
-            position: 'relative',
             mt: 3,
-            mb: 3,
-            '&:before': {
-              content: '""',
-              position: 'absolute',
-              top: '6px',
-              left: '6px',
-              right: '-6px',
-              bottom: '-6px',
-              backgroundColor: '#bb5c39',
-              opacity: 0.1,
-              borderRadius: '4px',
-              zIndex: 0
+            mb: 2,
+            py: 1.5,
+            backgroundColor: '#bb5c39',
+            '&:hover': {
+              backgroundColor: '#a04b2e'
             }
           }}
         >
-          <Button
-            fullWidth
-            variant="contained"
-            onClick={handleRegister}
-            disabled={loading}
-            sx={{
-              py: 1.75,
-              backgroundColor: '#bb5c39',
-              color: '#fff',
-              textTransform: 'none',
-              fontSize: '1rem',
-              fontWeight: 600,
-              borderRadius: '4px',
-              position: 'relative',
-              zIndex: 1,
-              boxShadow: 'none',
-              border: 'none',
-              transition: 'all 0.2s ease-in-out',
-              '&:hover': {
-                backgroundColor: '#a94f30'
-              }
+          {loading ? t('auth.registering') : t('auth.register')}
+        </Button>
+
+        <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+          {t('auth.alreadyHaveAccount')}{' '}
+          <Link 
+            to={`/${getCurrentLanguage()}/auth/login`}
+            style={{ 
+              color: '#bb5c39',
+              textDecoration: 'none',
+              fontWeight: 500
             }}
           >
-            {loading ? 'Creating Account...' : 'Create Account'}
-          </Button>
-        </Box>
-
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography sx={{ color: '#666' }}>
-            Already have an account?{' '}
-            <Link 
-              to="/auth/login" 
-              style={{ 
-                textDecoration: 'none',
-                color: '#bb5c39',
-                fontWeight: 500
-              }}
-            >
-              Sign in
-            </Link>
-          </Typography>
-        </Box>
+            {t('auth.signIn')}
+          </Link>
+        </Typography>
       </Box>
     </Container>
   );

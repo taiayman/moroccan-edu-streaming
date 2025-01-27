@@ -15,28 +15,28 @@ import {
 import {
   LiveTv as LiveTvIcon,
   Timer as TimerIcon,
-  PlayCircleOutline as PlayIcon
+  Person as PersonIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
-import { getEnrolledCourses } from '../../api/courses';
+import { getActiveLiveClasses } from '../../api/student';
+import { getCurrentLanguage } from '../../utils/navigation';
 import ShimmerCard from '../../components/common/ShimmerCard';
 
 const LiveClasses = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [courses, setCourses] = useState([]);
+  const [liveClasses, setLiveClasses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchLiveClasses = async () => {
       try {
-        console.log('Fetching courses for user:', user);
-        const coursesData = await getEnrolledCourses(user.id);
-        console.log('Fetched courses:', coursesData);
-        setCourses(coursesData);
+        setLoading(true);
+        const classes = await getActiveLiveClasses(user.id);
+        setLiveClasses(classes);
       } catch (error) {
-        console.error('Error fetching courses:', error);
+        console.error('Error fetching live classes:', error);
         setError(error.message);
       } finally {
         setLoading(false);
@@ -44,11 +44,17 @@ const LiveClasses = () => {
     };
 
     if (user?.id) {
-      fetchCourses();
+      fetchLiveClasses();
     }
   }, [user?.id]);
 
-  const ClassCard = ({ course }) => (
+  const handleJoinClass = (classId, channelName) => {
+    navigate(`/${getCurrentLanguage()}/student/live-class/${classId}`, {
+      state: { channelName }
+    });
+  };
+
+  const ClassCard = ({ liveClass }) => (
     <Paper
       elevation={0}
       sx={{
@@ -63,36 +69,40 @@ const LiveClasses = () => {
       }}
     >
       <Grid container alignItems="center" spacing={3}>
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={8}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Avatar src={course.imageURL} />
+            <Avatar>
+              <PersonIcon />
+            </Avatar>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                {course.title}
+                {liveClass.title}
               </Typography>
               <Typography variant="body2" sx={{ color: '#666' }}>
-                {course.teacherName || `Prof. ${course.teacherId}`}
+                {liveClass.teacherName || `Prof. ${liveClass.teacherId}`}
               </Typography>
             </Box>
           </Box>
-          <Typography variant="body1" sx={{ color: '#666', mb: 2 }}>
-            {course.description}
-          </Typography>
-          <Stack direction="row" spacing={2}>
-            {course.schedule?.map((scheduleItem, index) => (
-              <Chip
-                key={index}
-                icon={<TimerIcon sx={{ fontSize: '18px !important' }} />}
-                label={`${scheduleItem.day} ${scheduleItem.time}`}
-                sx={{ 
-                  backgroundColor: '#F5F5F5',
-                  borderRadius: '8px'
-                }}
-              />
-            ))}
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Chip
+              icon={<TimerIcon sx={{ fontSize: '18px !important' }} />}
+              label={`Started ${new Date(liveClass.startTime).toLocaleTimeString()}`}
+              sx={{ 
+                backgroundColor: '#F5F5F5',
+                borderRadius: '8px'
+              }}
+            />
+            <Chip
+              label="En Direct"
+              sx={{
+                backgroundColor: '#ff0000',
+                color: '#fff',
+                borderRadius: '8px'
+              }}
+            />
           </Stack>
         </Grid>
-        <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Box
             sx={{
               position: 'relative',
@@ -112,7 +122,7 @@ const LiveClasses = () => {
             <Button
               variant="contained"
               startIcon={<LiveTvIcon />}
-              onClick={() => navigate(`/student/live-class/${course.id}`)}
+              onClick={() => handleJoinClass(liveClass.id, liveClass.channelName)}
               sx={{
                 py: 1.5,
                 px: 3,
@@ -162,13 +172,13 @@ const LiveClasses = () => {
           </Stack>
         ) : (
           <Stack spacing={3}>
-            {courses.length > 0 ? (
-              courses.map((course) => (
-                <ClassCard key={course.id} course={course} />
+            {liveClasses.length > 0 ? (
+              liveClasses.map((liveClass) => (
+                <ClassCard key={liveClass.id} liveClass={liveClass} />
               ))
             ) : (
               <Typography variant="body1" color="textSecondary" align="center">
-                Aucun cours disponible pour le moment.
+                Aucun cours en direct pour le moment.
               </Typography>
             )}
           </Stack>

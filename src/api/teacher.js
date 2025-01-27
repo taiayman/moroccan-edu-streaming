@@ -13,10 +13,12 @@ import {
   onSnapshot,
   serverTimestamp,
   deleteDoc,
-  limit
+  limit,
+  addDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, COLLECTIONS } from './config';
+import { generateToken } from '../utils/agora';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
@@ -283,19 +285,35 @@ export const getTeacherLessons = async (teacherId) => {
 };
 
 // Start a live class
-export const startLiveClass = async (teacherId, lessonId) => {
+export const startLiveClass = async (teacherId, classData) => {
   try {
-    const classRef = doc(collection(db, COLLECTIONS.LIVE_CLASSES));
-    await setDoc(classRef, {
-      teacherId,
-      lessonId,
+    // Generate a unique channel name
+    const channelName = `class_${teacherId}_${Date.now()}`;
+    
+    // Generate Agora token for the host
+    const token = await generateToken(channelName, 'host');
+
+    // Create the live class document
+    const docRef = await addDoc(collection(db, COLLECTIONS.LIVE_CLASSES), {
+      ...classData,
+      channelName,
+      token,
       status: 'active',
-      startedAt: Timestamp.now(),
-      endedAt: null
+      startTime: serverTimestamp(),
+      endTime: null,
+      participants: [],
+      teacherId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     });
-    return classRef.id;
+
+    return {
+      classId: docRef.id,
+      channelName,
+      token
+    };
   } catch (error) {
-    console.error('Error starting class:', error);
+    console.error('Error starting live class:', error);
     throw error;
   }
 };

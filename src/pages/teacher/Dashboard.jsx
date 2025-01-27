@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../hooks/useAuth';
+import { getCurrentLanguage } from '../../i18n';
 import {
   Box,
   Typography,
@@ -61,31 +63,39 @@ import {
   deleteCalendarEvent,
 } from '../../api/teacher';
 
-const formatRelativeTime = (timestamp) => {
-  const now = new Date();
-  const date = new Date(timestamp);
-  const diffInSeconds = Math.floor((now - date) / 1000);
+const formatRelativeTime = (timestamp, t) => {
+  if (!timestamp) return t('common.time.unknown');
+  
+  try {
+    const now = new Date();
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return t('common.time.unknown');
+    
+    const diffInSeconds = Math.floor((now - date) / 1000);
 
-  if (diffInSeconds < 60) {
-    return 'Just now';
+    if (diffInSeconds < 60) {
+      return t('common.time.justNow');
+    }
+
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+      return t('common.time.minutesAgo', { count: diffInMinutes });
+    }
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return t('common.time.hoursAgo', { count: diffInHours });
+    }
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) {
+      return t('common.time.daysAgo', { count: diffInDays });
+    }
+
+    return date.toLocaleDateString();
+  } catch (error) {
+    return t('common.time.unknown');
   }
-
-  const diffInMinutes = Math.floor(diffInSeconds / 60);
-  if (diffInMinutes < 60) {
-    return `${diffInMinutes} minute${diffInMinutes > 1 ? 's' : ''} ago`;
-  }
-
-  const diffInHours = Math.floor(diffInMinutes / 60);
-  if (diffInHours < 24) {
-    return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
-  }
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) {
-    return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
-  }
-
-  return date.toLocaleDateString();
 };
 
 const getDaysInMonth = (year, month) => {
@@ -97,6 +107,7 @@ const getFirstDayOfMonth = (year, month) => {
 };
 
 const StatsCard = ({ stat }) => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today);
@@ -113,6 +124,7 @@ const StatsCard = ({ stat }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const isRTL = getCurrentLanguage() === 'ar';
 
   // Get Monday of the current week
   function getWeekStart(date) {
@@ -294,13 +306,14 @@ const StatsCard = ({ stat }) => {
     sx={{
       position: 'relative',
       height: '100%',
+      direction: isRTL ? 'rtl' : 'ltr',
         ...(stat.isCalendar && {
       '&:before': {
         content: '""',
         position: 'absolute',
         top: '8px',
-        left: '8px',
-        right: '-8px',
+        [isRTL ? 'right' : 'left']: '8px',
+        [isRTL ? 'left' : 'right']: '-8px',
         bottom: '-8px',
         backgroundColor: stat.accent ? 'rgba(187, 92, 57, 0.2)' : 'rgba(0, 0, 0, 0.1)',
         borderRadius: '16px',
@@ -322,7 +335,7 @@ const StatsCard = ({ stat }) => {
         border: '1px solid',
         borderColor: stat.accent ? '#bb5c39' : 'rgba(0, 0, 0, 0.1)',
         '&:hover': {
-          transform: 'translate(-4px, -4px)',
+          transform: isRTL ? 'translate(4px, -4px)' : 'translate(-4px, -4px)',
           }
         }}
       >
@@ -333,7 +346,7 @@ const StatsCard = ({ stat }) => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <CalendarIcon sx={{ color: '#fff', fontSize: 24 }} />
                 <Typography variant="h6" sx={{ color: '#fff' }}>
-                  {currentWeekStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  {t('dashboard.teacher.stats.calendar.title')}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 1 }}>
@@ -489,16 +502,16 @@ const StatsCard = ({ stat }) => {
               {isScheduleExpanded && (
                 <Stack spacing={1.5}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
+                    <Typography
+                      variant="caption"
+                      sx={{
                         color: 'rgba(255, 255, 255, 0.7)',
                         fontSize: '0.75rem',
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px'
                       }}
                     >
-                      Events
+                      {t('calendar.events')}
                     </Typography>
                     <IconButton
                       size="small"
@@ -596,7 +609,7 @@ const StatsCard = ({ stat }) => {
                         py: 1
                       }}
                     >
-                      No events scheduled
+                      {t('calendar.noEvents')}
                     </Typography>
                   )}
 
@@ -612,15 +625,15 @@ const StatsCard = ({ stat }) => {
                           letterSpacing: '0.5px'
                         }}
                       >
-                        Notes
+                        {t('calendar.notes.title')}
                       </Typography>
                       <Box sx={{ display: 'flex', gap: 1 }}>
                         {dayNote && !isEditingNote && (
-                      <IconButton 
-                        size="small" 
+                      <IconButton
+                        size="small"
                             onClick={handleDeleteNote}
                             disabled={loading}
-                            sx={{ 
+                            sx={{
                               color: 'rgba(255, 255, 255, 0.7)',
                               padding: 0,
                               '&:hover': {
@@ -671,7 +684,7 @@ const StatsCard = ({ stat }) => {
                         value={dayNote}
                         onChange={(e) => setDayNote(e.target.value)}
                         variant="standard"
-                        placeholder="Write your note here..."
+                        placeholder={t('calendar.notes.placeholder')}
                         sx={{
                           '& .MuiInputBase-input': {
                             color: '#fff',
@@ -698,7 +711,7 @@ const StatsCard = ({ stat }) => {
                           fontStyle: savedNotes[selectedDate.toISOString().split('T')[0]] ? 'normal' : 'italic'
                         }}
                       >
-                        {savedNotes[selectedDate.toISOString().split('T')[0]] || 'No notes for this day'}
+                        {savedNotes[selectedDate.toISOString().split('T')[0]] || t('calendar.notes.noNotes')}
                       </Typography>
                     )}
                   </Box>
@@ -782,10 +795,10 @@ const StatsCard = ({ stat }) => {
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-                Add Event
+                {t('calendar.addEvent.title')}
               </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                Schedule a new event in your calendar
+                {t('calendar.addEvent.subtitle')}
               </Typography>
             </Box>
             <IconButton 
@@ -806,14 +819,14 @@ const StatsCard = ({ stat }) => {
         <DialogContent sx={{ p: 3 }}>
           <Stack spacing={3} sx={{ mt: 1 }}>
           <TextField
-            label="Event Title"
+            label={t('calendar.addEvent.form.title')}
             fullWidth
-              required
+            required
             value={newEvent.title}
             onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-              variant="outlined"
-              error={error && !newEvent.title}
-              helperText={error && !newEvent.title ? 'Title is required' : ''}
+            variant="outlined"
+            error={error && !newEvent.title}
+            helperText={error && !newEvent.title ? t('calendar.addEvent.form.titleRequired') : ''}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
@@ -829,18 +842,18 @@ const StatsCard = ({ stat }) => {
               }}
           />
           <TextField
-            label="Time"
+            label={t('calendar.addEvent.form.time')}
             type="time"
             fullWidth
-              required
+            required
             value={newEvent.time}
             onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-              error={error && !newEvent.time}
-              helperText={error && !newEvent.time ? 'Time is required' : ''}
+            error={error && !newEvent.time}
+            helperText={error && !newEvent.time ? t('calendar.addEvent.form.timeRequired') : ''}
             InputLabelProps={{
               shrink: true,
             }}
-              variant="outlined"
+            variant="outlined"
               sx={{
                 '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
@@ -856,13 +869,14 @@ const StatsCard = ({ stat }) => {
             }}
           />
           <TextField
-            label="Description"
+            label={t('calendar.addEvent.form.description')}
             fullWidth
             multiline
-              rows={3}
+            rows={3}
             value={newEvent.description}
             onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-              variant="outlined"
+            variant="outlined"
+            placeholder={t('calendar.addEvent.form.placeholder.description')}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
@@ -886,38 +900,38 @@ const StatsCard = ({ stat }) => {
       </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-        <Button 
+        <Button
           onClick={() => setIsAddEventOpen(false)}
-            variant="outlined"
-            sx={{
-              borderColor: 'rgba(187, 92, 57, 0.5)',
-              color: '#bb5c39',
-              px: 3,
-              '&:hover': {
-                backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                borderColor: '#bb5c39'
-              }
-            }}
+          variant="outlined"
+          sx={{
+            borderColor: 'rgba(187, 92, 57, 0.5)',
+            color: '#bb5c39',
+            px: 3,
+            '&:hover': {
+              backgroundColor: 'rgba(187, 92, 57, 0.05)',
+              borderColor: '#bb5c39'
+            }
+          }}
         >
-          Cancel
+          {t('calendar.addEvent.actions.cancel')}
         </Button>
         <Button
           variant="contained"
           onClick={handleAddEvent}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+          disabled={loading}
+          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
           sx={{
             backgroundColor: '#bb5c39',
-              px: 4,
+            px: 4,
             '&:hover': {
               backgroundColor: '#a04b2e'
-              },
-              '&.Mui-disabled': {
-                backgroundColor: 'rgba(187, 92, 57, 0.3)'
+            },
+            '&.Mui-disabled': {
+              backgroundColor: 'rgba(187, 92, 57, 0.3)'
             }
           }}
         >
-            {loading ? 'Adding...' : 'Add Event'}
+          {loading ? t('calendar.addEvent.actions.adding') : t('calendar.addEvent.actions.add')}
         </Button>
       </DialogActions>
     </Dialog>
@@ -926,8 +940,11 @@ const StatsCard = ({ stat }) => {
 };
 
 const TeacherDashboard = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
+  const params = useParams();
   const { user } = useAuth();
+  const isRTL = getCurrentLanguage() === 'ar';
   
   // State management
   const [loading, setLoading] = useState(true);
@@ -1006,18 +1023,6 @@ const TeacherDashboard = () => {
       
       setStats([
         {
-          title: 'Courses',
-          value: coursesData.length.toString(),
-          icon: <MenuBookIcon />,
-          change: 'Active courses'
-        },
-        {
-          title: 'Students',
-          value: studentsData.length.toString(),
-          icon: <PeopleIcon />,
-          change: 'Total enrolled'
-        },
-        {
           title: 'Calendar',
           value: new Date().toLocaleDateString('en-US', { month: 'long' }),
           icon: <CalendarIcon />,
@@ -1047,13 +1052,15 @@ const TeacherDashboard = () => {
       }
       
       setLoading(true);
-      const classId = await startLiveClass(user.id, {
+      const { classId, channelName, token } = await startLiveClass(user.id, {
         ...liveClassData,
         teacherId: user.id,
         startTime: new Date().toISOString()
       });
       setStartLiveClassDialog(false);
-      navigate(`/teacher/streaming/${classId}`);
+      navigate(`/${getCurrentLanguage()}/teacher/streaming/${classId}`, {
+        state: { channelName, token }
+      });
     } catch (err) {
       console.error('Error starting class:', err);
       setError('Failed to start class');
@@ -1164,64 +1171,60 @@ const TeacherDashboard = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4, mt: { xs: 8, sm: 9 } }}>
+    <Container 
+      maxWidth="xl" 
+      sx={{ 
+        py: 4, 
+        mt: { xs: 8, sm: 9 },
+        direction: isRTL ? 'rtl' : 'ltr'
+      }}
+    >
       {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
+        <Alert severity="error" sx={{ mb: 3, textAlign: isRTL ? 'right' : 'left' }}>
           {error}
         </Alert>
       )}
 
       <Grid container spacing={3}>
-        {/* Stats Section with Quick Actions and Assignments */}
-        <Grid item xs={12} md={8}>
-            <Box
-              sx={{
+        {/* Quick Actions and Assignments Section */}
+        <Grid item xs={12} md={7}>
+          <Box
+            sx={{
               position: 'relative',
-                '&:before': {
-                  content: '""',
-                  position: 'absolute',
-                  top: '8px',
-                  left: '8px',
-                  right: '-8px',
-                  bottom: '-8px',
-                  backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                  borderRadius: '16px',
-                  zIndex: 0
+              '&:before': {
+                content: '""',
+                position: 'absolute',
+                top: '8px',
+                [isRTL ? 'right' : 'left']: '8px',
+                [isRTL ? 'left' : 'right']: '-8px',
+                bottom: '-8px',
+                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                borderRadius: '16px',
+                zIndex: 0
+              }
+            }}
+          >
+            <Paper
+              elevation={0}
+              sx={{
+                p: 3,
+                borderRadius: '16px',
+                border: '1px solid rgba(0, 0, 0, 0.1)',
+                position: 'relative',
+                backgroundColor: '#fff',
+                zIndex: 1,
+                height: '100%',
+                transition: 'all 0.2s',
+                '&:hover': {
+                  transform: isRTL ? 'translate(4px, -4px)' : 'translate(-4px, -4px)'
                 }
               }}
             >
-              <Paper
-                elevation={0}
-                sx={{
-                  p: 3,
-                  borderRadius: '16px',
-                  border: '1px solid rgba(0, 0, 0, 0.1)',
-                  position: 'relative',
-                  backgroundColor: '#fff',
-                zIndex: 1,
-                height: '100%',
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    transform: 'translate(-4px, -4px)'
-                  }
-                }}
-              >
-              {/* Stats Cards */}
-              <Grid container spacing={3} sx={{ mb: 3 }}>
-                {stats
-                  .filter(stat => !stat.isCalendar)
-                  .map((stat, index) => (
-                    <Grid item xs={12} md={6} key={index}>
-                      <Box>
-                        <StatsCard stat={stat} />
-                      </Box>
-                    </Grid>
-                  ))}
-              </Grid>
-
               {/* Quick Actions */}
               <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" sx={{ mb: 3 }}>Quick Actions</Typography>
+                <Typography variant="h6" sx={{ mb: 3, textAlign: isRTL ? 'right' : 'left' }}>
+                  {t('dashboard.teacher.quickActions.title')}
+                </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <Paper
@@ -1252,10 +1255,10 @@ const TeacherDashboard = () => {
                         </Avatar>
                         <Box sx={{ ml: 2 }}>
                           <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#bb5c39' }}>
-                            Start Live Class
+                            {t('dashboard.teacher.quickActions.liveClass.title')}
                           </Typography>
                           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                            Begin a new live session
+                            {t('dashboard.teacher.quickActions.liveClass.subtitle')}
                           </Typography>
                         </Box>
                       </Box>
@@ -1290,38 +1293,46 @@ const TeacherDashboard = () => {
                         </Avatar>
                         <Box sx={{ ml: 2 }}>
                           <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#bb5c39' }}>
-                            Create Assignment
+                            {t('dashboard.teacher.quickActions.assignment.title')}
                           </Typography>
                           <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                            Add new homework or task
+                            {t('dashboard.teacher.quickActions.assignment.subtitle')}
                           </Typography>
                         </Box>
                       </Box>
                     </Paper>
                   </Grid>
                 </Grid>
-            </Box>
-
-        {/* Assignments Overview */}
-              <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                <Box>
-                  <Typography variant="h6">My Assignments</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Recently created assignments
-                  </Typography>
-                </Box>
-                <Button
-                  endIcon={<ArrowForwardIcon />}
-                  onClick={() => navigate('/teacher/assignments')}
-                  sx={{
-                    color: '#bb5c39',
-                    '&:hover': { backgroundColor: 'rgba(187, 92, 57, 0.1)' }
-                  }}
-                >
-                  View All
-                </Button>
               </Box>
+
+              {/* Assignments Overview */}
+              <Box>
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  mb: 3,
+                  flexDirection: isRTL ? 'row-reverse' : 'row'
+                }}>
+                  <Box>
+                    <Typography variant="h6" sx={{ textAlign: isRTL ? 'right' : 'left' }}>
+                      {t('dashboard.teacher.assignments.title')}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ textAlign: isRTL ? 'right' : 'left' }}>
+                      {t('dashboard.teacher.assignments.subtitle')}
+                    </Typography>
+                  </Box>
+                  <IconButton
+                    onClick={() => navigate(`/${getCurrentLanguage()}/teacher/assignments`)}
+                    sx={{
+                      color: '#bb5c39',
+                      transform: isRTL ? 'rotate(180deg)' : 'none',
+                      '&:hover': { backgroundColor: 'rgba(187, 92, 57, 0.1)' }
+                    }}
+                  >
+                    <ArrowForwardIcon />
+                  </IconButton>
+                </Box>
 
                 <Grid container spacing={2}>
                 {assignments.slice(0, 3).map((assignment, index) => (
@@ -1340,7 +1351,7 @@ const TeacherDashboard = () => {
                         transform: 'translateY(-2px)'
                       }
                     }}
-                    onClick={() => navigate(`/teacher/assignments/${assignment.id}`)}
+                    onClick={() => navigate(`/${getCurrentLanguage()}/teacher/assignments/${assignment.id}`)}
                   >
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <Box>
@@ -1348,7 +1359,7 @@ const TeacherDashboard = () => {
                         {assignment.title}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" display="block">
-                        Created {formatRelativeTime(assignment.createdAt)}
+                        {t('teacherPages.assignments.created')} {formatRelativeTime(assignment.createdAt, t)}
                       </Typography>
                     </Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -1362,10 +1373,10 @@ const TeacherDashboard = () => {
                         }}
                       >
                         <PeopleIcon sx={{ fontSize: 16 }} />
-                        {assignment.submissions?.length || 0} submissions
+                        {assignment.submissions?.length || 0} {t('dashboard.teacher.assignments.submissions', { count: assignment.submissions?.length || 0 })}
                       </Box>
                       <Chip
-                        label={assignment.status || 'Active'}
+                        label={t(`teacherPages.assignments.status.${assignment.status?.toLowerCase() || 'active'}`)}
                         size="small"
                         sx={{
                           backgroundColor: 'rgba(187, 92, 57, 0.1)',
@@ -1389,7 +1400,7 @@ const TeacherDashboard = () => {
                   >
                     <AssignmentIcon sx={{ fontSize: 48, color: 'rgba(0, 0, 0, 0.2)', mb: 1 }} />
                     <Typography variant="body2">
-                      No assignments created yet
+                      {t('dashboard.teacher.assignments.empty')}
                     </Typography>
                   </Box>
                     </Grid>
@@ -1401,7 +1412,7 @@ const TeacherDashboard = () => {
         </Grid>
 
         {/* Calendar Card */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={5}>
           {stats
             .filter(stat => stat.isCalendar)
             .map((stat, index) => (
@@ -1422,7 +1433,8 @@ const TeacherDashboard = () => {
           sx: {
             borderRadius: '16px',
             p: 2,
-            backgroundColor: '#fff'
+            backgroundColor: '#fff',
+            direction: isRTL ? 'rtl' : 'ltr'
           }
         }}
       >
@@ -1441,10 +1453,10 @@ const TeacherDashboard = () => {
               </Avatar>
               <Box>
                 <Typography variant="h6" sx={{ color: '#2f2f2f', fontWeight: 600 }}>
-                  Create New Course
+                  {t('dashboard.teacher.dialogs.course.title')}
                 </Typography>
                 <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Add a new course to your teaching portfolio
+                  {t('dashboard.teacher.dialogs.course.subtitle')}
                 </Typography>
               </Box>
             </Box>
@@ -1471,10 +1483,10 @@ const TeacherDashboard = () => {
           >
             <Stack spacing={3}>
               <Box>
-                <Typography 
-                  variant="subtitle2" 
-                  sx={{ 
-                    mb: 1, 
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    mb: 1,
                     color: '#2f2f2f',
                     display: 'flex',
                     alignItems: 'center',
@@ -1482,13 +1494,13 @@ const TeacherDashboard = () => {
                   }}
                 >
                   <MenuBookIcon sx={{ fontSize: 20, color: '#bb5c39' }} />
-                  Course Title
-                  <Typography 
-                    component="span" 
-                    variant="caption" 
-                    sx={{ 
+                  {t('dashboard.teacher.dialogs.course.form.title')}
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    sx={{
                       color: '#bb5c39',
-                      ml: 0.5 
+                      ml: 0.5
                     }}
                   >
                     *
@@ -1515,10 +1527,10 @@ const TeacherDashboard = () => {
               </Box>
 
               <Box>
-                <Typography 
-                  variant="subtitle2" 
-                  sx={{ 
-                    mb: 1, 
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    mb: 1,
                     color: '#2f2f2f',
                     display: 'flex',
                     alignItems: 'center',
@@ -1526,7 +1538,7 @@ const TeacherDashboard = () => {
                   }}
                 >
                   <AssignmentIcon sx={{ fontSize: 20, color: '#bb5c39' }} />
-                  Description
+                  {t('dashboard.teacher.dialogs.course.form.description')}
                 </Typography>
                 <TextField
                   fullWidth
@@ -1550,10 +1562,10 @@ const TeacherDashboard = () => {
               </Box>
 
               <Box>
-                <Typography 
-                  variant="subtitle2" 
-                  sx={{ 
-                    mb: 1, 
+                <Typography
+                  variant="subtitle2"
+                  sx={{
+                    mb: 1,
                     color: '#2f2f2f',
                     display: 'flex',
                     alignItems: 'center',
@@ -1561,7 +1573,7 @@ const TeacherDashboard = () => {
                   }}
                 >
                   <TrendingUpIcon sx={{ fontSize: 20, color: '#bb5c39' }} />
-                  Level
+                  {t('dashboard.teacher.dialogs.course.form.level')}
                 </Typography>
                 <TextField
                   select
@@ -1645,7 +1657,7 @@ const TeacherDashboard = () => {
               }
             }}
           >
-            {loading ? 'Creating...' : 'Create Course'}
+            {loading ? t('common.loading') : t('dashboard.teacher.dialogs.course.actions.create')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1692,10 +1704,10 @@ const TeacherDashboard = () => {
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
               <Box>
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-                  Create New Assignment
+                  {t('dashboard.teacher.dialogs.assignment.title')}
                 </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  Add a new assignment for your students
+                  {t('dashboard.teacher.dialogs.assignment.subtitle')}
                 </Typography>
             </Box>
             <IconButton 
@@ -1718,7 +1730,7 @@ const TeacherDashboard = () => {
             <TextField
                   required
               fullWidth
-              label="Assignment Title"
+              label={t('dashboard.teacher.dialogs.assignment.form.title')}
               variant="outlined"
               value={newAssignmentData.title}
               onChange={(e) => setNewAssignmentData({ ...newAssignmentData, title: e.target.value })}
@@ -1742,38 +1754,39 @@ const TeacherDashboard = () => {
 
             <TextField
               fullWidth
-              label="Description"
+              label={t('dashboard.teacher.dialogs.assignment.form.description')}
               variant="outlined"
               multiline
               rows={4}
+              placeholder={t('dashboard.teacher.dialogs.assignment.form.placeholder.description')}
               value={newAssignmentData.description}
               onChange={(e) => setNewAssignmentData({ ...newAssignmentData, description: e.target.value })}
-                  sx={{
+              sx={{
                 mb: 3,
-                    '& .MuiOutlinedInput-root': {
+                '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
-                      },
+                    borderColor: 'rgba(187, 92, 57, 0.5)',
+                  },
                   '&.Mui-focused fieldset': {
-                        borderColor: '#bb5c39',
+                    borderColor: '#bb5c39',
                   },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
                   color: '#bb5c39',
-                    }
-                  }}
-                />
+                }
+              }}
+            />
 
             <TextField
               fullWidth
-              label="Assignment Content"
+              label={t('dashboard.teacher.dialogs.assignment.form.content')}
               variant="outlined"
               multiline
               rows={8}
-              placeholder="Write your assignment content here..."
+              placeholder={t('dashboard.teacher.dialogs.assignment.form.placeholder.content')}
               value={newAssignmentData.content}
               onChange={(e) => setNewAssignmentData({ ...newAssignmentData, content: e.target.value })}
-                  sx={{ 
+              sx={{ 
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: '#fff',
                   '&:hover fieldset': {
@@ -1805,7 +1818,7 @@ const TeacherDashboard = () => {
               }
             }}
           >
-            Cancel
+            {t('dashboard.teacher.dialogs.assignment.actions.cancel')}
           </Button>
           <Button
             variant="contained"
@@ -1823,7 +1836,7 @@ const TeacherDashboard = () => {
               }
             }}
           >
-            {loading ? 'Creating...' : 'Create Assignment'}
+            {loading ? t('common.loading') : t('dashboard.teacher.dialogs.assignment.actions.create')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1849,7 +1862,7 @@ const TeacherDashboard = () => {
         }}
       >
         <Box
-                sx={{
+          sx={{
             background: 'linear-gradient(135deg, #bb5c39 0%, #a04b2e 100%)',
             py: 4,
             px: 3,
@@ -1868,13 +1881,13 @@ const TeacherDashboard = () => {
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-              <Box>
+            <Box>
               <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-                  Start Live Class
-                </Typography>
+                {t('dashboard.teacher.dialogs.liveClass.title')}
+              </Typography>
               <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  Fill in the details to begin your live session
-                </Typography>
+                {t('dashboard.teacher.dialogs.liveClass.subtitle')}
+              </Typography>
             </Box>
             <IconButton 
               onClick={() => setStartLiveClassDialog(false)} 
@@ -1895,48 +1908,52 @@ const TeacherDashboard = () => {
           <Box sx={{ mt: 2 }}>
             <TextField
               fullWidth
-              label="Class Title"
+              label={t('dashboard.teacher.dialogs.liveClass.form.title')}
+              placeholder={t('dashboard.teacher.dialogs.liveClass.form.placeholder.title')}
               variant="outlined"
-                  value={liveClassData.title}
-                  onChange={(e) => setLiveClassData({ ...liveClassData, title: e.target.value })}
-                  sx={{
+              value={liveClassData.title}
+              onChange={(e) => setLiveClassData({ ...liveClassData, title: e.target.value })}
+              error={error && !liveClassData.title}
+              helperText={error && !liveClassData.title ? t('dashboard.teacher.dialogs.liveClass.form.titleRequired') : ''}
+              sx={{
                 mb: 3,
-                    '& .MuiOutlinedInput-root': {
+                '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
-                      },
+                    borderColor: 'rgba(187, 92, 57, 0.5)',
+                  },
                   '&.Mui-focused fieldset': {
-                        borderColor: '#bb5c39',
+                    borderColor: '#bb5c39',
                   },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
                   color: '#bb5c39',
-                    }
-                  }}
-                />
+                }
+              }}
+            />
             <TextField
               fullWidth
-              label="Description"
+              label={t('dashboard.teacher.dialogs.liveClass.form.description')}
+              placeholder={t('dashboard.teacher.dialogs.liveClass.form.placeholder.description')}
               variant="outlined"
-                  multiline
-                  rows={4}
-                  value={liveClassData.description}
-                  onChange={(e) => setLiveClassData({ ...liveClassData, description: e.target.value })}
-                  sx={{
+              multiline
+              rows={4}
+              value={liveClassData.description}
+              onChange={(e) => setLiveClassData({ ...liveClassData, description: e.target.value })}
+              sx={{
                 mb: 2,
-                    '& .MuiOutlinedInput-root': {
+                '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
-                      },
+                    borderColor: 'rgba(187, 92, 57, 0.5)',
+                  },
                   '&.Mui-focused fieldset': {
-                        borderColor: '#bb5c39',
+                    borderColor: '#bb5c39',
                   },
                 },
                 '& .MuiInputLabel-root.Mui-focused': {
                   color: '#bb5c39',
-                    }
-                  }}
-                />
+                }
+              }}
+            />
             {error && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
@@ -1959,7 +1976,7 @@ const TeacherDashboard = () => {
               }
             }}
           >
-            Cancel
+            {t('dashboard.teacher.dialogs.liveClass.actions.cancel')}
           </Button>
           <Button
             variant="contained"
@@ -1977,7 +1994,7 @@ const TeacherDashboard = () => {
               }
             }}
           >
-            {loading ? 'Starting...' : 'Start Class'}
+            {loading ? t('dashboard.teacher.dialogs.liveClass.actions.starting') : t('dashboard.teacher.dialogs.liveClass.actions.start')}
           </Button>
         </DialogActions>
       </Dialog>

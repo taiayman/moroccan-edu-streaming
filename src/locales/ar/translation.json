@@ -1,0 +1,528 @@
+{
+  "routes": {
+    "auth": {
+      "login": "/:lang/auth/login",
+      "register": "/:lang/auth/register"
+    }
+  },
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "assignments": "الواجبات",
+    "liveClasses": "الفصول المباشرة",
+    "schedule": "الجدول الزمني",
+    "profile": "الملف الشخصي",
+    "login": "تسجيل الدخول",
+    "register": "تسجيل",
+    "logout": "تسجيل الخروج",
+    "brand": "المنصة التعليمية",
+    "settings": "الإعدادات",
+    "help": "المساعدة",
+    "notifications": "الإشعارات",
+    "openUserMenu": "فتح قائمة المستخدم",
+    "defaultUserInitial": "م",
+    "defaultUserName": "مستخدم"
+  },
+  "common": {
+    "submit": "إرسال",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "loading": "جاري التحميل...",
+    "assignments": {
+      "created": "تم الإنشاء في"
+    },
+    "time": {
+      "unknown": "وقت غير معروف",
+      "justNow": "الآن",
+      "minutesAgo": "منذ {{count}} دقيقة",
+      "minutesAgo_plural": "منذ {{count}} دقائق",
+      "hoursAgo": "منذ {{count}} ساعة",
+      "hoursAgo_plural": "منذ {{count}} ساعات",
+      "daysAgo": "منذ {{count}} يوم",
+      "daysAgo_plural": "منذ {{count}} أيام"
+    },
+    "error": {
+      "default": "حدث خطأ",
+      "failed": "فشلت العملية"
+    },
+    "success": "تمت العملية بنجاح",
+    "student": "طالب",
+    "day": "اليوم",
+    "actions": {
+      "viewAll": "عرض الكل",
+      "cancel": "إلغاء"
+    },
+    "weekDays": {
+      "sun": "أحد",
+      "mon": "اثن",
+      "tue": "ثلا",
+      "wed": "أرب",
+      "thu": "خمي",
+      "fri": "جمع",
+      "sat": "سبت"
+    },
+    "states": {
+      "creating": "جاري الإنشاء..."
+    },
+    "months": {
+      "january": "يناير",
+      "february": "فبراير",
+      "march": "مارس",
+      "april": "أبريل",
+      "may": "مايو",
+      "june": "يونيو",
+      "july": "يوليو",
+      "august": "أغسطس",
+      "september": "سبتمبر",
+      "october": "أكتوبر",
+      "november": "نوفمبر",
+      "december": "ديسمبر"
+    }
+  },
+  "auth": {
+    "signIn": "تسجيل الدخول",
+    "welcomeBack": "مرحباً بعودتك! يرجى إدخال بيانات الدخول للمتابعة",
+    "emailAddress": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "rememberMe": "تذكرني",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "continueWithGoogle": "المتابعة باستخدام جوجل",
+    "noAccount": "ليس لديك حساب؟",
+    "signUpFree": "سجل مجاناً",
+    "enterCredentials": "يرجى إدخال البريد الإلكتروني وكلمة المرور",
+    "loginFailed": "فشل تسجيل الدخول. يرجى التحقق من بيانات الدخول.",
+    "incompleteProfile": "الملف الشخصي غير مكتمل. يرجى الاتصال بالدعم الفني.",
+    "createAccount": "إنشاء حساب",
+    "createAccountDesc": "أنشئ حسابك للوصول إلى منصة التعليم المغربية",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "creatingAccount": "جاري إنشاء الحساب...",
+    "haveAccount": "لديك حساب بالفعل؟",
+    "allFieldsRequired": "جميع الحقول مطلوبة",
+    "passwordLength": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+    "togglePasswordVisibility": "إظهار/إخفاء كلمة المرور",
+    "register": "إنشاء الحساب",
+    "registering": "جاري إنشاء الحساب...",
+    "alreadyHaveAccount": "لديك حساب بالفعل؟"
+  },
+  "roleSelection": {
+    "title": "اختر دورك",
+    "description": "حدد دورك لتخصيص تجربتك",
+    "student": {
+      "title": "طالب",
+      "description": "الوصول إلى المواد الدراسية والمشاركة في الفصول"
+    },
+    "teacher": {
+      "title": "معلم",
+      "description": "إنشاء وإدارة الدورات التعليمية وإجراء الفصول المباشرة"
+    },
+    "parent": {
+      "title": "ولي أمر",
+      "description": "متابعة تقدم وأداء طفلك"
+    },
+    "errors": {
+      "noSession": "لم يتم العثور على جلسة المستخدم. يرجى إعادة تسجيل الدخول.",
+      "invalidSession": "جلسة مستخدم غير صالحة. يرجى إعادة تسجيل الدخول.",
+      "roleFailed": "فشل في تحديد الدور. يرجى المحاولة مرة أخرى."
+    }
+  },
+  "liveClass": {
+    "live": "مباشر",
+    "leave": "مغادرة",
+    "chat": "المحادثة",
+    "participants": "المشاركون",
+    "sendMessage": "إرسال رسالة...",
+    "teaching": "يدرّس",
+    "student": "طالب",
+    "teacher": "معلم",
+    "welcomeMessage": "مرحباً بالجميع! لنبدأ الدرس.",
+    "controls": {
+      "toggleMic": "تشغيل/إيقاف الميكروفون",
+      "toggleCamera": "تشغيل/إيقاف الكاميرا",
+      "toggleScreen": "تشغيل/إيقاف مشاركة الشاشة",
+      "pipMode": "وضع الصورة داخل الصورة",
+      "settings": "الإعدادات",
+      "fullscreen": "ملء الشاشة"
+    }
+  },
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "welcome": "مرحباً، {{name}}! 👋",
+    "welcomeSubtitle": "تتبع تقدمك وإدارة رحلتك التعليمية",
+    "teacher": {
+      "title": "لوحة تحكم المعلم",
+      "stats": {
+        "calendar": {
+          "title": "التقويم",
+          "noEvents": "لا توجد أحداث لهذا اليوم",
+          "addEvent": "إضافة حدث",
+          "eventDetails": "تفاصيل الحدث"
+        }
+      },
+      "quickActions": {
+        "title": "إجراءات سريعة",
+        "liveClass": {
+          "title": "بدء فصل مباشر",
+          "subtitle": "إنشاء جلسة مباشرة جديدة"
+        },
+        "assignment": {
+          "title": "إنشاء واجب",
+          "subtitle": "إضافة واجب جديد"
+        }
+      },
+      "assignments": {
+        "title": "الواجبات",
+        "subtitle": "إدارة واجبات الطلاب",
+        "empty": "لا توجد واجبات متاحة",
+        "created": "تم الإنشاء في",
+        "submissions": "إجابة",
+        "submissions_plural": "إجابات",
+        "status": {
+          "active": "نشط",
+          "completed": "مكتمل",
+          "draft": "مسودة"
+        }
+      },
+      "dialogs": {
+        "course": {
+          "title": "إنشاء مقرر جديد",
+          "subtitle": "أدخل تفاصيل المقرر",
+          "form": {
+            "title": "عنوان المقرر",
+            "description": "وصف المقرر",
+            "level": "مستوى المقرر",
+            "levelPlaceholder": "اختر مستوى المقرر",
+            "levels": {
+              "beginner": "مبتدئ",
+              "intermediate": "متوسط",
+              "advanced": "متقدم"
+            }
+          },
+          "actions": {
+            "create": "إنشاء المقرر",
+            "cancel": "إلغاء",
+            "creating": "جاري الإنشاء..."
+          }
+        },
+        "assignment": {
+          "title": "إنشاء واجب جديد",
+          "subtitle": "أدخل تفاصيل الواجب",
+          "form": {
+            "title": "عنوان الواجب",
+            "description": "وصف الواجب",
+            "content": "محتوى الواجب",
+            "placeholder": {
+              "title": "أدخل عنوان الواجب",
+              "description": "أدخل وصف الواجب هنا...",
+              "content": "اكتب محتوى الواجب هنا..."
+            }
+          },
+          "actions": {
+            "create": "إنشاء الواجب",
+            "cancel": "إلغاء",
+            "creating": "جاري الإنشاء..."
+          }
+        },
+        "liveClass": {
+          "title": "بدء فصل مباشر",
+          "subtitle": "إنشاء جلسة مباشرة جديدة لطلابك",
+          "form": {
+            "title": "عنوان الفصل",
+            "titleRequired": "العنوان مطلوب",
+            "description": "وصف الفصل",
+            "placeholder": {
+              "title": "أدخل عنوان الفصل",
+              "description": "اكتب وصف الفصل هنا..."
+            }
+          },
+          "actions": {
+            "start": "بدء الفصل",
+            "cancel": "إلغاء",
+            "starting": "جاري البدء..."
+          }
+        }
+      }
+    },
+    "stats": {
+      "courses": "الدورات",
+      "activeCourses": "{{count}} دورة نشطة",
+      "upcomingAssignments": "الواجبات القادمة",
+      "dueSoon": "مستحق قريباً",
+      "globalProgress": "التقدم الإجمالي",
+      "courseAverage": "المتوسط في جميع الدورات"
+    },
+    "quickActions": {
+      "title": "إجراءات سريعة",
+      "browseLiveClasses": "تصفح الفصول المباشرة",
+      "viewAssignments": "عرض الواجبات",
+      "viewSchedule": "عرض الجدول"
+    },
+    "teachers": {
+      "title": "المعلمون",
+      "schedule": "جدول {{name}}"
+    }
+  },
+  "assignment": {
+    "backToAssignments": "العودة إلى الواجبات",
+    "due": "تاريخ التسليم",
+    "description": "الوصف",
+    "noDescription": "لا يوجد وصف متاح.",
+    "content": "محتوى الواجب",
+    "noContent": "لا يوجد محتوى متاح.",
+    "yourSubmission": "تسليمك",
+    "submittedOn": "تم التسليم في",
+    "grade": "الدرجة",
+    "notSubmitted": "لم تقم بتسليم هذا الواجب بعد",
+    "alreadySubmitted": "لقد قمت بتسليم هذا الواجب بالفعل",
+    "alreadyGraded": "تم تصحيح هذا الواجب بالفعل",
+    "submitNow": "سلم الآن",
+    "submitAssignment": "تسليم الواجب",
+    "yourAnswer": "إجابتك",
+    "writeAnswer": "اكتب إجابتك هنا...",
+    "submitting": "جاري التسليم...",
+    "submit": "تسليم",
+    "status": {
+      "submitted": "تم التسليم",
+      "notSubmitted": "لم يتم التسليم",
+      "not_submitted": "لم يتم التسليم",
+      "graded": "تم التصحيح"
+    },
+    "myAssignments": "واجباتي",
+    "viewAndSubmit": "عرض وتسليم واجباتك",
+    "selectTeacher": "اختر المعلم",
+    "searchAssignments": "البحث في الواجبات",
+    "failedToLoad": "فشل في تحميل الواجبات",
+    "failedToLoadTeachers": "فشل في تحميل قائمة المعلمين",
+    "authRequired": "يجب تسجيل الدخول",
+    "multipleSubmissionsNotAllowed": "لقد قمت بتسليم هذا الواجب بالفعل. لا يسمح بتسليمات متعددة.",
+    "failedToSubmit": "فشل في تسليم الواجب. يرجى المحاولة مرة أخرى.",
+    "assignmentNotFound": "لم يتم العثور على الواجب"
+  },
+  "profile": {
+    "editProfile": "تعديل الملف الشخصي",
+    "level": "المستوى",
+    "notSpecified": "غير محدد",
+    "enrollmentDate": "تاريخ التسجيل",
+    "academicProgress": "التقدم الأكاديمي",
+    "enrolledCourses": "المقررات المسجلة",
+    "currentAssignments": "الواجبات الحالية",
+    "attendanceRate": "نسبة الحضور",
+    "noCourses": "لم يتم تسجيل أي مقررات",
+    "coursesCount": "{{count}} مقرر",
+    "assignmentsCount": "{{count}} واجب"
+  },
+  "schedule": {
+    "title": "الجدول الزمني",
+    "daysOfWeek": {
+      "monday": "الاثنين",
+      "tuesday": "الثلاثاء",
+      "wednesday": "الأربعاء",
+      "thursday": "الخميس",
+      "friday": "الجمعة",
+      "saturday": "السبت",
+      "sunday": "الأحد"
+    },
+    "noClassesScheduled": "لا توجد حصص مجدولة",
+    "noCoursesFound": "لا توجد مقررات في الجدول الزمني",
+    "professor": "أ.د.",
+    "teacherPrefix": "أ."
+  },
+  "calendar": {
+    "events": "الأحداث",
+    "noEvents": "لا توجد أحداث مجدولة",
+    "notes": "الملاحظات",
+    "noNotes": "لا توجد ملاحظات لهذا اليوم",
+    "weekDays": {
+      "monday": "الإثنين",
+      "tuesday": "الثلاثاء",
+      "wednesday": "الأربعاء",
+      "thursday": "الخميس",
+      "friday": "الجمعة",
+      "saturday": "السبت",
+      "sunday": "الأحد"
+    },
+    "addEvent": {
+      "title": "إضافة حدث",
+      "subtitle": "جدولة حدث جديد في التقويم",
+      "form": {
+        "title": "عنوان الحدث",
+        "titleRequired": "العنوان مطلوب",
+        "time": "الوقت",
+        "timeRequired": "الوقت مطلوب",
+        "description": "الوصف",
+        "placeholder": {
+          "title": "أدخل عنوان الحدث",
+          "time": "اختر الوقت",
+          "description": "اكتب وصف الحدث هنا..."
+        }
+      },
+      "actions": {
+        "add": "إضافة حدث",
+        "adding": "جارٍ الإضافة...",
+        "cancel": "إلغاء"
+      }
+    },
+    "notes": {
+      "title": "الملاحظات",
+      "placeholder": "اكتب ملاحظتك هنا...",
+      "noNotes": "لا توجد ملاحظات لهذا اليوم"
+    }
+  },
+  "teacherPages": {
+    "assignments": {
+      "title": "الواجبات",
+      "description": "إدارة واجبات الطلاب",
+      "backToDashboard": "العودة إلى لوحة التحكم",
+      "createNew": "إنشاء واجب جديد",
+      "search": "البحث عن الواجبات...",
+      "noAssignments": "لا توجد واجبات",
+      "empty": "لم يتم إنشاء أي واجبات بعد",
+      "created": "تم الإنشاء في",
+      "submissions": "إجابة",
+      "submissions_plural": "إجابات",
+      "viewDetails": "عرض التفاصيل",
+      "errors": {
+        "loadFailed": "فشل في تحميل الواجبات",
+        "createFailed": "فشل في إنشاء الواجب",
+        "titleRequired": "عنوان الواجب مطلوب"
+      },
+      "dialogs": {
+        "assignment": {
+          "title": "إنشاء واجب جديد",
+          "form": {
+            "title": "عنوان الواجب",
+            "description": "وصف الواجب",
+            "content": "محتوى الواجب"
+          },
+          "actions": {
+            "cancel": "إلغاء",
+            "create": "إنشاء",
+            "creating": "جاري الإنشاء..."
+          }
+        }
+      },
+      "status": {
+        "active": "نشط",
+        "completed": "مكتمل",
+        "draft": "مسودة",
+        "pending": "قيد الانتظار"
+      }
+    },
+    "assignmentDetails": {
+      "back": "العودة إلى الواجبات",
+      "created": "تم الإنشاء في",
+      "submissionCount": "{{count}} إجابة",
+      "submissionCount_plural": "{{count}} إجابات",
+      "description": "الوصف",
+      "noDescription": "لا يوجد وصف متوفر",
+      "content": "محتوى الواجب",
+      "noContent": "لا يوجد محتوى متوفر",
+      "submissions": "الإجابات",
+      "unknownStudent": "طالب غير معروف",
+      "submissionStats": {
+        "title": "إحصائيات الواجب",
+        "total": "إجمالي الطلاب",
+        "submitted": "الإجابات المقدمة",
+        "graded": "تم التصحيح",
+        "pending": "قيد الانتظار"
+      },
+      "status": {
+        "label": "الحالة",
+        "active": "نشط",
+        "completed": "مكتمل",
+        "draft": "مسودة"
+      },
+      "grading": {
+        "title": "تصحيح الإجابة",
+        "grade": "الدرجة",
+        "feedback": "التعليق",
+        "update": "تحديث الدرجة",
+        "grade": "تصحيح",
+        "save": "حفظ الدرجة",
+        "saving": "جاري الحفظ..."
+      },
+      "errors": {
+        "notFound": "لم يتم العثور على الواجب",
+        "loadFailed": "فشل في تحميل تفاصيل الواجب",
+        "gradingFailed": "فشل في تصحيح الإجابة"
+      },
+      "noSubmissions": "لا توجد إجابات حتى الآن"
+    },
+    "streaming": {
+      "title": "الفصل المباشر",
+      "status": {
+        "live": "مباشر",
+        "ended": "انتهى",
+        "notStarted": "لم يبدأ"
+      },
+      "controls": {
+        "startStream": "بدء البث",
+        "endStream": "إنهاء البث",
+        "toggleMic": "تشغيل/إيقاف الميكروفون",
+        "toggleCamera": "تشغيل/إيقاف الكاميرا",
+        "toggleScreen": "تشغيل/إيقاف مشاركة الشاشة",
+        "settings": "الإعدادات"
+      },
+      "chat": {
+        "title": "محادثة الفصل",
+        "placeholder": "اكتب رسالة...",
+        "send": "إرسال",
+        "empty": "لا توجد رسائل حتى الآن"
+      },
+      "participants": {
+        "title": "المشاركون",
+        "teacher": "المعلم",
+        "students": "الطلاب",
+        "noStudents": "لم ينضم أي طالب بعد"
+      },
+      "settings": {
+        "title": "إعدادات البث",
+        "videoSource": "مصدر الفيديو",
+        "audioSource": "مصدر الصوت",
+        "quality": "جودة البث",
+        "apply": "تطبيق الإعدادات"
+      },
+      "errors": {
+        "deviceAccess": "تعذر الوصول إلى الكاميرا/الميكروفون",
+        "streamFailed": "فشل بدء البث",
+        "connectionLost": "تم فقد الاتصال"
+      },
+      "startStream": {
+        "title": "بدء بث جديد",
+        "streamTitle": "عنوان البث",
+        "start": "بدء البث"
+      }
+    }
+  },
+  "studentPages": {
+    "assignments": {
+      "title": "واجباتي",
+      "description": "عرض وإدارة واجباتك",
+      "backToDashboard": "العودة إلى لوحة التحكم",
+      "filter": {
+        "all": "الكل",
+        "pending": "قيد الانتظار",
+        "submitted": "تم التسليم",
+        "graded": "تم التصحيح"
+      },
+      "search": "البحث في الواجبات...",
+      "table": {
+        "title": "العنوان",
+        "course": "المقرر",
+        "dueDate": "تاريخ التسليم",
+        "status": "الحالة",
+        "grade": "الدرجة",
+        "actions": "الإجراءات"
+      },
+      "noAssignments": "لم يتم العثور على واجبات",
+      "viewDetails": "عرض التفاصيل",
+      "status": {
+        "pending": "قيد الانتظار",
+        "submitted": "تم التسليم",
+        "graded": "تم التصحيح",
+        "late": "متأخر"
+      }
+    }
+  }
+}
