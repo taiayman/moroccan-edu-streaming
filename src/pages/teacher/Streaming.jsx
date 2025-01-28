@@ -2,713 +2,669 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import AgoraRTC from 'agora-rtc-sdk-ng';
-import {
-  Box,
-  Typography,
-  Grid,
-  Paper,
-  IconButton,
-  Button,
-  Stack,
-  Avatar,
-  Tooltip,
-  CircularProgress,
-  Alert,
-  TextField,
-  Drawer,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  MenuItem
-} from '@mui/material';
-import {
-  Mic as MicIcon,
-  MicOff as MicOffIcon,
-  Videocam as VideocamIcon,
-  VideocamOff as VideocamOffIcon,
-  ScreenShare as ScreenShareIcon,
-  StopScreenShare as StopScreenShareIcon,
-  Chat as ChatIcon,
-  People as PeopleIcon,
-  Close as CloseIcon,
-  Send as SendIcon,
-  Settings as SettingsIcon,
-  PresentToAll as PresentIcon,
-  QuestionAnswer as QuestionIcon
-} from '@mui/icons-material';
+import { Box, Typography, IconButton, Button, Stack, Avatar, Tooltip, CircularProgress, Alert, TextField, Drawer, List, ListItem, ListItemText, ListItemAvatar, Divider, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Mic as MicIcon, MicOff as MicOffIcon, Videocam as VideocamIcon, VideocamOff as VideocamOffIcon, ScreenShare as ScreenShareIcon, StopScreenShare as StopScreenShareIcon, Chat as ChatIcon, People as PeopleIcon, Close as CloseIcon, Send as SendIcon, Settings as SettingsIcon, PresentToAll as PresentIcon, QuestionAnswer as QuestionIcon } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
-import { createAgoraClient } from '../../utils/agora';
 import { getCurrentLanguage } from '../../utils/navigation';
-import StreamLayout from '../../components/layout/StreamLayout';
+
+const appId = process.env.REACT_APP_AGORA_APP_ID || 'YOUR_AGORA_APP_ID_HERE';
 
 const Streaming = () => {
-  const { classId } = useParams();
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { t } = useTranslation();
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [agoraClient, setAgoraClient] = useState(null);
-  const [localTracks, setLocalTracks] = useState({ audioTrack: null, videoTrack: null });
-  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
-  const [screenTrack, setScreenTrack] = useState(null);
-  const [participants, setParticipants] = useState([]);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isPresentationMode, setIsPresentationMode] = useState(false);
-  const [isQuestionMode, setIsQuestionMode] = useState(false);
-  const localVideoRef = useRef(null);
-  const remoteVideosRef = useRef({});
+    console.log('[STREAMING] Component render start');
+    const { classId } = useParams();
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { t } = useTranslation();
+    const { user, isAuthenticated, loading: authLoading } = useAuth();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [agoraClient, setAgoraClient] = useState(null);
+    const [localTracks, setLocalTracks] = useState({ audioTrack: null, videoTrack: null });
+    const [screenTrack, setScreenTrack] = useState(null);
+    const [teacherUid, setTeacherUid] = useState(null);
+    const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+    const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+    const [isScreenSharing, setIsScreenSharing] = useState(false);
+    const [isPresentationMode, setIsPresentationMode] = useState(false);
+    const [isQuestionMode, setIsQuestionMode] = useState(false);
+    const [remoteUsers, setRemoteUsers] = useState({}); // key: uid => { videoTrack, audioTrack, hasVideo, hasAudio }
+    // Chat / UI states
+    const [messages, setMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState('');
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  useEffect(() => {
-    if (!location.state?.channelName) {
-      setError('Invalid class session');
-      return;
-    }
-    initializeAgora();
-    return () => {
-      cleanup();
-    };
-  }, []);
+    const localVideoRef = useRef(null);
+    const remoteVideosRef = useRef({});
 
-  const initializeAgora = async () => {
-    try {
-      setLoading(true);
-      const agoraClientInstance = createAgoraClient();
-      const { channelName } = location.state;
-      
-      // Generate a random UID between 1 and 999999
-      const uid = Math.floor(Math.random() * 999999) + 1;
-      
-      const { client, localTracks } = await agoraClientInstance.join(channelName, null, uid);
-      
-      setAgoraClient(client);
-      setLocalTracks(localTracks);
-      
-      // Wait for a short moment to ensure DOM is ready
-      setTimeout(() => {
-        if (localTracks.videoTrack && localVideoRef.current) {
-        localTracks.videoTrack.play(localVideoRef.current);
-      }
-      }, 100);
+    // Flags to handle double mount in Strict Mode
+    const joinedRef = useRef(false);
+    const cleanupInProgressRef = useRef(false);
 
-      setLoading(false);
-    } catch (err) {
-      console.error('Error initializing Agora:', err);
-      setError('Failed to initialize live class: ' + err.message);
-      setLoading(false);
-    }
-  };
+    useEffect(() => {
+        console.log('[STREAMING] useEffect triggered. Channel:', location.state?.channelName, 'Auth:', { isAuthenticated, authLoading });
+        
+        const timeoutIds = [];
+        let retries = 0;
+        const maxRetries = 8;
+        const checkInterval = 750;
 
-  const cleanup = async () => {
-    try {
-    if (agoraClient) {
-      await agoraClient.leave();
-    }
-    if (screenTrack) {
-      screenTrack.stop();
-      screenTrack.close();
-    }
-    Object.values(localTracks).forEach((track) => {
-      if (track) {
-        track.stop();
-        track.close();
-      }
-    });
-    } catch (err) {
-      console.error('Error during cleanup:', err);
-    }
-  };
-
-  const toggleAudio = async () => {
-    if (localTracks.audioTrack) {
-      if (isAudioEnabled) {
-        await localTracks.audioTrack.setEnabled(false);
-      } else {
-        await localTracks.audioTrack.setEnabled(true);
-      }
-      setIsAudioEnabled(!isAudioEnabled);
-    }
-  };
-
-  const toggleVideo = async () => {
-    if (localTracks.videoTrack) {
-      if (isVideoEnabled) {
-        await localTracks.videoTrack.setEnabled(false);
-      } else {
-        await localTracks.videoTrack.setEnabled(true);
-      }
-      setIsVideoEnabled(!isVideoEnabled);
-    }
-  };
-
-  const toggleScreenShare = async () => {
-    if (!isScreenSharing) {
-      try {
-        const screenTrack = await AgoraRTC.createScreenVideoTrack();
-        await agoraClient.unpublish(localTracks.videoTrack);
-        await agoraClient.publish(screenTrack);
-        setScreenTrack(screenTrack);
-        setIsScreenSharing(true);
-      } catch (err) {
-        console.error('Error sharing screen:', err);
-      }
-    } else {
-      if (screenTrack) {
-        await agoraClient.unpublish(screenTrack);
-        screenTrack.stop();
-        screenTrack.close();
-        setScreenTrack(null);
-        await agoraClient.publish(localTracks.videoTrack);
-        setIsScreenSharing(false);
-      }
-    }
-  };
-
-  const togglePresentationMode = () => {
-    setIsPresentationMode(!isPresentationMode);
-  };
-
-  const toggleQuestionMode = () => {
-    setIsQuestionMode(!isQuestionMode);
-  };
-
-  const sendMessage = () => {
-    if (newMessage.trim()) {
-      const message = {
-        id: Date.now(),
-        sender: user,
-        content: newMessage,
-        timestamp: new Date()
-      };
-      setMessages([...messages, message]);
-      setNewMessage('');
-    }
-  };
-
-  const handleEndClass = async () => {
-    try {
-      await cleanup();
-      navigate(`/${getCurrentLanguage()}/teacher/dashboard`);
-    } catch (err) {
-      console.error('Error ending class:', err);
-    }
-  };
-
-  if (loading) {
-    return (
-      <StreamLayout>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-          <CircularProgress />
-        </Box>
-      </StreamLayout>
-    );
-  }
-
-  if (error) {
-    return (
-      <StreamLayout>
-        <Box sx={{ p: 3 }}>
-          <Alert severity="error">{error}</Alert>
-        </Box>
-      </StreamLayout>
-    );
-  }
-
-  return (
-    <StreamLayout>
-      <Grid container sx={{ height: '100%' }}>
-        {/* Main Content */}
-        <Grid item xs={12} sx={{ height: '100%', position: 'relative' }}>
-          {/* Video Grid */}
-          <Box sx={{ height: { xs: 'calc(100% - 60px)', md: 'calc(100% - 80px)' }, p: { xs: 1, md: 2 } }}>
-            <Grid container spacing={{ xs: 1, md: 2 }} sx={{ height: '100%' }}>
-              {/* Local Video */}
-              <Grid item xs={12} sm={isScreenSharing ? 6 : 12} md={isScreenSharing ? 3 : 6}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    height: '100%',
-                    backgroundColor: '#2f2f2f',
-                    borderRadius: { xs: '8px', md: '12px' },
-                    overflow: 'hidden',
-                    position: 'relative'
-                  }}
-                >
-                  <Box
-                    ref={localVideoRef}
-                    sx={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover'
-                    }}
-                  />
-                  <Box
-                    sx={{
-                      position: 'absolute',
-                      bottom: { xs: 8, md: 16 },
-                      left: { xs: 8, md: 16 },
-                      color: '#fff',
-                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                      padding: { xs: '2px 8px', md: '4px 12px' },
-                      borderRadius: '16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 1,
-                      fontSize: { xs: '0.875rem', md: '1rem' }
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ fontSize: 'inherit' }}>
-                      {user?.name || 'Teacher'} (You)
-                    </Typography>
-                  </Box>
-                </Paper>
-              </Grid>
-
-              {/* Screen Share or Remote Videos */}
-              <Grid item xs={12} md={isScreenSharing ? 9 : 6}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    height: '100%',
-                    backgroundColor: '#2f2f2f',
-                    borderRadius: '12px',
-                    overflow: 'hidden'
-                  }}
-                >
-                  {isScreenSharing ? (
-                    <Box
-                      ref={(el) => (remoteVideosRef.current['screen'] = el)}
-                      sx={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'contain'
-                      }}
-                    />
-                  ) : (
-                    <Box sx={{ p: 3, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <Typography variant="body1" color="white">
-                        Waiting for participants...
-                      </Typography>
-                    </Box>
-                  )}
-                </Paper>
-              </Grid>
-            </Grid>
-          </Box>
-
-          {/* Control Bar */}
-          <Box
-            sx={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: { xs: '60px', md: '80px' },
-              backgroundColor: '#1a1a1a',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              px: { xs: 1, md: 3 }
-            }}
-          >
-            <Stack
-              direction="row"
-              spacing={{ xs: 1, md: 2 }}
-              alignItems="center"
-              justifyContent="center"
-              sx={{ width: '100%' }}
-            >
-              {/* Left Controls */}
-              <Stack direction="row" spacing={{ xs: 1, md: 2 }}>
-                <Tooltip title={isAudioEnabled ? t('stream.muteAudio') : t('stream.unmuteAudio')}>
-                  <IconButton
-                    onClick={toggleAudio}
-                    sx={{
-                      backgroundColor: isAudioEnabled ? 'primary.main' : 'error.main',
-                      '&:hover': {
-                        backgroundColor: isAudioEnabled ? 'primary.dark' : 'error.dark'
-                      },
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
-                      color: '#fff'
-                    }}
-                  >
-                    {isAudioEnabled ? <MicIcon /> : <MicOffIcon />}
-                  </IconButton>
-                </Tooltip>
-
-                <Tooltip title={isVideoEnabled ? t('stream.stopVideo') : t('stream.startVideo')}>
-                  <IconButton
-                    onClick={toggleVideo}
-                    sx={{
-                      backgroundColor: isVideoEnabled ? 'primary.main' : 'error.main',
-                      '&:hover': {
-                        backgroundColor: isVideoEnabled ? 'primary.dark' : 'error.dark'
-                      },
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
-                      color: '#fff'
-                    }}
-                  >
-                    {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-
-              {/* Center Controls */}
-              <Stack direction="row" spacing={{ xs: 1, md: 2 }}>
-                <Tooltip title={isScreenSharing ? t('stream.stopSharing') : t('stream.startSharing')}>
-                  <IconButton
-                    onClick={toggleScreenShare}
-                    sx={{
-                      backgroundColor: isScreenSharing ? 'warning.main' : 'primary.main',
-                      '&:hover': {
-                        backgroundColor: isScreenSharing ? 'warning.dark' : 'primary.dark'
-                      },
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
-                      color: '#fff'
-                    }}
-                  >
-                    {isScreenSharing ? <StopScreenShareIcon /> : <ScreenShareIcon />}
-                  </IconButton>
-                </Tooltip>
-
-                <Tooltip title={t('stream.presentationMode')}>
-                  <IconButton
-                    onClick={togglePresentationMode}
-                    sx={{
-                      backgroundColor: isPresentationMode ? 'warning.main' : 'primary.main',
-                      '&:hover': {
-                        backgroundColor: isPresentationMode ? 'warning.dark' : 'primary.dark'
-                      },
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
-                      display: { xs: 'none', sm: 'flex' },
-                      color: '#fff'
-                    }}
-                  >
-                    <PresentIcon />
-                  </IconButton>
-                </Tooltip>
-              </Stack>
-
-              {/* Right Controls */}
-              <Stack direction="row" spacing={{ xs: 1, md: 2 }}>
-                <Tooltip title={t('stream.chat')}>
-                  <IconButton
-                    onClick={() => setIsChatOpen(true)}
-                    sx={{
-                      backgroundColor: 'primary.main',
-                      '&:hover': { backgroundColor: 'primary.dark' },
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
-                      color: '#fff'
-                    }}
-                  >
-                    <ChatIcon />
-                  </IconButton>
-                </Tooltip>
-
-                <Tooltip title={t('stream.participants')}>
-                  <IconButton
-                    onClick={() => setIsParticipantsOpen(true)}
-                    sx={{
-                      backgroundColor: 'primary.main',
-                      '&:hover': { backgroundColor: 'primary.dark' },
-                      width: { xs: 40, md: 48 },
-                      height: { xs: 40, md: 48 },
-                      color: '#fff'
-                    }}
-                  >
-                    <PeopleIcon />
-                  </IconButton>
-                </Tooltip>
-
-                <Button
-                  variant="contained"
-                  color="error"
-                  onClick={handleEndClass}
-                  sx={{
-                    height: { xs: 40, md: 48 },
-                    minWidth: { xs: 100, md: 120 },
-                    display: { xs: 'none', sm: 'flex' }
-                  }}
-                >
-                  {t('stream.endClass')}
-                </Button>
-              </Stack>
-            </Stack>
-          </Box>
-
-          {/* Mobile End Class Button */}
-          <Box
-            sx={{
-              position: 'fixed',
-              top: 16,
-              right: 16,
-              display: { xs: 'block', sm: 'none' }
-            }}
-          >
-            <IconButton
-              color="error"
-              onClick={handleEndClass}
-              sx={{
-                backgroundColor: 'error.main',
-                '&:hover': { backgroundColor: 'error.dark' }
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </Grid>
-      </Grid>
-
-      {/* Chat Drawer */}
-      <Drawer
-        anchor="right"
-        open={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        PaperProps={{
-          sx: {
-            width: { xs: '100%', sm: 350 },
-            backgroundColor: '#1a1a1a',
-            color: '#fff'
-          }
-        }}
-      >
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Chat</Typography>
-          <IconButton onClick={() => setIsChatOpen(false)} sx={{ color: '#fff' }}>
-            <CloseIcon />
-          </IconButton>
-        </Box>
-        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
-        <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>
-          {messages.map((message) => (
-            <Box
-              key={message.id}
-              sx={{
-                mb: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: message.sender.id === user.id ? 'flex-end' : 'flex-start'
-              }}
-            >
-              <Box
-                sx={{
-                  backgroundColor: message.sender.id === user.id ? '#bb5c39' : 'rgba(255, 255, 255, 0.1)',
-                  borderRadius: '12px',
-                  p: 1.5,
-                  maxWidth: '80%'
-                }}
-              >
-                <Typography variant="body2">{message.content}</Typography>
-              </Box>
-              <Typography variant="caption" sx={{ mt: 0.5, color: 'rgba(255, 255, 255, 0.6)' }}>
-                {message.sender.displayName} • {new Date(message.timestamp).toLocaleTimeString()}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-        <Box sx={{ p: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Type a message..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-            InputProps={{
-              endAdornment: (
-                <IconButton onClick={sendMessage} sx={{ color: '#bb5c39' }}>
-                  <SendIcon />
-                </IconButton>
-              )
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                color: '#fff',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: 'rgba(187, 92, 57, 0.5)'
-                },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#bb5c39'
+        const checkUserData = () => {
+            if (user?.id) {
+                if (user.role !== 'teacher') {
+                    console.error('[STREAMING] User is not a teacher');
+                    setError('Only teachers can start live classes');
+                    navigate(`/${getCurrentLanguage()}/dashboard`);
+                    return;
                 }
-              }
-            }}
-          />
-        </Box>
-      </Drawer>
+                console.log('[STREAMING] User data now available:', user.id);
+                handleInitialization();
+            } else if (retries < maxRetries) {
+                retries++;
+                console.warn(`[STREAMING] User data check retry ${retries}/${maxRetries}`);
+                const timeoutId = setTimeout(checkUserData, checkInterval);
+                timeoutIds.push(timeoutId);
+            } else {
+                console.error('[STREAMING] User data timeout after all retries');
+                setError('User profile loading failed - please refresh the page');
+                navigate(`/${getCurrentLanguage()}/dashboard`);
+            }
+        };
 
-      {/* Participants Drawer */}
-      <Drawer
-        anchor="right"
-        open={isParticipantsOpen}
-        onClose={() => setIsParticipantsOpen(false)}
-        PaperProps={{
-          sx: {
-            width: { xs: '100%', sm: 350 },
-            backgroundColor: '#1a1a1a',
-            color: '#fff'
-          }
-        }}
-      >
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Participants ({participants.length + 1})</Typography>
-          <IconButton onClick={() => setIsParticipantsOpen(false)} sx={{ color: '#fff' }}>
-            <CloseIcon />
-          </IconButton>
-        </Box>
-        <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
-        <List>
-          {/* Host */}
-          <ListItem>
-            <ListItemAvatar>
-              <Avatar sx={{ backgroundColor: '#bb5c39' }}>
-                {user?.displayName?.[0]}
-              </Avatar>
-            </ListItemAvatar>
-            <ListItemText
-              primary={
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <Typography>{user?.displayName}</Typography>
-                  <Typography variant="caption" sx={{ color: '#bb5c39' }}>
-                    (Host)
-                  </Typography>
+        const handleInitialization = () => {
+            if (!joinedRef.current && !cleanupInProgressRef.current) {
+                console.log('[STREAMING] Initializing with user:', user.id);
+                joinedRef.current = true;
+                initializeAgora().catch((err) => {
+                    console.error('[STREAMING] initializeAgora() error:', err);
+                    setError(`Failed to initialize: ${err.message}`);
+                });
+            }
+        };
+
+        if (authLoading) {
+            console.log('[STREAMING] Auth loading, waiting...');
+            return;
+        }
+
+        if (!isAuthenticated) {
+            console.error('[STREAMING] User not authenticated');
+            setError('Please login to access this feature');
+            navigate(`/${getCurrentLanguage()}/auth/login`);
+            return;
+        }
+
+        // Start checking for user data
+        checkUserData();
+
+        return () => {
+            console.log('[STREAMING] useEffect cleanup');
+            timeoutIds.forEach(clearTimeout); // Clear any pending timeouts
+            cleanup();
+        };
+    }, [location.state?.channelName, isAuthenticated, authLoading, navigate, user, user?.id]);
+
+    const initializeAgora = async () => {
+        if (!user || !user.id) {
+            console.warn('[STREAMING] User or user.id is missing');
+            return;
+        }
+        
+        // Add role validation
+        if (user?.role !== 'teacher') {
+            console.error('[STREAMING] Unauthorized access - user is not a teacher');
+            setError('Only teachers can start live classes');
+            navigate(`/${getCurrentLanguage()}/dashboard`);
+            return;
+        }
+
+        console.log('[STREAMING] >>> initializeAgora() called');
+        try {
+            setLoading(true);
+
+            const { channelName } = location.state;
+            if (!channelName) {
+                throw new Error('Channel name is required');
+            }
+
+            console.log('[STREAMING] Initializing teacher with channel:', channelName, 'uid:', user.id);
+
+            // Update the Agora client configuration
+            const clientConfig = {
+                mode: 'live',
+                codec: 'vp8'
+            };
+
+            // Only add proxy/turn config if env vars are present
+            if (process.env.REACT_APP_AGORA_PROXY_SERVER) {
+                clientConfig.proxyServer = process.env.REACT_APP_AGORA_PROXY_SERVER;
+            }
+
+            if (process.env.REACT_APP_AGORA_TURN_SERVER) {
+                clientConfig.turnServer = {
+                    turnServerURL: process.env.REACT_APP_AGORA_TURN_SERVER,
+                    username: process.env.REACT_APP_AGORA_TURN_USERNAME,
+                    password: process.env.REACT_APP_AGORA_TURN_CREDENTIAL
+                };
+            }
+
+            const client = AgoraRTC.createClient(clientConfig);
+            
+            setAgoraClient(client);
+
+            // Generate unique numeric UID for Agora
+            const agoraUid = Math.floor(Math.random() * 1000000) + 100000;
+            console.log('[STREAMING] Generated Agora UID:', agoraUid);
+
+            // Create local A/V tracks before joining
+            console.log('[STREAMING] Creating local tracks...');
+            const [audioTrack, videoTrack] = await Promise.all([
+                AgoraRTC.createMicrophoneAudioTrack(),
+                AgoraRTC.createCameraVideoTrack()
+            ]);
+
+            // Store tracks first
+            setLocalTracks({ audioTrack, videoTrack });
+
+            // Join with numeric UID
+            await client.join(appId, channelName, null, agoraUid);
+            console.log('[STREAMING] Teacher joined channel with Agora UID:', agoraUid);
+
+            // Set user role attribute - must be set before publishing
+            await client.setClientRole("host");
+
+            // Store both Firebase UID and Agora UID
+            setTeacherUid({
+                firebaseUid: user.id,
+                agoraUid: agoraUid
+            });
+
+            // Event handlers for student connections
+            client.on('user-joined', (user) => {
+                console.log('[STREAMING] Student joined:', user.uid);
+            });
+
+            client.on('user-left', (user) => {
+                console.log('[STREAMING] Student left:', user.uid);
+            });
+
+            // Publish tracks after joining and setting role
+            try {
+                await client.publish([audioTrack, videoTrack]);
+                console.log('[STREAMING] Published teacher audio+video tracks successfully');
+            } catch (error) {
+                console.error('[STREAMING] Error publishing tracks:', error);
+                throw error;
+            }
+
+            // Play local video preview
+            if (videoTrack && localVideoRef.current) {
+                console.log('[STREAMING] Playing local video preview');
+                videoTrack.play(localVideoRef.current);
+            }
+
+        } catch (err) {
+            console.error('[STREAMING] ERROR in initializeAgora =>', err);
+            await cleanup();
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Add effect to handle local video playback
+    useEffect(() => {
+        if (localTracks.videoTrack && localVideoRef.current) {
+            console.log('[STREAMING] Playing local video track in useEffect');
+            localTracks.videoTrack.play(localVideoRef.current);
+        }
+    }, [localTracks.videoTrack]);
+
+    const handleUserLeft = (user) => {
+        console.log('[STREAMING] user-left =>', user.uid);
+        if (user.uid) {
+            setRemoteUsers((prev) => {
+                const newState = { ...prev };
+                delete newState[user.uid];
+                return newState;
+            });
+        }
+    };
+
+    const handleUserJoined = (user) => {
+        console.log('[STREAMING] user-joined =>', user.uid);
+        // Don't add users to remoteUsers until they publish tracks
+        // This prevents phantom users from appearing
+    };
+
+    const handleUserPublished = async (user, mediaType) => {
+        console.log('[STREAMING] user-published =>', user.uid, mediaType);
+        
+        if (!agoraClient) {
+            console.log('[STREAMING] No agoraClient yet, ignoring');
+            return;
+        }
+
+        try {
+            await agoraClient.subscribe(user, mediaType);
+            console.log('[STREAMING] Subscribed => user:', user.uid, 'mediaType:', mediaType);
+
+            setRemoteUsers((prev) => {
+                const existing = prev[user.uid] || { 
+                    id: user.uid, 
+                    displayName: `Student ${user.uid}`, 
+                    hasAudio: false, 
+                    hasVideo: false, 
+                    videoTrack: null, 
+                    audioTrack: null 
+                };
+                
+                const updated = { ...existing };
+                if (mediaType === 'video' && user.videoTrack) {
+                    updated.videoTrack = user.videoTrack;
+                    updated.hasVideo = true;
+                }
+                if (mediaType === 'audio' && user.audioTrack) {
+                    updated.audioTrack = user.audioTrack;
+                    updated.hasAudio = true;
+                    user.audioTrack.play();
+                }
+                return { ...prev, [user.uid]: updated };
+            });
+
+            if (mediaType === 'video' && user.videoTrack && remoteVideosRef.current[user.uid]) {
+                user.videoTrack.play(remoteVideosRef.current[user.uid]);
+            }
+
+        } catch (err) {
+            console.error('[STREAMING] Error subscribing =>', err);
+        }
+    };
+
+    const handleUserUnpublished = (user, mediaType) => {
+        console.log('[STREAMING] user-unpublished =>', user.uid, mediaType);
+        setRemoteUsers((prev) => {
+            const updated = { ...prev };
+            if (updated[user.uid]) {
+                if (mediaType === 'audio') {
+                    updated[user.uid].hasAudio = false;
+                    updated[user.uid].audioTrack = null;
+                }
+                if (mediaType === 'video') {
+                    updated[user.uid].hasVideo = false;
+                    updated[user.uid].videoTrack = null;
+                }
+                // Remove user completely if they have no audio and no video
+                if (!updated[user.uid].hasAudio && !updated[user.uid].hasVideo) {
+                    delete updated[user.uid];
+                }
+            }
+            return updated;
+        });
+    };
+
+    // Cleanup
+    const cleanup = async () => {
+        if (cleanupInProgressRef.current) {
+            console.log('[STREAMING] Cleanup already in progress, skipping');
+            return;
+        }
+        cleanupInProgressRef.current = true;
+        console.log('[STREAMING] >>> cleanup() called');
+        try {
+            // Stop local A/V
+            for (const track of Object.values(localTracks)) {
+                if (track) {
+                    try { track.stop(); track.close(); } catch { }
+                }
+            }
+
+            // Stop screen
+            if (screenTrack) {
+                try { screenTrack.stop(); screenTrack.close(); } catch { }
+            }
+
+            // Leave channel
+            if (agoraClient && joinedRef.current) {
+                console.log('[STREAMING] teacher leaving the channel...');
+                await agoraClient.leave();
+                agoraClient.removeAllListeners();
+            }
+
+        } catch (err) {
+            console.error('[STREAMING] Cleanup error =>', err);
+        } finally {
+            setAgoraClient(null);
+            setLocalTracks({ audioTrack: null, videoTrack: null });
+            setScreenTrack(null);
+            setRemoteUsers({});
+            setTeacherUid(null);
+            joinedRef.current = false;
+            cleanupInProgressRef.current = false;
+            console.log('[STREAMING] Cleanup finished');
+            if (!window.location.pathname.includes('/dashboard') && !isAuthenticated) {
+                navigate(`/${getCurrentLanguage()}/dashboard`);
+            }
+        }
+    };
+
+    // Toggles
+    const toggleAudio = async () => {
+        console.log('[STREAMING] Toggling audio. Current:', isAudioEnabled);
+        if (localTracks.audioTrack) {
+            await localTracks.audioTrack.setEnabled(!isAudioEnabled);
+            setIsAudioEnabled((prev) => !prev);
+        }
+    };
+
+    const toggleVideo = async () => {
+        console.log('[STREAMING] Toggling video. Current:', isVideoEnabled);
+        if (localTracks.videoTrack) {
+            await localTracks.videoTrack.setEnabled(!isVideoEnabled);
+            setIsVideoEnabled((prev) => !prev);
+        }
+    };
+
+    const toggleScreenShare = async () => {
+        console.log('[STREAMING] Toggling screen share. Currently isScreenSharing=', isScreenSharing);
+        if (!isScreenSharing) {
+            try {
+                const screen = await AgoraRTC.createScreenVideoTrack();
+
+                if (agoraClient && localTracks.videoTrack) {
+                    await agoraClient.unpublish(localTracks.videoTrack);
+                }
+                if (agoraClient) {
+                    await agoraClient.publish(screen);
+                }
+                setScreenTrack(screen);
+                setIsScreenSharing(true);
+            } catch (err) {
+                console.error('[STREAMING] Error sharing screen =>', err);
+            }
+        } else {
+            if (screenTrack && agoraClient) {
+                try {
+                    await agoraClient.unpublish(screenTrack);
+                    screenTrack.stop();
+                    screenTrack.close();
+                } catch { }
+                setScreenTrack(null);
+                if (localTracks.videoTrack) {
+                    await agoraClient.publish(localTracks.videoTrack);
+                }
+                setIsScreenSharing(false);
+            }
+        }
+    };
+
+    const togglePresentationMode = () => {
+        console.log('[STREAMING] Toggling presentation. Current:', isPresentationMode);
+        setIsPresentationMode(!isPresentationMode);
+    };
+
+    const toggleQuestionMode = () => {
+        console.log('[STREAMING] Toggling Q&A. Current:', isQuestionMode);
+        setIsQuestionMode(!isQuestionMode);
+    };
+
+    const sendMessage = () => {
+        if (newMessage.trim()) {
+            const msgObj = { id: Date.now(), sender: user, content: newMessage, timestamp: new Date() };
+            setMessages((old) => [...old, msgObj]);
+            setNewMessage('');
+        }
+    };
+
+    const handleEndClass = async () => {
+        console.log('[STREAMING] handleEndClass => navigating away after cleanup');
+        await cleanup();
+        navigate(`/${getCurrentLanguage()}/teacher/dashboard`);
+    };
+
+    const renderVideoContainer = (isLocal, uid, ref, participant = {}) => {
+        const { hasAudio, hasVideo } = participant;
+        return (
+            <Box sx={{ position: 'relative', width: '100%', height: '100%', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#1a1a1a' }}>
+                <Box ref={ref} sx={{ width: '100%', height: '100%', objectFit: 'cover', backgroundColor: '#000' }} />
+                {/* Info overlay */}
+                <Box sx={{ position: 'absolute', bottom: 0, left: 0, right: 0, p: 1, background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    {/* Local track w/ video off => show teacher avatar */}
+                    {isLocal && !isVideoEnabled && (
+                        <Avatar sx={{ width: 24, height: 24, bgcolor: 'primary.main' }}>{user?.name?.[0] || 'T'}</Avatar>
+                    )}
+                    {/* Remote track w/ video off => show placeholder */}
+                    {!isLocal && !hasVideo && (
+                        <Avatar sx={{ width: 24, height: 24, bgcolor: '#666' }}>{String(uid).slice(-2)}</Avatar>
+                    )}
+                    <Typography variant="body2" sx={{ color: '#fff', fontWeight: 500 }}>
+                        {isLocal ? `${user?.name || 'Teacher'} (You)` : remoteUsers[uid]?.displayName || `User #${uid}`}
+                    </Typography>
+                    {isLocal && !isAudioEnabled && (
+                        <MicOffIcon sx={{ color: '#ff4d4f', fontSize: 16 }} />
+                    )}
+                    {!isLocal && (
+                        <>
+                            {hasVideo && <VideocamIcon sx={{ color: '#4caf50', fontSize: 16 }} />}
+                            {hasAudio && <MicIcon sx={{ color: '#4caf50', fontSize: 16 }} />}
+                        </>
+                    )}
                 </Box>
-              }
-            />
-          </ListItem>
-          {/* Participants */}
-          {participants.map((participant) => (
-            <ListItem key={participant.id}>
-              <ListItemAvatar>
-                <Avatar>
-                  {participant.displayName[0]}
-                </Avatar>
-              </ListItemAvatar>
-              <ListItemText primary={participant.displayName} />
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
+            </Box>
+        );
+    };
 
-      {/* Settings Dialog */}
-      <Dialog
-        open={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            backgroundColor: '#2f2f2f',
-            color: '#fff'
-          }
-        }}
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">Settings</Typography>
-            <IconButton onClick={() => setIsSettingsOpen(false)} sx={{ color: '#fff' }}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Stack spacing={3}>
-            {/* Audio Settings */}
-            <Box>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>Audio</Typography>
-              <TextField
-                select
-                fullWidth
-                label="Microphone"
-                variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    color: '#fff',
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.23)'
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.5)'
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#bb5c39'
-                    }
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: 'rgba(255, 255, 255, 0.7)'
-                  }
-                }}
-              >
-                <MenuItem value="default">Default Microphone</MenuItem>
-              </TextField>
+    // Render conditions
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', bgcolor: '#000' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    if (error) {
+        return (
+            <Box sx={{ p: 3, bgcolor: '#000' }}>
+                <Alert severity="error">{error}</Alert>
+            </Box>
+        );
+    }
+
+    return (
+        <Box sx={{ height: '100vh', bgcolor: '#000' }}>
+            <Box sx={{ height: '100%', position: 'relative', overflow: 'hidden' }}>
+                {/* Video Grid */}
+                <Box sx={{ height: '100%', p: 2, display: 'grid', gridTemplateColumns: isScreenSharing ? '1fr' : Object.keys(remoteUsers).length > 0 ? 'repeat(auto-fit, minmax(280px, 1fr))' : '1fr', gap: 2, gridAutoRows: 'minmax(200px, 1fr)' }}>
+                    {/* Teacher */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {renderVideoContainer(true, teacherUid, localVideoRef)}
+                    </Box>
+
+                    {/* Students */}
+                    {Object.entries(remoteUsers).map(([uid, info]) => (
+                        <Box key={uid} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {renderVideoContainer(
+                                false,
+                                uid,
+                                (el) => { remoteVideosRef.current[uid] = el; },
+                                info
+                            )}
+                        </Box>
+                    ))}
+                </Box>
+
+                {/* Screen Sharing Overlay */}
+                {isScreenSharing && screenTrack && (
+                    <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, bgcolor: '#000', zIndex: 10 }}>
+                        {renderVideoContainer(true, 'screen', (el) => el && screenTrack.play(el), {})}
+                    </Box>
+                )}
+
+                {/* Control Bar */}
+                <Box
+                    sx={{
+                        position: 'absolute',
+                        bottom: 24,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        px: 2,
+                        py: 1.5,
+                        bgcolor: 'rgba(0,0,0,0.6)',
+                        backdropFilter: 'blur(10px)',
+                        borderRadius: '50px',
+                        display: 'flex',
+                        gap: 1,
+                        alignItems: 'center',
+                    }}
+                >
+                    <Tooltip title={isAudioEnabled ? 'Mute' : 'Unmute'}>
+                        <IconButton onClick={toggleAudio} sx={{ color: '#fff' }}>
+                            {isAudioEnabled ? <MicIcon /> : <MicOffIcon />}
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title={isVideoEnabled ? 'Stop Video' : 'Start Video'}>
+                        <IconButton onClick={toggleVideo} sx={{ color: '#fff' }}>
+                            {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title={isScreenSharing ? 'Stop Sharing' : 'Share Screen'}>
+                        <IconButton onClick={toggleScreenShare} sx={{ color: isScreenSharing ? '#ff4d4d' : '#fff' }}>
+                            {isScreenSharing ? <StopScreenShareIcon /> : <ScreenShareIcon />}
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title={isPresentationMode ? 'Exit Presentation' : 'Enter Presentation'}>
+                        <IconButton onClick={togglePresentationMode} sx={{ color: isPresentationMode ? '#1890ff' : '#fff' }}>
+                            <PresentIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title={isQuestionMode ? 'End Q&A' : 'Start Q&A'}>
+                        <IconButton onClick={toggleQuestionMode} sx={{ color: isQuestionMode ? '#1890ff' : '#fff' }}>
+                            <QuestionIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Settings">
+                        <IconButton onClick={() => setIsSettingsOpen(true)} sx={{ color: '#fff' }}>
+                            <SettingsIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Chat">
+                        <IconButton onClick={() => setIsChatOpen(true)} sx={{ color: '#fff' }}>
+                            <ChatIcon />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Participants">
+                        <IconButton onClick={() => setIsParticipantsOpen(true)} sx={{ color: '#fff' }}>
+                            <PeopleIcon />
+                        </IconButton>
+                    </Tooltip>
+
+                    <Button variant="contained" color="error" onClick={handleEndClass} startIcon={<CloseIcon />}>
+                        End Class
+                    </Button>
+                </Box>
             </Box>
 
-            {/* Video Settings */}
-            <Box>
-              <Typography variant="subtitle1" sx={{ mb: 1 }}>Video</Typography>
-              <TextField
-                select
-                fullWidth
-                label="Camera"
-                variant="outlined"
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    color: '#fff',
-                    '& fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.23)'
-                    },
-                    '&:hover fieldset': {
-                      borderColor: 'rgba(255, 255, 255, 0.5)'
-                    },
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#bb5c39'
+            {/* Chat Drawer */}
+            <Drawer
+                anchor="right"
+                open={isChatOpen}
+                onClose={() => setIsChatOpen(false)}
+                PaperProps={{ sx: { width: { xs: '100%', sm: 350 }, backgroundColor: '#1a1a1a', color: '#fff' } }}
+            >
+                <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="h6">Chat</Typography>
+                    <IconButton onClick={() => setIsChatOpen(false)} sx={{ color: '#fff' }}>
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+                <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+                <Box sx={{ flex: 1, p: 2, overflowY: 'auto' }}>
+                    <Stack spacing={2}>
+                        {messages.map((m) => (
+                            <Box key={m.id}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                                    <Avatar sx={{ width: 24, height: 24 }}>{m?.sender?.name?.[0] || 'T'}</Avatar>
+                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                        {m?.sender?.name || 'Teacher'}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.6)' }}>
+                                        {new Date(m.timestamp).toLocaleTimeString()}
+                                    </Typography>
+                                </Box>
+                                <Typography variant="body1">{m.content}</Typography>
+                            </Box>
+                        ))}
+                    </Stack>
+                </Box>
+                <Box sx={{ p: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                    <Stack direction="row" spacing={1}>
+                        <TextField
+                            fullWidth
+                            size="small"
+                            placeholder="Type a message..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                            sx={{
+                                '& .MuiOutlinedInput-root': {
+                                    color: '#fff',
+                                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                    '& fieldset': { borderColor: 'transparent' },
+                                    '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
+                                    '&.Mui-focused fieldset': { borderColor: '#fff' },
+                                },
+                            }}
+                        />
+                        <IconButton onClick={sendMessage} sx={{ color: '#fff' }}>
+                            <SendIcon />
+                        </IconButton>
+                    </Stack>
+                </Box>
+            </Drawer>
+
+            {/* Participants Drawer */}
+            <Drawer
+                anchor="right"
+                open={isParticipantsOpen}
+                onClose={() => setIsParticipantsOpen(false)}
+                PaperProps={{
+                    sx: { 
+                        width: { xs: '100%', sm: 350 }, 
+                        backgroundColor: '#1a1a1a', 
+                        color: '#fff' 
                     }
-                  },
-                  '& .MuiInputLabel-root': {
-                    color: 'rgba(255, 255, 255, 0.7)'
-                  }
                 }}
-              >
-                <MenuItem value="default">Default Camera</MenuItem>
-              </TextField>
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button
-            variant="contained"
-            onClick={() => setIsSettingsOpen(false)}
-            sx={{
-              backgroundColor: '#bb5c39',
-              '&:hover': {
-                backgroundColor: '#a04b2e'
-              }
-            }}
-          >
-            Done
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </StreamLayout>
-  );
+            >
+                <Box sx={{ p: 2 }}>
+                    <Typography variant="h6" sx={{ color: '#fff' }}>Participants</Typography>
+                </Box>
+                <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+                <List>
+                    {Object.entries(remoteUsers).map(([uid, user]) => (
+                        <ListItem key={`participant-${uid}`}>
+                            <ListItemText 
+                                primary={user.isTeacher ? 'Teacher (Host)' : `Student ${uid}`}
+                                primaryTypographyProps={{ sx: { color: '#fff' } }}
+                            />
+                        </ListItem>
+                    ))}
+                </List>
+            </Drawer>
+
+            {/* Settings Dialog */}
+            <Dialog open={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} PaperProps={{ sx: { bgcolor: '#1a1a1a', color: '#fff', minWidth: 320 } }}>
+                <DialogTitle>Settings</DialogTitle>
+                <DialogContent>
+                    <Typography variant="body2">Configure your audio/video devices here (TODO).</Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setIsSettingsOpen(false)} sx={{ color: '#fff' }}>Close</Button>
+                </DialogActions>
+            </Dialog>
+        </Box>
+    );
 };
 
 export default Streaming;

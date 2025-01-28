@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -12,7 +12,8 @@ import {
 } from '@mui/material';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../api/config';
-import { useAuth } from '../../store/authStore';
+import { useAuth } from '../../hooks/useAuth';
+import { getCurrentLanguage } from '../../utils/navigation';
 
 const RoleSelectionPage = () => {
   const navigate = useNavigate();
@@ -20,58 +21,41 @@ const RoleSelectionPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    // Only redirect if user has a role and is not a new user
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    if (userData?.role && !userData?.isNewUser) {
+      navigate(`/${getCurrentLanguage()}/${userData.role}/dashboard`);
+    }
+  }, [navigate]);
+
   const handleRoleSelection = async (role) => {
     setLoading(true);
     setError('');
 
-    if (!user) {
-      const currentUser = localStorage.getItem('user');
-      if (!currentUser) {
-        setError('User session not found. Please try logging in again.');
-        setLoading(false);
-        return;
-      }
-      // Try to recover user data from localStorage
-      const userData = JSON.parse(currentUser);
-      await updateUser(userData);
-    }
-
-    if (!user?.id) {
-      setError('Invalid user session. Please try logging in again.');
-      setLoading(false);
-      return;
-    }
-
     try {
+      const userData = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!userData?.id) {
+        throw new Error('Invalid user session');
+      }
+
       // Update user role in Firestore
-      const userRef = doc(db, 'users', user.id);
+      const userRef = doc(db, 'users', userData.id);
       await updateDoc(userRef, {
         role: role,
         isNewUser: false
       });
 
       // Update local user state
-      const updatedUser = { ...user, role: role };
+      const updatedUser = { ...userData, role: role, isNewUser: false };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       await updateUser(updatedUser);
 
       // Navigate based on selected role
-      switch (role) {
-        case 'student':
-          navigate('/student/dashboard');
-          break;
-        case 'teacher':
-          navigate('/teacher/dashboard');
-          break;
-        case 'parent':
-          navigate('/parent/dashboard');
-          break;
-        default:
-          navigate('/student/dashboard');
-      }
+      navigate(`/${getCurrentLanguage()}/${role}/dashboard`);
     } catch (err) {
-      setError('Failed to set role. Please try again.');
       console.error('Role selection error:', err);
+      setError('Failed to set role. Please try again.');
     } finally {
       setLoading(false);
     }

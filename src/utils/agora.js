@@ -8,26 +8,34 @@ export const createAgoraClient = () => {
   }
 
   const client = AgoraRTC.createClient({
-    mode: 'rtc',
+    mode: 'live',
     codec: 'vp8'
   });
 
-  const join = async (channelName, token) => {
+  const join = async (channelName, token, role = 'audience') => {
     try {
-      // Generate a random UID between 1 and 999999
-      const uid = Math.floor(Math.random() * 999999) + 1;
+      // Generate a random UID between 100000 and 999999 to match component range
+      const uid = Math.floor(Math.random() * 900000) + 100000;
+      
+      // Set role before joining
+      await client.setClientRole(role);
       
       // Join the channel
       await client.join(appId, channelName, token, uid);
       
-      // Create local audio and video tracks
-      const [audioTrack, videoTrack] = await Promise.all([
-        AgoraRTC.createMicrophoneAudioTrack(),
-        AgoraRTC.createCameraVideoTrack()
-      ]);
+      // Create local tracks only if host
+      let audioTrack = null;
+      let videoTrack = null;
       
-      // Publish local tracks
-      await client.publish([audioTrack, videoTrack]);
+      if (role === 'host') {
+        [audioTrack, videoTrack] = await Promise.all([
+          AgoraRTC.createMicrophoneAudioTrack(),
+          AgoraRTC.createCameraVideoTrack()
+        ]);
+        
+        // Publish local tracks
+        await client.publish([audioTrack, videoTrack]);
+      }
       
       return {
         client,

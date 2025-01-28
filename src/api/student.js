@@ -32,7 +32,9 @@ export const getActiveLiveClasses = async (studentId) => {
       const classData = {
         id: doc.id,
         ...doc.data(),
-        startTime: doc.data().startTime?.toDate()
+        startTime: doc.data().startTime?.toDate(),
+        // Ensure channelName is included in the returned data
+        channelName: doc.data().channelName || `class_${doc.data().teacherId}_${doc.data().startTime?.toMillis()}`
       };
       
       // Convert Firestore Timestamp to Date

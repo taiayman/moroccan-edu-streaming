@@ -27,6 +27,8 @@ class WebRTCService {
     this.localStream = null;
     this.remoteStream = null;
     this.roomId = null;
+    this.candidatesQueue = [];
+    this.isAnswerSet = false;
   }
 
   async createRoom(userId, courseId, title) {
@@ -70,18 +72,31 @@ class WebRTCService {
       const offer = await this.peerConnection.createOffer();
       await this.peerConnection.setLocalDescription(offer);
 
+      // Send the offer to the server
+      await fetch(`${endpoints.streaming.offer}/${this.roomId}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(offer)
+      });
+
       // Listen for remote answer
+      this._listenForAnswer();
+
+      // Handle ICE candidates
       this.peerConnection.onicecandidate = async (event) => {
         if (event.candidate) {
-          await fetch(`${endpoints.streaming.offer}/${this.roomId}`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify(event.candidate.toJSON())
-          });
+          await this._sendIceCandidate(event.candidate);
         }
       };
 
-      return data;
+      // Start listening for remote ICE candidates
+      this._listenForCandidates();
+
+      return {
+        roomId: this.roomId,
+        localStream: this.localStream,
+        remoteStream: this.remoteStream
+      };
     } catch (error) {
       console.error('Error creating room:', error);
       throw error;
@@ -97,7 +112,6 @@ class WebRTCService {
       
       if (!response.ok) throw new Error('Failed to join room');
       
-      const data = await response.json();
       this.roomId = roomId;
 
       // Initialize the connection
@@ -124,13 +138,15 @@ class WebRTCService {
         });
       };
 
-      // Create answer
-      const offer = await fetch(`${endpoints.streaming.offer}/${roomId}`, {
+      // Get and set remote offer
+      const offerResponse = await fetch(`${endpoints.streaming.offer}/${roomId}`, {
         method: 'GET',
         headers: getAuthHeaders()
       });
-      const offerData = await offer.json();
+      const offerData = await offerResponse.json();
       await this.peerConnection.setRemoteDescription(new RTCSessionDescription(offerData));
+
+      // Create and send answer
       const answer = await this.peerConnection.createAnswer();
       await this.peerConnection.setLocalDescription(answer);
 
@@ -140,21 +156,84 @@ class WebRTCService {
         body: JSON.stringify(answer)
       });
 
-      // Listen for remote ICE candidates
+      // Handle ICE candidates
       this.peerConnection.onicecandidate = async (event) => {
         if (event.candidate) {
-          await fetch(`${endpoints.streaming.candidate}/${roomId}`, {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify(event.candidate.toJSON())
-          });
+          await this._sendIceCandidate(event.candidate);
         }
       };
 
-      return data;
+      // Start listening for remote ICE candidates
+      this._listenForCandidates();
+
+      return {
+        localStream: this.localStream,
+        remoteStream: this.remoteStream
+      };
     } catch (error) {
       console.error('Error joining room:', error);
       throw error;
+    }
+  }
+
+  async _listenForAnswer() {
+    try {
+      const answerResponse = await fetch(`${endpoints.streaming.answer}/${this.roomId}`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+      
+      if (answerResponse.ok) {
+        const answerData = await answerResponse.json();
+        if (answerData && !this.isAnswerSet) {
+          const answerDescription = new RTCSessionDescription(answerData);
+          await this.peerConnection.setRemoteDescription(answerDescription);
+          this.isAnswerSet = true;
+          
+          // Process any queued candidates after setting the answer
+          while (this.candidatesQueue.length) {
+            const candidate = this.candidatesQueue.shift();
+            await this.peerConnection.addIceCandidate(candidate);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error listening for answer:', error);
+    }
+  }
+
+  async _listenForCandidates() {
+    try {
+      const response = await fetch(`${endpoints.streaming.candidate}/${this.roomId}`, {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (response.ok) {
+        const candidates = await response.json();
+        for (const candidateData of candidates) {
+          const candidate = new RTCIceCandidate(candidateData);
+          if (this.peerConnection.remoteDescription && this.peerConnection.remoteDescription.type) {
+            await this.peerConnection.addIceCandidate(candidate);
+          } else {
+            this.candidatesQueue.push(candidate);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error listening for candidates:', error);
+    }
+  }
+
+  async _sendIceCandidate(candidate) {
+    try {
+      await fetch(`${endpoints.streaming.candidate}/${this.roomId}`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(candidate.toJSON())
+      });
+    } catch (error) {
+      console.error('Error sending ICE candidate:', error);
     }
   }
 
@@ -171,10 +250,16 @@ class WebRTCService {
         this.localStream.getTracks().forEach(track => track.stop());
       }
       
+      if (this.peerConnection) {
+        this.peerConnection.close();
+      }
+
       this.peerConnection = null;
       this.localStream = null;
       this.remoteStream = null;
       this.roomId = null;
+      this.candidatesQueue = [];
+      this.isAnswerSet = false;
     } catch (error) {
       console.error('Error ending call:', error);
       throw error;

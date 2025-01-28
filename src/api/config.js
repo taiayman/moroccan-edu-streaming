@@ -54,6 +54,10 @@ export const endpoints = {
     create: `${API_BASE_URL}/streaming/create`,
     join: `${API_BASE_URL}/streaming/join`,
     end: `${API_BASE_URL}/streaming/end`,
+    token: `${API_BASE_URL}/streaming/token`, // Added token endpoint
+    offer: `${API_BASE_URL}/streaming/offer`,
+    answer: `${API_BASE_URL}/streaming/answer`,
+    candidate: `${API_BASE_URL}/streaming/candidate`,
   },
   courses: {
     list: `${API_BASE_URL}/courses`,

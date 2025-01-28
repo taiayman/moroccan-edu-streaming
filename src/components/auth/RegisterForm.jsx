@@ -66,7 +66,7 @@ const RegisterForm = () => {
       const lastName = formData.lastName.trim() || '';
       const displayName = firstName + (lastName ? ` ${lastName}` : '');
 
-      await register({
+      const response = await register({
         email: formData.email,
         password: formData.password,
         displayName: displayName,
@@ -74,9 +74,20 @@ const RegisterForm = () => {
         lastName: lastName
       });
 
-      navigate('/auth/role-selection');
+      // Store auth data in localStorage
+      localStorage.setItem('token', response.token);
+      localStorage.setItem('user', JSON.stringify({
+        ...response.user,
+        firstName,
+        lastName,
+        displayName
+      }));
+      
+      navigate(`/${getCurrentLanguage()}/auth/role-selection`);
     } catch (error) {
-      setError(error.message);
+      console.error('Registration error:', error);
+      setError(error.message || 'Registration failed. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
