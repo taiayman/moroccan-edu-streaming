@@ -1,6 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import WebRTCService from '../api/streaming';
+import { 
+  selectPeers, 
+  selectLocalPeer,
+  selectIsConnectedToRoom,
+  selectRoomState
+} from '@100mslive/hms-video-store';
+import * as streamingService from '../api/streaming';
 import { useAuth } from './useAuth';
 
 export const useStream = (roomId = null) => {
@@ -8,25 +14,19 @@ export const useStream = (roomId = null) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [localStream, setLocalStream] = useState(null);
-  const [remoteStream, setRemoteStream] = useState(null);
+  const [hmsStore, setHMSStore] = useState(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
-  const [activeRooms, setActiveRooms] = useState([]);
 
   // Create a new streaming room
   const createRoom = useCallback(async (courseId, title) => {
     try {
       setLoading(true);
       setError(null);
-      const { roomId, localStream, remoteStream } = await WebRTCService.createRoom(
-        user.uid,
-        courseId,
-        title
-      );
-      setLocalStream(localStream);
-      setRemoteStream(remoteStream);
-      return roomId;
+      const roomData = await streamingService.createRoom(user.uid, courseId);
+      const store = await streamingService.joinRoom(roomData.id, user.uid, 'host');
+      setHMSStore(store);
+      return roomData.id;
     } catch (err) {
       setError(err.message);
       throw err;
@@ -40,23 +40,21 @@ export const useStream = (roomId = null) => {
     try {
       setLoading(true);
       setError(null);
-      const { localStream, remoteStream } = await WebRTCService.joinRoom(roomId);
-      setLocalStream(localStream);
-      setRemoteStream(remoteStream);
+      const store = await streamingService.joinRoom(roomId, user.uid);
+      setHMSStore(store);
     } catch (err) {
       setError(err.message);
       throw err;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
-  // End the current call
-  const endCall = useCallback(async () => {
+  // Leave the current room
+  const leaveRoom = useCallback(async () => {
     try {
-      await WebRTCService.endCall();
-      setLocalStream(null);
-      setRemoteStream(null);
+      await streamingService.leaveRoom();
+      setHMSStore(null);
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);
@@ -66,8 +64,8 @@ export const useStream = (roomId = null) => {
   // Toggle audio
   const toggleAudio = useCallback(async () => {
     try {
-      const isEnabled = await WebRTCService.toggleAudio();
-      setIsAudioEnabled(isEnabled);
+      const enabled = await streamingService.toggleAudio();
+      setIsAudioEnabled(enabled);
     } catch (err) {
       setError(err.message);
     }
@@ -76,54 +74,65 @@ export const useStream = (roomId = null) => {
   // Toggle video
   const toggleVideo = useCallback(async () => {
     try {
-      const isEnabled = await WebRTCService.toggleVideo();
-      setIsVideoEnabled(isEnabled);
+      const enabled = await streamingService.toggleVideo();
+      setIsVideoEnabled(enabled);
     } catch (err) {
       setError(err.message);
     }
   }, []);
 
-  // Get active rooms for a course
-  const getActiveRooms = useCallback(async (courseId) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const rooms = await WebRTCService.getActiveRooms(courseId);
-      setActiveRooms(rooms);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Get current participants
+  const getParticipants = useCallback(() => {
+    if (!hmsStore) return [];
+    return hmsStore.getState(selectPeers);
+  }, [hmsStore]);
+
+  // Get local peer
+  const getLocalPeer = useCallback(() => {
+    if (!hmsStore) return null;
+    return hmsStore.getState(selectLocalPeer);
+  }, [hmsStore]);
+
+  // Check if connected to room
+  const isConnected = useCallback(() => {
+    if (!hmsStore) return false;
+    return hmsStore.getState(selectIsConnectedToRoom);
+  }, [hmsStore]);
+
+  // Get room state
+  const getRoomState = useCallback(() => {
+    if (!hmsStore) return null;
+    return hmsStore.getState(selectRoomState);
+  }, [hmsStore]);
 
   // Join room if roomId is provided
   useEffect(() => {
-    if (roomId) {
+    if (roomId && user) {
       joinRoom(roomId);
     }
-    // Cleanup function
+    // Cleanup
     return () => {
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
+      if (hmsStore) {
+        streamingService.leaveRoom();
       }
     };
-  }, [roomId, joinRoom, localStream]);
+  }, [roomId, user, joinRoom]);
 
   return {
     loading,
     error,
-    localStream,
-    remoteStream,
     isAudioEnabled,
     isVideoEnabled,
-    activeRooms,
+    hmsStore,
+    getParticipants,
+    getLocalPeer,
+    isConnected,
+    getRoomState,
     createRoom,
     joinRoom,
-    endCall,
+    leaveRoom,
     toggleAudio,
-    toggleVideo,
-    getActiveRooms
+    toggleVideo
   };
 };
 

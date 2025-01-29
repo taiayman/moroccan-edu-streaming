@@ -10,6 +10,7 @@ import {
   Button,
   Stack,
   Avatar,
+  Tooltip,
   CircularProgress,
   Alert,
   TextField,
@@ -28,25 +29,22 @@ import {
   MicOff as MicOffIcon,
   Videocam as VideocamIcon,
   VideocamOff as VideocamOffIcon,
-  ScreenShare as ScreenShareIcon,
-  StopScreenShare as StopScreenShareIcon,
   Chat as ChatIcon,
   People as PeopleIcon,
   Close as CloseIcon,
   Send as SendIcon,
   Settings as SettingsIcon,
-  FiberManualRecord as RecordIcon,
-  Stop as StopIcon
+  HandRaised as HandRaisedIcon,
+  PanTool as PanToolIcon
 } from '@mui/icons-material';
 import {
   selectPeers,
-  selectLocalPeer,
-  selectIsLocalAudioEnabled,
-  selectIsLocalVideoEnabled
+  selectLocalPeer
 } from '@100mslive/hms-video-store';
 import { useStream } from '../../hooks/useStream';
 import { useAuth } from '../../hooks/useAuth';
 import { getCurrentLanguage } from '../../utils/navigation';
+import { raiseHand, lowerHand } from '../../api/streaming';
 
 const Streaming = () => {
   const { classId } = useParams();
@@ -74,8 +72,8 @@ const Streaming = () => {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isParticipantsOpen, setIsParticipantsOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isHandRaised, setIsHandRaised] = useState(false);
+  const [hasPermission, setHasPermission] = useState(false);
 
   useEffect(() => {
     if (hmsStore) {
@@ -84,46 +82,38 @@ const Streaming = () => {
         // Update UI when peers change
       });
 
-      return () => unsubscribe();
+      // Subscribe to messages
+      const messageUnsubscribe = hmsStore.subscribe((state) => state.messages, () => {
+        // Update messages when new ones arrive
+      });
+
+      return () => {
+        unsubscribe();
+        messageUnsubscribe();
+      };
     }
   }, [hmsStore]);
 
-  const toggleScreenShare = async () => {
-    if (hmsStore) {
-      try {
-        if (isScreenSharing) {
-          await hmsStore.actions.setScreenShareEnabled(false);
-        } else {
-          await hmsStore.actions.setScreenShareEnabled(true);
-        }
-        setIsScreenSharing(!isScreenSharing);
-      } catch (err) {
-        console.error('Error toggling screen share:', err);
-      }
-    }
-  };
-
-  const toggleRecording = async () => {
-    if (hmsStore) {
-      try {
-        if (isRecording) {
-          await hmsStore.actions.stopRecording();
-        } else {
-          await hmsStore.actions.startRecording();
-        }
-        setIsRecording(!isRecording);
-      } catch (err) {
-        console.error('Error toggling recording:', err);
-      }
-    }
-  };
-
-  const endClass = async () => {
+  const toggleHand = async () => {
     try {
-      await leaveRoom();
-      navigate(`/${getCurrentLanguage()}/teacher/dashboard`);
+      if (hmsStore) {
+        if (isHandRaised) {
+          await lowerHand(location.state?.roomId, user.id);
+          await hmsStore.actions.sendBroadcastMessage({
+            type: 'HAND_LOWERED',
+            userId: user.id
+          });
+        } else {
+          await raiseHand(location.state?.roomId, user.id);
+          await hmsStore.actions.sendBroadcastMessage({
+            type: 'HAND_RAISED',
+            userId: user.id
+          });
+        }
+        setIsHandRaised(!isHandRaised);
+      }
     } catch (err) {
-      console.error('Error ending class:', err);
+      console.error('Error toggling hand:', err);
     }
   };
 
@@ -138,6 +128,15 @@ const Streaming = () => {
       hmsStore.actions.sendBroadcastMessage(newMessage);
       setMessages([...messages, message]);
       setNewMessage('');
+    }
+  };
+
+  const leaveClass = async () => {
+    try {
+      await leaveRoom();
+      navigate(`/${getCurrentLanguage()}/student/dashboard`);
+    } catch (err) {
+      console.error('Error leaving class:', err);
     }
   };
 
@@ -161,6 +160,7 @@ const Streaming = () => {
 
   const localPeer = getLocalPeer();
   const participants = getParticipants();
+  const teacher = participants.find(p => p.roleName === 'host');
 
   return (
     <Box sx={{ height: '100vh', bgcolor: '#000' }}>
@@ -170,7 +170,7 @@ const Streaming = () => {
         <Box sx={{ height: 'calc(100% - 80px)', p: 2 }}>
           <Grid container spacing={2} sx={{ height: '100%' }}>
             {/* Teacher video */}
-            <Grid item xs={12} md={isScreenSharing ? 4 : 6}>
+            <Grid item xs={12} md={6}>
               <Paper
                 elevation={0}
                 sx={{
@@ -181,14 +181,13 @@ const Streaming = () => {
                   position: 'relative'
                 }}
               >
-                {localPeer && (
+                {teacher && (
                   <video
                     autoPlay
-                    muted
                     playsInline
                     ref={(video) => {
-                      if (video && localPeer.videoTrack) {
-                        video.srcObject = new MediaStream([localPeer.videoTrack.native]);
+                      if (video && teacher.videoTrack) {
+                        video.srcObject = new MediaStream([teacher.videoTrack.native]);
                       }
                     }}
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
@@ -210,17 +209,17 @@ const Streaming = () => {
                   }}
                 >
                   <Avatar sx={{ width: 24, height: 24 }}>
-                    {user?.displayName?.[0]}
+                    {teacher?.name?.[0] || 'T'}
                   </Avatar>
                   <Typography variant="body2">
-                    {user?.displayName} (You)
+                    {teacher?.name || 'Teacher'}
                   </Typography>
                 </Box>
               </Paper>
             </Grid>
 
-            {/* Screen share or student grid */}
-            <Grid item xs={12} md={isScreenSharing ? 8 : 6}>
+            {/* Student video */}
+            <Grid item xs={12} md={6}>
               <Paper
                 elevation={0}
                 sx={{
@@ -230,21 +229,22 @@ const Streaming = () => {
                   overflow: 'hidden'
                 }}
               >
-                {isScreenSharing ? (
+                {hasPermission && localPeer ? (
                   <video
                     autoPlay
+                    muted
                     playsInline
                     ref={(video) => {
-                      if (video && localPeer?.screenShareTrack) {
-                        video.srcObject = new MediaStream([localPeer.screenShareTrack.native]);
+                      if (video && localPeer.videoTrack) {
+                        video.srcObject = new MediaStream([localPeer.videoTrack.native]);
                       }
                     }}
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                   />
                 ) : (
                   <Box sx={{ p: 3, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Typography variant="body1" color="white">
-                      Waiting for participants...
+                      {hasPermission ? 'You have permission to speak' : 'Raise your hand to request permission to speak'}
                     </Typography>
                   </Box>
                 )}
@@ -269,32 +269,31 @@ const Streaming = () => {
             px: 3
           }}
         >
-          <IconButton
-            onClick={toggleAudio}
-            sx={{ color: isAudioEnabled ? 'primary.main' : 'error.main' }}
-          >
-            {isAudioEnabled ? <MicIcon /> : <MicOffIcon />}
-          </IconButton>
+          <Tooltip title={hasPermission ? (isAudioEnabled ? 'Mute' : 'Unmute') : 'Request permission to speak'}>
+            <IconButton
+              onClick={toggleAudio}
+              sx={{ color: !hasPermission ? 'action.disabled' : (isAudioEnabled ? 'primary.main' : 'error.main') }}
+              disabled={!hasPermission}
+            >
+              {isAudioEnabled ? <MicIcon /> : <MicOffIcon />}
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip title={hasPermission ? (isVideoEnabled ? 'Stop Video' : 'Start Video') : 'Request permission for video'}>
+            <IconButton
+              onClick={toggleVideo}
+              sx={{ color: !hasPermission ? 'action.disabled' : (isVideoEnabled ? 'primary.main' : 'error.main') }}
+              disabled={!hasPermission}
+            >
+              {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
+            </IconButton>
+          </Tooltip>
 
           <IconButton
-            onClick={toggleVideo}
-            sx={{ color: isVideoEnabled ? 'primary.main' : 'error.main' }}
+            onClick={toggleHand}
+            sx={{ color: isHandRaised ? 'warning.main' : 'white' }}
           >
-            {isVideoEnabled ? <VideocamIcon /> : <VideocamOffIcon />}
-          </IconButton>
-
-          <IconButton
-            onClick={toggleScreenShare}
-            sx={{ color: isScreenSharing ? 'primary.main' : 'white' }}
-          >
-            {isScreenSharing ? <StopScreenShareIcon /> : <ScreenShareIcon />}
-          </IconButton>
-
-          <IconButton
-            onClick={toggleRecording}
-            sx={{ color: isRecording ? 'error.main' : 'white' }}
-          >
-            {isRecording ? <StopIcon /> : <RecordIcon />}
+            {isHandRaised ? <PanToolIcon /> : <HandRaisedIcon />}
           </IconButton>
 
           <IconButton
@@ -321,9 +320,9 @@ const Streaming = () => {
           <Button
             variant="contained"
             color="error"
-            onClick={endClass}
+            onClick={leaveClass}
           >
-            End Class
+            Leave Class
           </Button>
         </Box>
       </Box>
@@ -403,18 +402,7 @@ const Streaming = () => {
 
           <List>
             {participants.map((peer) => (
-              <ListItem
-                key={peer.id}
-                secondaryAction={
-                  <IconButton
-                    edge="end"
-                    onClick={() => hmsStore?.actions.removePeer(peer.id)}
-                    sx={{ color: 'error.main' }}
-                  >
-                    <CloseIcon />
-                  </IconButton>
-                }
-              >
+              <ListItem key={peer.id}>
                 <ListItemAvatar>
                   <Avatar>{peer.name[0]}</Avatar>
                 </ListItemAvatar>
