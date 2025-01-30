@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher's Virtual Classroom</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #localStream {
+            width: 100%;
+            height: 100vh;
+            background-color: #0f172a;
+        }
+
+        .daily-component {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="localStream" class="daily-component">
+        <!-- Daily.co will inject its UI here -->
+    </div>
+
+    <!-- Script Initialization -->
+    <script src="https://unpkg.com/@daily-co/daily-js"></script>
+    <script>
+        window.DAILY_PARAMS = {
+            ROOM_NAME: new URLSearchParams(window.location.search).get('room')
+        };
+    </script>
+    <script type="module" src="js/teacher.js"></script>
+</body>
+</html>

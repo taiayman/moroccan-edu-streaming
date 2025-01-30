@@ -12,7 +12,7 @@ const firebaseConfig = {
   appId: "1:785334032082:web:07ed141b102ba995417f0b",
   measurementId: "G-K4YKPL8DBS"
 };
-
+ 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
@@ -31,14 +31,16 @@ export const ROLES = {
 // Collections names
 export const COLLECTIONS = {
   LESSONS: 'lessons',
-  SCHEDULES: 'schedules',
-  LIVE_CLASSES: 'liveClasses',
-  QUESTIONS: 'questions',
-  MESSAGES: 'messages',
+  SCHEDULE: 'schedule',
   ASSIGNMENTS: 'assignments',
   USERS: 'users',
+  COURSES: 'courses',
+  STUDENTS: 'students',
+  ACTIVITIES: 'activities',
   CALENDAR_EVENTS: 'calendar_events',
-  CALENDAR_NOTES: 'calendar_notes'
+  CALENDAR_NOTES: 'calendar_notes',
+  LIVE_CLASSES: 'live_classes',
+  DAILYCO_ROOMS: 'dailyco_rooms'
 };
 
 // API endpoints configuration
@@ -49,15 +51,6 @@ export const endpoints = {
     login: `${API_BASE_URL}/auth/login`,
     register: `${API_BASE_URL}/auth/register`,
     logout: `${API_BASE_URL}/auth/logout`,
-  },
-  streaming: {
-    create: `${API_BASE_URL}/streaming/create`,
-    join: `${API_BASE_URL}/streaming/join`,
-    end: `${API_BASE_URL}/streaming/end`,
-    token: `${API_BASE_URL}/streaming/token`, // Added token endpoint
-    offer: `${API_BASE_URL}/streaming/offer`,
-    answer: `${API_BASE_URL}/streaming/answer`,
-    candidate: `${API_BASE_URL}/streaming/candidate`,
   },
   courses: {
     list: `${API_BASE_URL}/courses`,

@@ -1,3 +1,894 @@
+================================================================================
+FILE: src/api/config.js
+================================================================================
+
+import { initializeApp } from 'firebase/app';
+import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC6gdAOUcIA9w_KuCYXse6aCfZjqLYU71s",
+  authDomain: "moroccan-platform-streaming.firebaseapp.com",
+  projectId: "moroccan-platform-streaming",
+  storageBucket: "moroccan-platform-streaming.firebasestorage.app",
+  messagingSenderId: "785334032082",
+  appId: "1:785334032082:web:07ed141b102ba995417f0b",
+  measurementId: "G-K4YKPL8DBS"
+};
+ 
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
+export const googleProvider = new GoogleAuthProvider();
+
+// Constants
+export const ROLES = {
+  STUDENT: 'student',
+  PARENT: 'parent',
+  TEACHER: 'teacher',
+  ADMIN: 'admin'
+};
+
+// Collections names
+export const COLLECTIONS = {
+  LESSONS: 'lessons',
+  SCHEDULE: 'schedule',
+  ASSIGNMENTS: 'assignments',
+  USERS: 'users',
+  COURSES: 'courses',
+  STUDENTS: 'students',
+  ACTIVITIES: 'activities',
+  CALENDAR_EVENTS: 'calendar_events',
+  CALENDAR_NOTES: 'calendar_notes',
+  LIVE_CLASSES: 'live_classes'
+};
+
+// API endpoints configuration
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
+
+export const endpoints = {
+  auth: {
+    login: `${API_BASE_URL}/auth/login`,
+    register: `${API_BASE_URL}/auth/register`,
+    logout: `${API_BASE_URL}/auth/logout`,
+  },
+  courses: {
+    list: `${API_BASE_URL}/courses`,
+    details: (id) => `${API_BASE_URL}/courses/${id}`,
+  }
+};
+
+export const getAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
+};
+
+================================================================================
+FILE: public/streaming/js/config.js
+================================================================================
+
+// public/streaming/js/config.js
+const CONFIG = {
+    HMS: {
+      TEMPLATE_ID: '679a10fc8102660b706ab08c', // Replace with 100ms template ID
+      VIDEO_SETTINGS: {
+        width: 1280,
+        height: 720,
+        frameRate: 24,
+        bitrate: 2500,
+      },
+      AUDIO_SETTINGS: {
+        codec: 'opus',
+        bitrate: 32,
+      },
+      ROLE: 'teacher', // or 'student' depending on page
+      ENV: process.env.NODE_ENV === 'production' ? 'prod' : 'qa'
+    },
+    UI: {
+      STATES: {
+        INITIALIZING: 'initializing',
+        CONNECTED: 'connected',
+        DISCONNECTED: 'disconnected',
+        ERROR: 'error'
+      }
+    }
+  };
+================================================================================
+FILE: public/streaming/js/teacher.js
+================================================================================
+
+// public/streaming/js/teacher.js
+import { HMSSdk } from '@100mslive/hms-video';
+import CONFIG from './config.js';
+
+let hmsClient = null;
+let localTracks = {
+  audioTrack: null,
+  videoTrack: null,
+  screenTrack: null
+};
+
+async function initializeHMSClient() {
+  try {
+    hmsClient = new HMSSdk();
+    
+    const authToken = await getAuthToken(); // Implement token endpoint
+    const config = {
+      userName: 'Teacher',
+      authToken,
+      settings: {
+        isAudioMuted: false,
+        isVideoMuted: false,
+      },
+      rememberDeviceSelection: true,
+    };
+
+    await hmsClient.join(config);
+    
+    // Setup local tracks
+    localTracks.audioTrack = await hmsClient.getLocalAudioTrack();
+    localTracks.videoTrack = await hmsClient.getLocalVideoTrack();
+    
+    // Publish tracks
+    await hmsClient.publish([localTracks.audioTrack, localTracks.videoTrack]);
+    
+    // Event listeners
+    hmsClient.on('peer-joined', handlePeerJoined);
+    hmsClient.on('peer-left', handlePeerLeft);
+    hmsClient.on('track-updated', handleTrackUpdate);
+
+  } catch (error) {
+    console.error('HMS initialization failed:', error);
+    showError('Failed to join room: ' + error.message);
+  }
+}
+
+// Handle peer events
+function handlePeerJoined(peer) {
+  console.log('Peer joined:', peer.name);
+  updateParticipantsList();
+  
+  if (peer.videoTrack) {
+    const playerContainer = createRemotePlayerContainer(peer.id);
+    hmsClient.attachVideoTrack(peer.videoTrack, playerContainer);
+  }
+}
+
+function handlePeerLeft(peer) {
+  console.log('Peer left:', peer.name);
+  removeRemotePlayerContainer(peer.id);
+  updateParticipantsList();
+}
+
+function handleTrackUpdate(track, peer) {
+  console.log('Track updated:', track.type, peer.name);
+  updateParticipantsList();
+}
+
+// Update media controls
+async function toggleAudio() {
+  if (localTracks.audioTrack) {
+    await hmsClient.setLocalAudioEnabled(!isAudioEnabled);
+    isAudioEnabled = !isAudioEnabled;
+    updateUIState();
+  }
+}
+
+async function toggleScreenShare() {
+  if (!isScreenSharing) {
+    localTracks.screenTrack = await hmsClient.getLocalScreenTrack();
+    await hmsClient.publish([localTracks.screenTrack]);
+    isScreenSharing = true;
+  } else {
+    await hmsClient.unpublish([localTracks.screenTrack]);
+    isScreenSharing = false;
+  }
+}
+================================================================================
+FILE: public/streaming/teacher.html
+================================================================================
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher's Virtual Classroom</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@100mslive/hms-video@latest/dist/hms-video.js"></script>
+    <style>
+        :root {
+            --primary: #bb5c39;
+            --primary-dark: #a04b2e;
+            --bg-dark: #0f172a;
+        }
+        
+        body {
+            background-color: var(--bg-dark);
+            color: white;
+            min-height: 100vh;
+        }
+
+        #localStream {
+            width: 100%;
+            height: 100%;
+            background-color: #1e293b;
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.75rem;
+            min-height: 240px;
+        }
+
+        #localStream video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .no-video::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 64px;
+            height: 64px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'/%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        .stream-error {
+            @apply absolute inset-0 flex items-center justify-center bg-gray-900/90 text-center p-4;
+        }
+
+        .control-btn {
+            @apply bg-gray-800 hover:bg-gray-700 text-white p-3 rounded-full transition-all duration-200 ease-in-out flex items-center justify-center;
+            width: 44px;
+            height: 44px;
+        }
+
+        .control-btn.active {
+            @apply bg-blue-600 hover:bg-blue-700;
+        }
+
+        .control-btn.danger {
+            @apply bg-red-600 hover:bg-red-700;
+        }
+
+        .participant-card {
+            @apply bg-gray-800 rounded-xl overflow-hidden relative;
+            aspect-ratio: 16/9;
+        }
+
+        .participant-info {
+            @apply absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent;
+        }
+
+        #remoteStreams {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-900 border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <h1 class="text-xl font-semibold text-white">Virtual Classroom</h1>
+                <span id="connectionStatus" class="px-3 py-1 rounded-full text-sm bg-gray-800 text-gray-300">Initializing...</span>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button id="endStreamBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                    <span>End Stream</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex">
+        <!-- Main Stream Area -->
+        <div class="flex-1 p-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Teacher Stream -->
+                <div class="participant-card">
+                    <div id="localStream">
+                        <div id="streamError" class="stream-error hidden">
+                            <div class="text-center">
+                                <p class="text-red-400 mb-4">Camera access failed. Please check permissions.</p>
+                                <button onclick="window.retryConnection()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                                    Retry
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="participant-info">
+                        <span class="font-medium">You (Teacher)</span>
+                    </div>
+                </div>
+
+                <!-- Remote Streams -->
+                <div id="remoteStreams" class="grid gap-4">
+                    <!-- Remote streams will be added here dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="w-80 bg-gray-900 border-l border-gray-800 flex flex-col">
+            <!-- Tabs -->
+            <div class="flex border-b border-gray-800">
+                <button class="flex-1 px-4 py-3 text-white bg-gray-800">Participants</button>
+                <button class="flex-1 px-4 py-3 text-gray-400 hover:bg-gray-800">Chat</button>
+            </div>
+            <!-- Participants List -->
+            <div id="participantsList" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <!-- Participants will be added here dynamically -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Controls Bar -->
+    <div class="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-4">
+                <button id="toggleAudioBtn" class="control-btn" title="Toggle Microphone">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                    </svg>
+                </button>
+                <button id="toggleVideoBtn" class="control-btn" title="Toggle Camera">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                    </svg>
+                </button>
+                <button id="toggleScreenShareBtn" class="control-btn" title="Share Screen">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Initialization -->
+    <script>
+        // Essential global parameters
+        window.AGORA_PARAMS = {
+            CHANNEL: new URLSearchParams(window.location.search).get('channel'),
+            TOKEN: new URLSearchParams(window.location.search).get('token'),
+            UID: 1  // Teacher is always uid 1
+        };
+    </script>
+    <script type="module" src="js/teacher.js"></script>
+</body>
+</html>
+================================================================================
+FILE: public/streaming/student.html
+================================================================================
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student's Virtual Classroom</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/@100mslive/hms-video@latest/dist/hms-video.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --danger-color: #dc2626;
+            --success-color: #16a34a;
+        }
+        body {
+            background-color: #0f172a;
+            color: white;
+        }
+        #localStream, #teacherStream {
+            width: 100%;
+            height: 100%;
+            background-color: #1e293b;
+            position: relative;
+            overflow: hidden;
+            border-radius: 0.5rem;
+            min-height: 240px;
+        }
+        #localStream video, #teacherStream video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .no-video::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 64px;
+            height: 64px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'/%3E%3C/svg%3E");
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0.5;
+        }
+        .control-btn {
+            @apply bg-gray-800 hover:bg-gray-700 text-white p-3 rounded-full transition-all duration-200 ease-in-out flex items-center justify-center;
+            width: 44px;
+            height: 44px;
+        }
+        .control-btn.active {
+            @apply bg-blue-600 hover:bg-blue-700;
+        }
+        .control-btn.btn-muted {
+            @apply bg-red-600 hover:bg-red-700;
+        }
+        .participant-info {
+            @apply absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-white;
+        }
+        .status-badge {
+            @apply absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium;
+        }
+        .status-badge.speaking {
+            @apply bg-green-500 text-white;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-gray-900 border-b border-gray-800">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <h1 class="text-xl font-semibold text-white">Virtual Classroom</h1>
+                    <span id="connectionStatus" class="px-3 py-1 rounded-full text-sm bg-gray-800 text-gray-300"></span>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button id="leaveBtn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        <span>Leave Class</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1">
+            <!-- Remove the setup section -->
+            <div id="joinSection" class="hidden">
+                <!-- This section will be hidden and unused -->
+            </div>
+
+            <!-- Show class section by default -->
+            <div id="classSection" class="flex-1">
+                <div class="h-full flex">
+                    <!-- Main Stream Area -->
+                    <div class="flex-1 p-4">
+                        <div class="grid grid-cols-1 gap-4">
+                            <!-- Teacher Stream -->
+                            <div class="aspect-video bg-gray-900 rounded-lg overflow-hidden relative">
+                                <div id="teacherStream"></div>
+                                <div class="participant-info">
+                                    <span class="font-medium">Teacher</span>
+                                </div>
+                            </div>
+                            <!-- Local Stream -->
+                            <div class="aspect-video bg-gray-900 rounded-lg overflow-hidden relative">
+                                <div id="localStream"></div>
+                                <div class="participant-info">
+                                    <span class="font-medium">You (Student)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sidebar -->
+                    <div class="w-80 bg-gray-900 border-l border-gray-800 flex flex-col">
+                        <!-- Tabs -->
+                        <div class="flex border-b border-gray-800">
+                            <button class="flex-1 px-4 py-3 text-white bg-gray-800">Participants</button>
+                            <button class="flex-1 px-4 py-3 text-gray-400 hover:bg-gray-800">Chat</button>
+                        </div>
+                        <!-- Participants List -->
+                        <div id="participantsList" class="flex-1 overflow-y-auto p-4 space-y-3">
+                            <!-- Participants will be added here dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Controls Bar -->
+                <div class="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800">
+                    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-center items-center space-x-4">
+                        <button id="toggleAudioBtn" class="control-btn">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                            </svg>
+                        </button>
+                        <button id="toggleVideoBtn" class="control-btn">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                        </button>
+                        <button id="raiseHandBtn" class="control-btn">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/student.js"></script>
+</body>
+</html>
+
+================================================================================
+FILE: public/streaming/js/student.js
+================================================================================
+
+// public/streaming/js/student.js
+import { HMSSdk } from '@100mslive/hms-video';
+import CONFIG from './config.js';
+
+let hmsClient = null;
+
+async function initializeHMS() {
+  try {
+    hmsClient = new HMSSdk();
+    
+    const authToken = await getAuthToken(); // Get from your token endpoint
+    const config = {
+      userName: 'Student',
+      authToken,
+      settings: {
+        isAudioMuted: true,
+        isVideoMuted: true,
+      }
+    };
+
+    await hmsClient.join(config);
+    
+    // Event listeners
+    hmsClient.on('peer-joined', handlePeerJoined);
+    hmsClient.on('peer-left', handlePeerLeft);
+    hmsClient.on('track-updated', handleTrackUpdate);
+
+  } catch (error) {
+    console.error('HMS initialization failed:', error);
+    showError('Failed to join class: ' + error.message);
+  }
+}
+
+function handlePeerJoined(peer) {
+  if (peer.role === 'teacher') {
+    hmsClient.attachVideoTrack(peer.videoTrack, 'teacherStream');
+  }
+}
+================================================================================
+FILE: src/pages/student/LiveClasses.jsx
+================================================================================
+
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Typography,
+  Grid,
+  Paper,
+  Avatar,
+  Button,
+  Chip,
+  Stack,
+  Container,
+  Alert,
+  CircularProgress
+} from '@mui/material';
+import {
+  LiveTv as LiveTvIcon,
+  Timer as TimerIcon,
+  Person as PersonIcon,
+  School as SchoolIcon
+} from '@mui/icons-material';
+import { useAuth } from '../../hooks/useAuth';
+import { getActiveLiveClasses } from '../../api/student';
+import { getCurrentLanguage } from '../../i18n';
+import { auth } from '../../api/config';
+import ShimmerCard from '../../components/common/ShimmerCard';
+
+const LiveClasses = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [liveClasses, setLiveClasses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [joiningClass, setJoiningClass] = useState(false);
+
+  useEffect(() => {
+    const fetchLiveClasses = async () => {
+      try {
+        setLoading(true);
+        const classes = await getActiveLiveClasses(user.id);
+        console.log('Fetched live classes:', classes);
+        setLiveClasses(classes);
+      } catch (error) {
+        console.error('Error fetching live classes:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user?.id) {
+      fetchLiveClasses();
+    }
+  }, [user?.id]);
+
+  const handleJoinClass = async (classId, channelName) => {
+    try {
+      setJoiningClass(true);
+      setError(null);
+
+      // Get current Firebase user
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error('No authenticated user found');
+      }
+
+      // Get fresh token
+      const token = await currentUser.getIdToken(true);
+      if (!token) {
+        throw new Error('Failed to get authentication token');
+      }
+
+      // Store tokens
+      localStorage.setItem('token', token);
+      localStorage.setItem('auth_token', token);
+
+      // Get current language
+      const currentLang = getCurrentLanguage();
+
+      // Construct streaming URL with all required parameters
+      const streamingUrl = '/streaming/student.html?' + new URLSearchParams({
+        channel: channelName,
+        token: token,
+        lang: currentLang,
+        userId: user.id
+      }).toString();
+
+      console.log('Joining stream with URL:', streamingUrl);
+      
+      // Navigate to streaming page
+      window.location.href = streamingUrl;
+
+    } catch (error) {
+      console.error('Error joining class:', error);
+      setError('Failed to join class: ' + error.message);
+      setJoiningClass(false);
+    }
+  };
+
+  const ClassCard = ({ liveClass }) => (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 3,
+        border: '1px solid rgba(0, 0, 0, 0.1)',
+        borderRadius: '12px',
+        transition: 'all 0.2s',
+        '&:hover': {
+          borderColor: '#bb5c39',
+          transform: 'translateY(-2px)',
+          boxShadow: '0 4px 12px rgba(187, 92, 57, 0.1)'
+        }
+      }}
+    >
+      <Grid container alignItems="center" spacing={3}>
+        <Grid item xs={12} md={8}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Avatar
+              sx={{
+                bgcolor: 'rgba(187, 92, 57, 0.1)',
+                color: '#bb5c39'
+              }}
+            >
+              <SchoolIcon />
+            </Avatar>
+            <Box>
+              <Typography variant="h6" sx={{ 
+                fontWeight: 600,
+                color: '#2f2f2f'
+              }}>
+                {liveClass.title}
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                {liveClass.teacherName || 'Teacher'}
+              </Typography>
+            </Box>
+          </Box>
+          
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Chip
+              icon={<TimerIcon sx={{ fontSize: '18px !important' }} />}
+              label={`Started ${new Date(liveClass.startTime).toLocaleTimeString()}`}
+              sx={{ 
+                backgroundColor: 'rgba(187, 92, 57, 0.1)',
+                color: '#bb5c39',
+                borderRadius: '8px',
+                '& .MuiChip-icon': {
+                  color: '#bb5c39'
+                }
+              }}
+            />
+            <Chip
+              icon={<LiveTvIcon sx={{ fontSize: '18px !important' }} />}
+              label="Live"
+              sx={{
+                backgroundColor: '#bb5c39',
+                color: '#fff',
+                borderRadius: '8px',
+                '& .MuiChip-icon': {
+                  color: '#fff'
+                }
+              }}
+            />
+          </Stack>
+        </Grid>
+
+        <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Box
+            sx={{
+              position: 'relative',
+              '&:before': {
+                content: '""',
+                position: 'absolute',
+                top: '6px',
+                left: '6px',
+                right: '-6px',
+                bottom: '-6px',
+                backgroundColor: 'rgba(187, 92, 57, 0.2)',
+                borderRadius: '8px',
+                zIndex: 0
+              }
+            }}
+          >
+            <Button
+              variant="contained"
+              startIcon={joiningClass ? <CircularProgress size={20} color="inherit" /> : <LiveTvIcon />}
+              disabled={joiningClass}
+              onClick={() => handleJoinClass(liveClass.id, liveClass.channelName)}
+              sx={{
+                py: 1.5,
+                px: 3,
+                backgroundColor: '#bb5c39',
+                color: '#fff',
+                position: 'relative',
+                zIndex: 1,
+                border: '1px solid rgba(187, 92, 57, 0.1)',
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  backgroundColor: '#a04b2e',
+                  transform: 'translate(-2px, -2px)',
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: 'rgba(187, 92, 57, 0.5)',
+                  color: '#fff'
+                }
+              }}
+            >
+              {joiningClass ? 'Joining...' : 'Join Class'}
+            </Button>
+          </Box>
+        </Grid>
+      </Grid>
+    </Paper>
+  );
+
+  return (
+    <Box sx={{ 
+      minHeight: '100vh',
+      backgroundColor: '#f8f9fa',
+      pt: { xs: '80px', sm: '90px' },
+      pb: 4
+    }}>
+      <Container maxWidth="xl">
+        <Typography variant="h4" sx={{ 
+          fontWeight: 700, 
+          mb: 3,
+          color: '#2f2f2f'
+        }}>
+          Live Classes
+        </Typography>
+        
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 3,
+              borderRadius: '8px',
+              border: '1px solid rgba(211, 47, 47, 0.1)'
+            }}
+          >
+            {error}
+          </Alert>
+        )}
+
+        {loading ? (
+          <Stack spacing={3}>
+            {[1, 2, 3].map((index) => (
+              <ShimmerCard key={index} height={160} />
+            ))}
+          </Stack>
+        ) : (
+          <Stack spacing={3}>
+            {liveClasses.length > 0 ? (
+              liveClasses.map((liveClass) => (
+                <ClassCard key={liveClass.id} liveClass={liveClass} />
+              ))
+            ) : (
+              <Box 
+                sx={{ 
+                  textAlign: 'center',
+                  py: 8,
+                  backgroundColor: 'rgba(187, 92, 57, 0.03)',
+                  borderRadius: '12px',
+                  border: '1px dashed rgba(187, 92, 57, 0.2)'
+                }}
+              >
+                <LiveTvIcon sx={{ 
+                  fontSize: 48, 
+                  color: 'rgba(187, 92, 57, 0.2)',
+                  mb: 2
+                }} />
+                <Typography 
+                  variant="h6" 
+                  sx={{ 
+                    color: '#666',
+                    fontWeight: 500
+                  }}
+                >
+                  No live classes available at the moment
+                </Typography>
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: '#888',
+                    mt: 1
+                  }}
+                >
+                  Check back later for upcoming classes
+                </Typography>
+              </Box>
+            )}
+          </Stack>
+        )}
+      </Container>
+    </Box>
+  );
+};
+
+export default LiveClasses;
+================================================================================
+FILE: src/pages/teacher/Dashboard.jsx
+================================================================================
+
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -53,7 +944,6 @@ import {
   startLiveClass,
   saveLessonPlan,
   getTeacherStats,
-  createDailyRoom,
   getTeacherCourses,
   getTeacherAssignments,
   getTeacherStudents,
@@ -967,7 +1857,6 @@ const TeacherDashboard = () => {
   const [liveClassData, setLiveClassData] = useState({
     title: '',
     description: '',
-    subject: '',
     enableChat: true,
     allowQuestions: true
   });
@@ -1069,35 +1958,40 @@ const TeacherDashboard = () => {
       setLoading(true);
       setError(null);
 
-      // Create Daily.co room
-      const roomData = {
+      // Save class details to firebase
+      const classData = {
         title: liveClassData.title,
         description: liveClassData.description,
-        subject: liveClassData.subject || 'General',
-        startTime: new Date().toISOString(),
         teacherId: user.id,
-        teacherName: user.displayName || 'Unknown Teacher'
+        startTime: new Date().toISOString(),
+        status: 'active'
       };
 
-      const result = await createDailyRoom(user.id, roomData);
-      console.log('Created Daily.co room:', result);
+      const result = await startLiveClass(user.id, classData);
+
+      // Get stored token
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
+        throw new Error('No authentication token available');
+      }
+
+      // Clean and store the token
+      const cleanToken = storedToken.replace('Bearer ', '');
+      localStorage.setItem('auth_token', cleanToken);
 
       // Close the dialog before navigation
       setStartLiveClassDialog(false);
-      
-      // Reset form data
-      setLiveClassData({
-        title: '',
-        description: '',
-        subject: ''
-      });
 
-      // Navigate to Daily.co room URL
-      window.location.href = `/streaming/teacher.html?room=${result.roomName}`;
+      // Get current language
+      const currentLang = getCurrentLanguage();
+      
+      // Navigate directly to the streaming page
+      const streamingUrl = `/streaming/teacher.html?channel=${result.channelName}&lang=${currentLang}&token=${cleanToken}&userId=${user.id}`;
+      window.location.href = streamingUrl;
 
     } catch (error) {
-      console.error('Error creating room:', error);
-      setError(error.message || 'Failed to create room');
+      console.error('Error starting class:', error);
+      setError(error.message || 'Failed to start class');
     } finally {
       setLoading(false);
     }
@@ -1196,52 +2090,30 @@ const TeacherDashboard = () => {
     }
   };
 
-  const handleStartStream = async () => {
-    try {
-      if (!streamData.channelName) {
-        setError('Stream title is required');
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
-      // Create Daily.co room with stream data
-      const roomData = {
-        title: streamData.channelName,
-        description: streamData.description,
-        subject: 'Live Stream',
-        startTime: new Date().toISOString(),
-        teacherId: user.id,
-        teacherName: user.displayName || 'Unknown Teacher',
-        enableChat: streamData.enableChat,
-        allowQuestions: streamData.allowQuestions
-      };
-
-      const result = await createDailyRoom(user.id, roomData);
-      console.log('Created Daily.co room:', result);
-      
-      // Close dialog before navigation
-      setStartStreamDialog(false);
-      
-      // Reset form data
-      setStreamData({
-        channelName: '',
-        description: '',
-        enableChat: true,
-        allowQuestions: true
-      });
-
-      // Navigate to streaming page with room name
-      window.location.href = `/streaming/teacher.html?room=${result.roomName}`;
-
-    } catch (error) {
-      console.error('Stream start failed:', error);
-      setError('Failed to start stream: ' + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // src/pages/teacher/Dashboard.jsx
+const handleStartStream = async () => {
+  try {
+    const response = await fetch('/api/hms-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${user.token}`
+      },
+      body: JSON.stringify({
+        room_id: streamData.channelName,
+        role: 'teacher'
+      })
+    });
+    
+    const { token } = await response.json();
+    
+    const streamingUrl = `/streaming/teacher.html?room=${streamData.channelName}&token=${token}`;
+    window.location.href = streamingUrl;
+  } catch (error) {
+    console.error('Stream start failed:', error);
+    setError('Failed to start stream');
+  }
+};
 
   if (loading) {
     return (
@@ -2137,3 +3009,4 @@ const TeacherDashboard = () => {
 };
 
 export default TeacherDashboard;
+

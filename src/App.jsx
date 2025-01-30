@@ -16,7 +16,6 @@ import RoleSelectionPage from './pages/auth/RoleSelectionPage';
 
 // Student Components
 import StudentDashboard from './pages/student/Dashboard';
-import LiveClass from './pages/student/LiveClass';
 import LiveClasses from './pages/student/LiveClasses';
 import AssignmentsPage from './pages/student/AssignmentsPage';
 import SchedulePage from './pages/student/SchedulePage';
@@ -27,7 +26,6 @@ import StudentProfile from './pages/student/Profile';
 // Teacher Components
 import TeacherDashboard from './pages/teacher/Dashboard';
 import TeacherAssignments from './pages/teacher/Assignments';
-import Streaming from './pages/teacher/Streaming';
 import TeacherAssignmentDetails from './pages/teacher/AssignmentDetails';
 
 // Parent Components
@@ -38,7 +36,6 @@ import AdminDashboard from './pages/admin/Dashboard';
 
 // Layout Components
 import Navbar from './components/layout/Navbar';
-import StreamLayout from './components/layout/StreamLayout';
 
 // Temporary placeholders for other registration components
 const TeacherRegistration = () => (
@@ -108,23 +105,6 @@ const AppRoutes = () => {
         } />
         <Route path="teacher/assignments/:id" element={<TeacherAssignmentDetails />} />
 
-        {/* Streaming Routes - Direct StreamLayout */}
-        <Route path="teacher/streaming/:id" element={
-          <PrivateRoute>
-            <StreamLayout>
-              <Streaming />
-            </StreamLayout>
-          </PrivateRoute>
-        } />
-        
-        <Route path="student/live-class/:id" element={
-          <PrivateRoute>
-            <StreamLayout>
-              <LiveClass />
-            </StreamLayout>
-          </PrivateRoute>
-        } />
-
         {/* Admin Routes */}
         <Route
           path="admin"
@@ -191,7 +171,7 @@ const AppRoutes = () => {
       </Route>
     </Routes>
   );
-};
+}
 
 const App = () => {
   return (

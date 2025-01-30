@@ -1,0 +1,153 @@
+/* Custom styles for streaming pages */
+
+/* Video container styles */
+.aspect-video {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    height: 0;
+    overflow: hidden;
+}
+
+.aspect-video video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background-color: #1a1a1a;
+}
+
+/* Connection status indicators */
+#connectionStatus.connected {
+    background-color: #10B981;
+    color: white;
+}
+
+#connectionStatus.connecting {
+    background-color: #F59E0B;
+    color: white;
+}
+
+#connectionStatus.disconnected {
+    background-color: #EF4444;
+    color: white;
+}
+
+/* Button states */
+.btn-active {
+    background-color: #4F46E5 !important;
+    color: white !important;
+}
+
+.btn-muted {
+    background-color: #EF4444 !important;
+    color: white !important;
+}
+
+/* Hand raised indicator */
+.hand-raised {
+    position: relative;
+}
+
+.hand-raised::after {
+    content: '✋';
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background-color: #F59E0B;
+    color: white;
+    border-radius: 50%;
+    padding: 2px;
+    font-size: 12px;
+}
+
+/* Participant list item styles */
+.participant-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    background-color: #F3F4F6;
+}
+
+.participant-item:last-child {
+    margin-bottom: 0;
+}
+
+.participant-item .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.participant-item .status-indicator.online {
+    background-color: #10B981;
+}
+
+.participant-item .status-indicator.offline {
+    background-color: #EF4444;
+}
+
+/* Screen share styles */
+.screen-share-active {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 50;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.screen-share-container {
+    width: 90%;
+    height: 90%;
+    background-color: #000;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .screen-share-container {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+    }
+}
+
+/* Input styles */
+input[type="text"] {
+    border: 1px solid #E5E7EB;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.15s ease-in-out;
+}
+
+input[type="text"]:focus {
+    border-color: #4F46E5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+} 

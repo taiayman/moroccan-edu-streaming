@@ -4,56 +4,77 @@ import {
   where, 
   getDocs,
   orderBy,
-  Timestamp 
+  Timestamp,
+  doc,
+  getDoc
 } from 'firebase/firestore';
 import { db, COLLECTIONS } from './config';
 
 // Get active live classes for a student
 export const getActiveLiveClasses = async (studentId) => {
   try {
-    const now = Timestamp.now();
-    
-    // Query live classes that are:
-    // 1. Currently active (status === 'active')
-    // 2. Have started (startTime <= now)
-    // 3. Haven't ended (endTime === null OR endTime > now)
+    // Query active Daily.co rooms
     const q = query(
-      collection(db, COLLECTIONS.LIVE_CLASSES),
+      collection(db, COLLECTIONS.DAILYCO_ROOMS),
       where('status', '==', 'active'),
-      where('startTime', '<=', now),
-      where('endTime', '==', null),
-      orderBy('startTime', 'desc')
+      orderBy('createdAt', 'desc')
     );
     
     const snapshot = await getDocs(q);
-    const liveClasses = [];
-    
-    for (const doc of snapshot.docs) {
-      const classData = {
-        id: doc.id,
-        ...doc.data(),
-        startTime: doc.data().startTime?.toDate(),
-        // Ensure channelName is included in the returned data
-        channelName: doc.data().channelName || `class_${doc.data().teacherId}_${doc.data().startTime?.toMillis()}`
-      };
-      
-      // Convert Firestore Timestamp to Date
-      if (classData.createdAt) {
-        classData.createdAt = classData.createdAt.toDate();
-      }
-      if (classData.updatedAt) {
-        classData.updatedAt = classData.updatedAt.toDate();
-      }
-      
-      // Additional check to ensure the class is truly active
-      if (!classData.endTime) {
-        liveClasses.push(classData);
-      }
-    }
-    
-    return liveClasses;
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      startTime: doc.data().createdAt?.toDate(),
+      createdAt: doc.data().createdAt?.toDate(),
+      updatedAt: doc.data().updatedAt?.toDate()
+    }));
   } catch (error) {
     console.error('Error fetching live classes:', error);
     throw error;
   }
-}; 
+};
+
+// Get active Daily.co rooms
+export const getActiveDailyRooms = async () => {
+  try {
+    const q = query(
+      collection(db, COLLECTIONS.DAILYCO_ROOMS),
+      where('status', '==', 'active'),
+      orderBy('createdAt', 'desc')
+    );
+    
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate(),
+      updatedAt: doc.data().updatedAt?.toDate()
+    }));
+  } catch (error) {
+    console.error('Error fetching Daily.co rooms:', error);
+    throw error;
+  }
+};
+
+// Get a specific Daily.co room by ID
+export const getDailyRoom = async (roomId) => {
+  try {
+    const roomRef = doc(db, COLLECTIONS.DAILYCO_ROOMS, roomId);
+    const roomSnap = await getDoc(roomRef);
+    
+    if (!roomSnap.exists()) {
+      throw new Error('Room not found');
+    }
+
+    const roomData = roomSnap.data();
+    return {
+      id: roomSnap.id,
+      ...roomData,
+      createdAt: roomData.createdAt?.toDate(),
+      updatedAt: roomData.updatedAt?.toDate()
+    };
+  } catch (error) {
+    console.error('Error fetching Daily.co room:', error);
+    throw error;
+  }
+};
