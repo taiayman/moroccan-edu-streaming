@@ -62,8 +62,6 @@ export const endpoints = {
     register: `${API_BASE_URL}/auth/register`,
     logout: `${API_BASE_URL}/auth/logout`,
   },
-<<<<<<< HEAD
-=======
   streaming: {
     // 100ms API endpoints
     rooms: 'https://api.100ms.live/v2/rooms',
@@ -73,7 +71,6 @@ export const endpoints = {
     activeRooms: 'https://api.100ms.live/v2/active-rooms',
     peers: 'https://api.100ms.live/v2/peers'
   },
->>>>>>> origin/main
   courses: {
     list: `${API_BASE_URL}/courses`,
     details: (id) => `${API_BASE_URL}/courses/${id}`,

@@ -18,15 +18,12 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, COLLECTIONS } from './config';
-<<<<<<< HEAD
-=======
 import { 
   startLiveClass as startHMSClass, 
   endLiveClass as endHMSClass,
   createRoom,
   getManagementToken 
 } from './streaming';
->>>>>>> origin/main
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
@@ -241,41 +238,15 @@ export const getTeacherLessons = async (teacherId) => {
 
     return lessons;
   } catch (error) {
-<<<<<<< HEAD
-    console.error('Error getting teacher lessons:', error);
-    throw error;
-  } 
-=======
     console.error('Error getting lessons:', error);
     // Return empty array instead of throwing to handle gracefully
     return [];
   }
->>>>>>> origin/main
 };
 
 // Start a live class
 export const startLiveClass = async (teacherId, classData) => {
   try {
-<<<<<<< HEAD
-    // First create the scheduled class
-    const scheduleRef = await addDoc(collection(db, COLLECTIONS.SCHEDULE), {
-      ...classData,
-      teacherId,
-      status: 'scheduled',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-
-    // Generate a stable channel name without timestamp
-    const channelName = `class_${teacherId}_${scheduleRef.id}`;
-
-    // Create an active live class
-    const liveClassRef = await addDoc(collection(db, COLLECTIONS.LIVE_CLASSES), {
-      ...classData,
-      teacherId,
-      scheduleId: scheduleRef.id,
-      channelName: channelName, // Use the stable channel name
-=======
     // Create a room in 100ms
     const room = await createRoom(teacherId, classData.classId);
     
@@ -288,26 +259,19 @@ export const startLiveClass = async (teacherId, classData) => {
       roomId: room.id,
       roomName: room.name,
       token,
->>>>>>> origin/main
       status: 'active',
       startTime: serverTimestamp(),
-      endTime: null,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+      teacherId,
+      endTime: null
     });
 
     return {
-<<<<<<< HEAD
-      classId: liveClassRef.id,
-      channelName: channelName
-=======
       classId: docRef.id,
       roomId: room.id,
       token
->>>>>>> origin/main
     };
   } catch (error) {
-    console.error('Error scheduling class:', error);
+    console.error('Error starting live class:', error);
     throw error;
   }
 };
