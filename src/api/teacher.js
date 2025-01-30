@@ -18,6 +18,15 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage, COLLECTIONS } from './config';
+<<<<<<< HEAD
+=======
+import { 
+  startLiveClass as startHMSClass, 
+  endLiveClass as endHMSClass,
+  createRoom,
+  getManagementToken 
+} from './streaming';
+>>>>>>> origin/main
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
@@ -207,6 +216,15 @@ export const saveLessonPlan = async (teacherId, lessonData, files = []) => {
 // Get teacher's lessons
 export const getTeacherLessons = async (teacherId) => {
   try {
+    if (!navigator.onLine) {
+      console.warn('Currently offline. Attempting to fetch from cache...');
+    }
+
+    if (!teacherId) {
+      console.error('No teacherId provided to getTeacherLessons');
+      return [];
+    }
+
     const q = query(
       collection(db, COLLECTIONS.LESSONS),
       where('teacherId', '==', teacherId),
@@ -214,19 +232,31 @@ export const getTeacherLessons = async (teacherId) => {
     );
     
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
+    const lessons = snapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
+      createdAt: doc.data().createdAt?.toDate?.() || doc.data().createdAt,
+      updatedAt: doc.data().updatedAt?.toDate?.() || doc.data().updatedAt
     }));
+
+    return lessons;
   } catch (error) {
+<<<<<<< HEAD
     console.error('Error getting teacher lessons:', error);
     throw error;
   } 
+=======
+    console.error('Error getting lessons:', error);
+    // Return empty array instead of throwing to handle gracefully
+    return [];
+  }
+>>>>>>> origin/main
 };
 
 // Start a live class
 export const startLiveClass = async (teacherId, classData) => {
   try {
+<<<<<<< HEAD
     // First create the scheduled class
     const scheduleRef = await addDoc(collection(db, COLLECTIONS.SCHEDULE), {
       ...classData,
@@ -245,6 +275,20 @@ export const startLiveClass = async (teacherId, classData) => {
       teacherId,
       scheduleId: scheduleRef.id,
       channelName: channelName, // Use the stable channel name
+=======
+    // Create a room in 100ms
+    const room = await createRoom(teacherId, classData.classId);
+    
+    // Get management token for teacher
+    const token = await getManagementToken(room.id, teacherId);
+
+    // Create the live class document in Firestore
+    const docRef = await addDoc(collection(db, COLLECTIONS.LIVE_CLASSES), {
+      ...classData,
+      roomId: room.id,
+      roomName: room.name,
+      token,
+>>>>>>> origin/main
       status: 'active',
       startTime: serverTimestamp(),
       endTime: null,
@@ -253,8 +297,14 @@ export const startLiveClass = async (teacherId, classData) => {
     });
 
     return {
+<<<<<<< HEAD
       classId: liveClassRef.id,
       channelName: channelName
+=======
+      classId: docRef.id,
+      roomId: room.id,
+      token
+>>>>>>> origin/main
     };
   } catch (error) {
     console.error('Error scheduling class:', error);
@@ -266,10 +316,14 @@ export const startLiveClass = async (teacherId, classData) => {
 export const endLiveClass = async (classId) => {
   try {
     const classRef = doc(db, COLLECTIONS.LIVE_CLASSES, classId);
-    await updateDoc(classRef, {
-      status: 'ended',
-      endedAt: Timestamp.now()
-    });
+    const classDoc = await getDoc(classRef);
+    
+    if (!classDoc.exists()) {
+      throw new Error('Class not found');
+    }
+
+    const classData = classDoc.data();
+    await endHMSClass(classId, classData.roomId);
   } catch (error) {
     console.error('Error ending class:', error);
     throw error;

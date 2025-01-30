@@ -1004,22 +1004,15 @@ const TeacherDashboard = () => {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       // Get today's date range
       const today = new Date();
       const startOfDay = new Date(today.setHours(0, 0, 0, 0));
       const endOfDay = new Date(today.setHours(23, 59, 59, 999));
 
-      // Load all dashboard data
-      const [
-        lessonsData,
-        scheduleData,
-        coursesData,
-        assignmentsData,
-        studentsData,
-        statsData,
-        activitiesData
-      ] = await Promise.all([
+      // Load data with individual error handling
+      const results = await Promise.allSettled([
         getTeacherLessons(user.id),
         getTeacherSchedule(user.id, startOfDay, endOfDay),
         getTeacherCourses(user.id),
@@ -1029,19 +1022,39 @@ const TeacherDashboard = () => {
         getRecentActivities(user.id)
       ]);
 
-      setLessons(lessonsData);
-      setSchedule(scheduleData);
-      setCourses(coursesData);
-      setAssignments(assignmentsData);
-      setStudents(studentsData);
-      setActivities(activitiesData);
-      
+      // Process results and set data
+      const [
+        lessonsResult,
+        scheduleResult,
+        coursesResult,
+        assignmentsResult,
+        studentsResult,
+        statsResult,
+        activitiesResult
+      ] = results;
+
+      // Handle each result individually
+      if (lessonsResult.status === 'fulfilled') setLessons(lessonsResult.value);
+      if (scheduleResult.status === 'fulfilled') setSchedule(scheduleResult.value);
+      if (coursesResult.status === 'fulfilled') setCourses(coursesResult.value);
+      if (assignmentsResult.status === 'fulfilled') setAssignments(assignmentsResult.value);
+      if (studentsResult.status === 'fulfilled') setStudents(studentsResult.value);
+      if (activitiesResult.status === 'fulfilled') setActivities(activitiesResult.value);
+
+      // Check if we have any rejected promises
+      const failedRequests = results.filter(result => result.status === 'rejected');
+      if (failedRequests.length > 0) {
+        console.warn('Some data failed to load:', failedRequests);
+        setError('Some dashboard data could not be loaded. Please check your internet connection.');
+      }
+
+      // Set stats even if some data is missing
       setStats([
         {
           title: 'Calendar',
           value: new Date().toLocaleDateString('en-US', { month: 'long' }),
           icon: <CalendarIcon />,
-          schedule: schedule.map(item => ({
+          schedule: (scheduleResult.status === 'fulfilled' ? scheduleResult.value : []).map(item => ({
             time: item.time,
             title: item.subject
           })),
@@ -1050,10 +1063,9 @@ const TeacherDashboard = () => {
         }
       ]);
 
-      setError(null);
     } catch (err) {
       console.error('Error loading dashboard:', err);
-      setError('Failed to load dashboard data');
+      setError('Failed to load dashboard data. Please check your internet connection and try again.');
     } finally {
       setLoading(false);
     }
