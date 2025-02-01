@@ -1,6 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+// Emotion + RTL Setup
+import { CacheProvider } from '@emotion/react';
+import createCache from '@emotion/cache';
+import rtlPlugin from 'stylis-plugin-rtl';
+import { prefixer } from 'stylis';
+
 import {
+  ThemeProvider,
+  createTheme,
   Box,
   Typography,
   Grid,
@@ -11,21 +20,55 @@ import {
   Stack,
   Container,
   Alert,
-  CircularProgress
+  CircularProgress,
+  CssBaseline
 } from '@mui/material';
+
 import {
   LiveTv as LiveTvIcon,
   Timer as TimerIcon,
   Person as PersonIcon,
   School as SchoolIcon
 } from '@mui/icons-material';
+
 import { useAuth } from '../../hooks/useAuth';
 import { getActiveLiveClasses, getDailyRoom } from '../../api/student';
 import { getCurrentLanguage } from '../../i18n';
 import { auth } from '../../api/config';
+import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
+
+// RTL Cache & Theme Setup
+const cacheRtl = createCache({
+  key: 'muirtl',
+  stylisPlugins: [prefixer, rtlPlugin],
+});
+
+const fontFamily = "'Noto Kufi Arabic', sans-serif";
+const theme = createTheme({
+  direction: 'rtl',
+  typography: {
+    fontFamily: fontFamily,
+    h3: { fontFamily, fontWeight: 600 },
+    h4: { fontFamily, fontWeight: 600 },
+    h5: { fontFamily, fontWeight: 500 },
+    h6: { fontFamily, fontWeight: 500 },
+    body1: { fontFamily },
+    button: { fontFamily, fontWeight: 500 },
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: `
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
+        body { font-family: ${fontFamily}; }
+      `,
+    },
+  },
+});
 
 const LiveClasses = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [liveClasses, setLiveClasses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -57,22 +100,17 @@ const LiveClasses = () => {
       setJoiningClass(true);
       setError(null);
 
-      // Get current Firebase user
       const currentUser = auth.currentUser;
       if (!currentUser) {
         throw new Error('No authenticated user found');
       }
 
-      // Get room information
       const room = await getDailyRoom(classId);
       if (!room) {
         throw new Error('Room not found');
       }
 
-      // Extract room name from the URL
       const roomName = room.url.split('/').pop();
-      
-      // Navigate to our student streaming interface with the room name
       window.location.href = `/streaming/student.html?room=${roomName}`;
 
     } catch (error) {
@@ -84,189 +122,257 @@ const LiveClasses = () => {
 
   const ClassCard = ({ liveClass }) => (
     <Paper
+      component={motion.div}
+      whileHover={{ y: -4 }}
+      whileTap={{ scale: 0.98 }}
       elevation={0}
       sx={{
-        p: 3,
-        borderRadius: '8px',
+        position: 'relative',
+        borderRadius: '12px',
         backgroundColor: 'rgba(45, 55, 72, 0.9)',
         backdropFilter: 'blur(10px)',
         border: '1px solid rgba(255, 255, 255, 0.05)',
-        transition: 'all 0.2s',
-        '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
-        }
+        transition: 'all 0.3s ease',
+        overflow: 'hidden'
       }}
     >
-      <Grid container alignItems="center" spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-            <Avatar
-              sx={{
-                bgcolor: 'rgba(74, 144, 226, 0.1)',
-                color: '#4a90e2',
-                width: 48,
-                height: 48
-              }}
-            >
-              <SchoolIcon />
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ 
-                fontWeight: 500,
-                color: '#fff',
-                letterSpacing: '0.3px'
-              }}>
-                {liveClass.title}
-              </Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-                {liveClass.teacherName || 'Teacher'}
+      <Box sx={{ p: 3 }}>
+        <Grid container spacing={2} alignItems="center">
+          {/* Left Section: Avatar and Title */}
+          <Grid item xs>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar
+                sx={{
+                  bgcolor: 'rgba(0, 255, 163, 0.1)',
+                  color: '#00FFA3',
+                  width: 48,
+                  height: 48
+                }}
+              >
+                <SchoolIcon />
+              </Avatar>
+              <Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 600,
+                    color: '#fff',
+                    fontSize: '1.1rem'
+                  }}
+                >
+                  {liveClass.title}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: 'rgba(255, 255, 255, 0.7)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
+                    mt: 0.5
+                  }}
+                >
+                  <PersonIcon sx={{ fontSize: '0.9rem' }} />
+                  {liveClass.teacherName || t('common.teacher')}
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+
+          {/* Middle Section: Time */}
+          <Grid item>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 1,
+              color: 'rgba(255, 255, 255, 0.7)',
+              borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+              px: 2
+            }}>
+              <TimerIcon sx={{ fontSize: '1.1rem' }} />
+              <Typography variant="body2">
+                {new Date(liveClass.startTime).toLocaleTimeString([], { 
+                  hour: '2-digit', 
+                  minute: '2-digit' 
+                })}
               </Typography>
             </Box>
-          </Box>
-          
-          <Stack direction="row" spacing={2} alignItems="center">
-            <Chip
-              icon={<TimerIcon sx={{ fontSize: '18px !important' }} />}
-              label={`Started ${new Date(liveClass.startTime).toLocaleTimeString()}`}
-              sx={{ 
-                backgroundColor: 'rgba(74, 144, 226, 0.1)',
-                color: '#4a90e2',
-                borderRadius: '4px',
-                '& .MuiChip-icon': {
-                  color: '#4a90e2'
-                }
-              }}
-            />
-            <Chip
-              icon={<LiveTvIcon sx={{ fontSize: '18px !important' }} />}
-              label="Live"
-              sx={{
-                backgroundColor: '#4a90e2',
-                color: '#fff',
-                borderRadius: '4px',
-                '& .MuiChip-icon': {
-                  color: '#fff'
-                }
-              }}
-            />
-          </Stack>
-        </Grid>
+          </Grid>
 
-        <Grid item xs={12} md={4} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Box
-            sx={{
-              position: 'relative',
-              '&:before': {
-                content: '""',
-                position: 'absolute',
-                top: '6px',
-                left: '6px',
-                right: '-6px',
-                bottom: '-6px',
-                backgroundColor: 'rgba(74, 144, 226, 0.1)',
-                borderRadius: '4px',
-                zIndex: 0
-              }
-            }}
-          >
-            <Button
-              variant="contained"
-              startIcon={joiningClass ? <CircularProgress size={20} color="inherit" /> : <LiveTvIcon />}
-              disabled={joiningClass}
-              onClick={() => handleJoinClass(liveClass.id)}
-              sx={{
-                py: 1.5,
-                px: 3,
-                backgroundColor: '#4a90e2',
-                color: '#fff',
-                position: 'relative',
-                zIndex: 1,
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-                transition: 'all 0.2s',
-                borderRadius: '4px',
-                '&:hover': {
-                  backgroundColor: '#357abd',
-                  transform: 'translate(-2px, -2px)',
-                },
-                '&.Mui-disabled': {
-                  backgroundColor: 'rgba(74, 144, 226, 0.3)',
-                  color: '#fff'
-                }
-              }}
-            >
-              {joiningClass ? 'Joining...' : 'Join Class'}
-            </Button>
-          </Box>
+          {/* Right Section: Live Badge and Join Button */}
+          <Grid item>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              {/* Live Badge */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  backgroundColor: 'rgba(0, 255, 163, 0.1)',
+                  border: '1px solid rgba(0, 255, 163, 0.2)',
+                  borderRadius: '20px',
+                  py: 0.5,
+                  px: 1.5
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    backgroundColor: '#00FFA3',
+                    animation: 'pulse 2s infinite'
+                  }}
+                />
+                <Typography
+                  variant="caption"
+                  sx={{
+                    color: '#00FFA3',
+                    fontWeight: 600,
+                    fontSize: '0.75rem'
+                  }}
+                >
+                  {t('liveClass.live')}
+                </Typography>
+              </Box>
+
+              {/* Join Button */}
+              <Button
+                variant="contained"
+                disabled={joiningClass}
+                onClick={() => handleJoinClass(liveClass.id)}
+                sx={{
+                  backgroundColor: '#00FFA3',
+                  color: '#1a1f2c',
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  px: 2,
+                  '&:hover': {
+                    backgroundColor: '#00cc82'
+                  },
+                  '&.Mui-disabled': {
+                    backgroundColor: 'rgba(0, 255, 163, 0.3)',
+                    color: '#1a1f2c'
+                  }
+                }}
+              >
+                {joiningClass ? t('liveClass.joining') : t('liveClass.join')}
+              </Button>
+            </Box>
+          </Grid>
         </Grid>
-      </Grid>
+      </Box>
+
+      <style>
+        {`
+          @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+          }
+        `}
+      </style>
     </Paper>
   );
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(145deg, #1a1f2c 0%, #2d3748 100%)',
-      pt: { xs: '80px', sm: '90px' },
-      pb: 4
-    }}>
-      <Container maxWidth="xl">
-        <Typography variant="h4" sx={{ 
-          fontWeight: 500, 
-          mb: 3,
-          color: '#fff',
-          fontFamily: '"Roboto", sans-serif',
-          letterSpacing: '0.5px'
+    <CacheProvider value={cacheRtl}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <style>
+          {`
+            @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
+            * { font-family: ${fontFamily}; }
+          `}
+        </style>
+        <Box sx={{ 
+          minHeight: '100vh',
+          background: 'linear-gradient(145deg, #1a1f2c 0%, #2d3748 100%)',
+          pt: { xs: '80px', sm: '90px' },
+          pb: 4
         }}>
-          Live Classes
-        </Typography>
-        
-        {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 3,
-              backgroundColor: 'rgba(211, 47, 47, 0.1)',
-              color: '#ff5252',
-              border: '1px solid rgba(211, 47, 47, 0.2)',
-              borderRadius: '8px',
-              '& .MuiAlert-icon': { color: '#ff5252' }
-            }}
-          >
-            {error}
-          </Alert>
-        )}
-
-        {loading ? (
-          <Stack spacing={3}>
-            {[1, 2, 3].map((index) => (
-              <Paper
-                key={index}
-                sx={{
-                  p: 3,
-                  height: 160,
-                  borderRadius: '8px',
-                  backgroundColor: 'rgba(45, 55, 72, 0.5)',
-                  animation: 'pulse 1.5s infinite'
+          <Container maxWidth="xl">
+            <Typography 
+              variant="h4" 
+              component={motion.h1}
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              sx={{ 
+                fontWeight: 600, 
+                mb: 3,
+                color: '#fff',
+                letterSpacing: '0.5px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1
+              }}
+            >
+              <LiveTvIcon sx={{ color: '#00FFA3' }} />
+              {t('liveClass.title')}
+            </Typography>
+            
+            {error && (
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 3,
+                  backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                  color: '#ff5252',
+                  border: '1px solid rgba(211, 47, 47, 0.2)',
+                  borderRadius: '12px',
+                  '& .MuiAlert-icon': { color: '#ff5252' }
                 }}
-              />
-            ))}
-          </Stack>
-        ) : (
-          <Stack spacing={3}>
-            {liveClasses.length > 0 ? (
-              liveClasses.map((liveClass) => (
-                <ClassCard key={liveClass.id} liveClass={liveClass} />
-              ))
-            ) : (
-              <Typography variant="body1" sx={{ color: '#fff', textAlign: 'center' }}>
-                No live classes available at the moment.
-              </Typography>
+              >
+                {error}
+              </Alert>
             )}
-          </Stack>
-        )}
-      </Container>
-    </Box>
+
+            {loading ? (
+              <Stack spacing={3}>
+                {[1, 2, 3].map((index) => (
+                  <Paper
+                    key={index}
+                    sx={{
+                      p: 3,
+                      height: 160,
+                      borderRadius: '12px',
+                      backgroundColor: 'rgba(45, 55, 72, 0.5)',
+                      animation: 'pulse 1.5s infinite'
+                    }}
+                  />
+                ))}
+              </Stack>
+            ) : (
+              <Stack spacing={3}>
+                {liveClasses.length > 0 ? (
+                  liveClasses.map((liveClass) => (
+                    <ClassCard key={liveClass.id} liveClass={liveClass} />
+                  ))
+                ) : (
+                  <Box
+                    sx={{
+                      textAlign: 'center',
+                      py: 6,
+                      color: 'rgba(255, 255, 255, 0.7)',
+                      backgroundColor: 'rgba(45, 55, 72, 0.5)',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255, 255, 255, 0.05)'
+                    }}
+                  >
+                    <LiveTvIcon sx={{ fontSize: 48, mb: 2, opacity: 0.5, color: '#00FFA3' }} />
+                    <Typography variant="body1">
+                      {t('liveClass.noClasses')}
+                    </Typography>
+                  </Box>
+                )}
+              </Stack>
+            )}
+          </Container>
+        </Box>
+      </ThemeProvider>
+    </CacheProvider>
   );
 };
 

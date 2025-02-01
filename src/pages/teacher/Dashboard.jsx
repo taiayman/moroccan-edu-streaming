@@ -196,27 +196,6 @@ const StatsCard = ({ stat }) => {
     return new Date(d.setDate(diff));
   }
 
-  // Get array of 7 days in the current week
-  const weekDates = Array.from({ length: 7 }, (_, i) => {
-    const date = new Date(currentWeekStart);
-    date.setDate(currentWeekStart.getDate() + i);
-    return date;
-  });
-
-  const weekDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-
-  const handlePrevWeek = () => {
-    const newWeekStart = new Date(currentWeekStart);
-    newWeekStart.setDate(currentWeekStart.getDate() - 7);
-    setCurrentWeekStart(newWeekStart);
-  };
-
-  const handleNextWeek = () => {
-    const newWeekStart = new Date(currentWeekStart);
-    newWeekStart.setDate(currentWeekStart.getDate() + 7);
-    setCurrentWeekStart(newWeekStart);
-  };
-
   const isToday = (date) => {
     const today = new Date();
     return (
@@ -231,6 +210,13 @@ const StatsCard = ({ stat }) => {
     const dateStr = date.toISOString().split('T')[0];
     return stat.schedule.some((event) => event.date === dateStr);
   };
+
+  // Get array of 7 days in the current week
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(currentWeekStart);
+    date.setDate(currentWeekStart.getDate() + i);
+    return date;
+  });
 
   useEffect(() => {
     if (stat.isCalendar && user) {
@@ -376,7 +362,11 @@ const StatsCard = ({ stat }) => {
         </Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <IconButton
-            onClick={handlePrevWeek}
+            onClick={() => {
+              const newWeekStart = new Date(currentWeekStart);
+              newWeekStart.setDate(currentWeekStart.getDate() - 7);
+              setCurrentWeekStart(newWeekStart);
+            }}
             sx={{
               color: '#fff',
               backgroundColor: 'rgba(0, 255, 163, 0.1)',
@@ -386,7 +376,11 @@ const StatsCard = ({ stat }) => {
             <KeyboardArrowDownIcon sx={{ transform: 'rotate(-90deg)' }} />
           </IconButton>
           <IconButton
-            onClick={handleNextWeek}
+            onClick={() => {
+              const newWeekStart = new Date(currentWeekStart);
+              newWeekStart.setDate(currentWeekStart.getDate() + 7);
+              setCurrentWeekStart(newWeekStart);
+            }}
             sx={{
               color: '#fff',
               backgroundColor: 'rgba(0, 255, 163, 0.1)',
@@ -397,25 +391,6 @@ const StatsCard = ({ stat }) => {
           </IconButton>
         </Box>
       </Box>
-
-      {/* Week Days */}
-      <Grid container spacing={1} sx={{ mb: 2 }}>
-        {weekDays.map((day, index) => (
-          <Grid item xs key={index}>
-            <Typography
-              align="center"
-              sx={{
-                fontSize: '0.75rem',
-                color: 'rgba(255, 255, 255, 0.7)',
-                fontWeight: 500,
-                fontFamily
-              }}
-            >
-              {day}
-            </Typography>
-          </Grid>
-        ))}
-      </Grid>
 
       {/* Calendar Days */}
       <Grid container spacing={1}>
@@ -1282,85 +1257,9 @@ const TeacherDashboard = () => {
             </Box>
 
             <Box sx={{ display: currentTab === 2 ? 'block' : 'none' }}>
-              {/* Students View */}
-              <Box sx={{ mb: 3 }}>
-                <Typography
-                  variant="h6"
-                  sx={{
-                    color: '#fff',
-                    fontWeight: 600,
-                    mb: 2,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1
-                  }}
-                >
-                  <PeopleIcon sx={{ color: '#00FFA3' }} />
-                  {t('dashboard.teacher.students.online')} ({Object.values(onlineUsers).filter(u => u.isOnline).length})
-                </Typography>
-                <Stack spacing={2}>
-                  {students
-                    .filter(student => onlineUsers[student.id]?.isOnline)
-                    .map((student) => (
-                      <Paper
-                        key={student.id}
-                        elevation={0}
-                        sx={{
-                          p: 2,
-                          borderRadius: '12px',
-                          bgcolor: 'rgba(45, 55, 72, 0.9)',
-                          backdropFilter: 'blur(10px)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)'
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Box sx={{ position: 'relative' }}>
-                            <Avatar sx={{ bgcolor: 'rgba(0, 255, 163, 0.1)', color: '#00FFA3' }}>
-                              {student.displayName?.charAt(0) || 'S'}
-                            </Avatar>
-                            <Box
-                              sx={{
-                                width: 10,
-                                height: 10,
-                                borderRadius: '50%',
-                                backgroundColor: '#00FFA3',
-                                border: '2px solid rgba(45, 55, 72, 0.9)',
-                                position: 'absolute',
-                                bottom: 0,
-                                right: 0
-                              }}
-                            />
-                          </Box>
-                          <Box sx={{ flex: 1 }}>
-                            <Typography sx={{ color: '#fff', fontWeight: 500, fontFamily }}>
-                              {student.displayName}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontFamily }}>
-                              {student.email}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </Paper>
-                    ))}
-                  {Object.values(onlineUsers).filter(u => u.isOnline).length === 0 && (
-                    <Box
-                      sx={{
-                        textAlign: 'center',
-                        py: 3,
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        bgcolor: 'rgba(45, 55, 72, 0.5)',
-                        borderRadius: '12px',
-                        border: '1px solid rgba(255, 255, 255, 0.1)'
-                      }}
-                    >
-                      <Typography variant="body2" sx={{ fontFamily }}>
-                        {t('dashboard.teacher.students.noOnline')}
-                      </Typography>
-                    </Box>
-                  )}
-                </Stack>
-              </Box>
-
+              {/* Students View - Removed online students section */}
+              
+              {/* Keep only the "All Students" section */}
               <Box>
                 <Typography
                   variant="h6"
@@ -1374,7 +1273,7 @@ const TeacherDashboard = () => {
                   }}
                 >
                   <PeopleIcon sx={{ color: '#00FFA3' }} />
-                  {t('dashboard.teacher.students.all')} ({students.length})
+                  {t('dashboard.teacher.students.all')} {isRTL ? `(${students.length.toLocaleString('ar-SA')})` : `(${students.length})`}
                 </Typography>
                 <Stack spacing={2}>
                   {students.map((student) => (
@@ -1607,6 +1506,39 @@ const TeacherDashboard = () => {
                   value={newAssignmentData.description}
                   onChange={(e) =>
                     setNewAssignmentData({ ...newAssignmentData, description: e.target.value })
+                  }
+                  InputLabelProps={{
+                    style: { fontFamily },
+                    shrink: true
+                  }}
+                  sx={{
+                    mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      color: '#fff',
+                      borderRadius: '12px',
+                      '& fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.2)'
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#00FFA3'
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#00FFA3'
+                      }
+                    }
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  label={t('teacherPages.assignments.dialogs.assignment.form.content')}
+                  variant="outlined"
+                  multiline
+                  rows={6}
+                  value={newAssignmentData.content}
+                  onChange={(e) =>
+                    setNewAssignmentData({ ...newAssignmentData, content: e.target.value })
                   }
                   InputLabelProps={{
                     style: { fontFamily },
@@ -1900,6 +1832,9 @@ const TeacherDashboard = () => {
                   color: 'rgba(255,255,255,0.5)',
                   '&.Mui-selected': {
                     color: '#00FFA3'
+                  },
+                  '& .MuiBottomNavigationAction-label': {
+                    fontSize: '0.625rem'
                   }
                 }
               }}
@@ -1907,7 +1842,12 @@ const TeacherDashboard = () => {
               <BottomNavigationAction
                 label={t('nav.schedule')}
                 icon={<CalendarIcon />}
-                sx={{ minWidth: 'auto' }}
+                sx={{ 
+                  minWidth: 'auto',
+                  '& .MuiBottomNavigationAction-label': {
+                    fontSize: '0.625rem'
+                  }
+                }}
               />
               <BottomNavigationAction
                 label={t('nav.assignments')}

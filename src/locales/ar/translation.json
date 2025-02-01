@@ -11,6 +11,7 @@
     "liveClasses": "الفصول المباشرة",
     "schedule": "الجدول الزمني",
     "profile": "الملف الشخصي",
+    "teachers": "المعلمون",
     "login": "تسجيل الدخول",
     "register": "تسجيل",
     "logout": "تسجيل الخروج",
@@ -20,7 +21,9 @@
     "notifications": "الإشعارات",
     "openUserMenu": "فتح قائمة المستخدم",
     "defaultUserInitial": "م",
-    "defaultUserName": "مستخدم"
+    "defaultUserName": "مستخدم",
+    "students": "الطلاب",
+    "activity": "النشاطات"
   },
   "common": {
     "submit": "إرسال",
@@ -86,6 +89,7 @@
     "welcomeBack": "مرحباً بعودتك! يرجى إدخال بيانات الدخول للمتابعة",
     "emailAddress": "البريد الإلكتروني",
     "password": "كلمة المرور",
+    "phoneNumber": "رقم الهاتف",
     "rememberMe": "تذكرني",
     "forgotPassword": "نسيت كلمة المرور؟",
     "continueWithGoogle": "المتابعة باستخدام جوجل",
@@ -105,7 +109,13 @@
     "togglePasswordVisibility": "إظهار/إخفاء كلمة المرور",
     "register": "إنشاء الحساب",
     "registering": "جاري إنشاء الحساب...",
-    "alreadyHaveAccount": "لديك حساب بالفعل؟"
+    "alreadyHaveAccount": "لديك حساب بالفعل؟",
+    "errors": {
+      "allFieldsRequired": "جميع الحقول مطلوبة",
+      "passwordLength": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
+      "invalidPhone": "يرجى إدخال رقم هاتف صحيح مكون من 10 أرقام",
+      "registrationFailed": "فشل التسجيل. يرجى المحاولة مرة أخرى."
+    }
   },
   "roleSelection": {
     "title": "اختر دورك",
@@ -131,6 +141,9 @@
   "liveClass": {
     "live": "مباشر",
     "leave": "مغادرة",
+    "join": "الانضمام للفصل",
+    "joining": "جاري الانضمام للفصل...",
+    "title": "الفصل المباشر",
     "chat": "المحادثة",
     "participants": "المشاركون",
     "sendMessage": "إرسال رسالة...",
@@ -151,14 +164,29 @@
     "title": "لوحة التحكم",
     "welcome": "مرحباً، {{name}}! 👋",
     "welcomeSubtitle": "تتبع تقدمك وإدارة رحلتك التعليمية",
+    "selectTeacherForSchedule": "اختر معلماً لعرض جدوله الزمني",
     "teacher": {
       "title": "لوحة تحكم المعلم",
       "stats": {
+        "title": "الإحصائيات",
+        "students": "الطلاب",
+        "courses": "المقررات",
+        "assignments": "الواجبات",
         "calendar": {
           "title": "التقويم",
           "noEvents": "لا توجد أحداث لهذا اليوم",
           "addEvent": "إضافة حدث",
           "eventDetails": "تفاصيل الحدث"
+        },
+        "activities": {
+          "title": "النشاطات الأخيرة",
+          "empty": "لا توجد نشاطات حديثة",
+          "types": {
+            "assignment": "واجب جديد",
+            "submission": "تسليم واجب",
+            "liveClass": "فصل مباشر",
+            "course": "مقرر جديد"
+          }
         }
       },
       "quickActions": {
@@ -170,7 +198,21 @@
         "assignment": {
           "title": "إنشاء واجب",
           "subtitle": "إضافة واجب جديد"
+        },
+        "course": {
+          "title": "إنشاء مقرر",
+          "subtitle": "إضافة مقرر جديد"
         }
+      },
+      "recentActivity": {
+        "title": "النشاطات الأخيرة",
+        "empty": "لا توجد نشاطات حديثة",
+        "viewAll": "عرض الكل"
+      },
+      "upcomingClasses": {
+        "title": "الفصول القادمة",
+        "empty": "لا توجد فصول قادمة",
+        "viewAll": "عرض الكل"
       },
       "assignments": {
         "title": "الواجبات",
@@ -243,6 +285,13 @@
             "starting": "جاري البدء..."
           }
         }
+      },
+      "students": {
+        "all": "جميع الطلاب"
+      },
+      "activity": {
+        "title": "النشاطات الأخيرة",
+        "empty": "لا توجد نشاطات حديثة"
       }
     },
     "stats": {
@@ -414,6 +463,10 @@
             "create": "إنشاء",
             "creating": "جاري الإنشاء..."
           }
+        },
+        "edit": {
+          "title": "تعديل الواجب",
+          "subtitle": "تعديل تفاصيل الواجب"
         }
       },
       "status": {

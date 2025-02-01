@@ -11,6 +11,7 @@
     "liveClasses": "Live Classes",
     "schedule": "Schedule",
     "profile": "Profile",
+    "teachers": "Teachers",
     "login": "Login",
     "register": "Register",
     "logout": "Logout",
@@ -74,6 +75,7 @@
     "welcomeBack": "Welcome back! Please enter your credentials to continue",
     "emailAddress": "Email address",
     "password": "Password",
+    "phoneNumber": "Phone Number",
     "rememberMe": "Remember me",
     "forgotPassword": "Forgot password?",
     "continueWithGoogle": "Continue with Google",
@@ -89,7 +91,13 @@
     "creatingAccount": "Creating Account...",
     "haveAccount": "Already have an account?",
     "allFieldsRequired": "All fields are required",
-    "passwordLength": "Password must be at least 6 characters long"
+    "passwordLength": "Password must be at least 6 characters long",
+    "errors": {
+      "allFieldsRequired": "All fields are required",
+      "passwordLength": "Password must be at least 6 characters long",
+      "invalidPhone": "Please enter a valid 10-digit phone number",
+      "registrationFailed": "Failed to register. Please try again."
+    }
   },
   "roleSelection": {
     "title": "Choose Your Role",
@@ -115,6 +123,9 @@
   "liveClass": {
     "live": "LIVE",
     "leave": "Leave",
+    "join": "Join Class",
+    "joining": "Joining class...",
+    "title": "Live Class",
     "chat": "Chat",
     "participants": "Participants",
     "sendMessage": "Send a message...",
@@ -191,11 +202,19 @@
     "title": "Dashboard",
     "welcome": "Welcome, {{name}}! 👋",
     "welcomeSubtitle": "Track your progress and manage your learning journey",
+    "selectTeacherForSchedule": "Select a teacher to view their schedule",
     "teacher": {
       "dashboard": {
         "schedule": {
           "viewAll": "View All"
         }
+      },
+      "students": {
+        "all": "All Students"
+      },
+      "activity": {
+        "title": "Recent Activity",
+        "empty": "No recent activity"
       }
     },
     "stats": {
@@ -402,6 +421,10 @@
             "create": "Create",
             "creating": "Creating..."
           }
+        },
+        "edit": {
+          "title": "Edit Assignment",
+          "subtitle": "Modify assignment details"
         }
       },
       "status": {

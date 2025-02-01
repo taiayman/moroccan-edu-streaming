@@ -13,6 +13,7 @@ export const createUserProfile = async (userId, userData) => {
       displayName: userData.displayName || 'User',
       firstName: userData.firstName || 'User',
       lastName: userData.lastName || '',
+      phoneNumber: userData.phoneNumber || '',
       createdAt: new Date().toISOString()
     };
 

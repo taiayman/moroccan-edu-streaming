@@ -406,7 +406,7 @@ const LoginForm = () => {
                 onClick={handleGoogleLogin}
                 sx={{
                   py: 1.5,
-                  mb: 4,
+                  mb: 2,
                   color: '#fff',
                   borderColor: 'rgba(255,255,255,0.1)',
                   backgroundColor: 'rgba(26,32,44,0.9)',
@@ -430,7 +430,7 @@ const LoginForm = () => {
                 {t('auth.continueWithGoogle')}
               </Button>
 
-              <Box sx={{ textAlign: 'center', mt: 'auto' }}>
+              <Box sx={{ textAlign: 'center', mb: 4 }}>
                 <Typography sx={{ 
                   color: 'rgba(255,255,255,0.7)', 
                   fontSize: '0.875rem',
@@ -451,6 +451,8 @@ const LoginForm = () => {
                   </Link>
                 </Typography>
               </Box>
+
+              <Box sx={{ flex: 1 }} />
             </Box>
           </Container>
         </>

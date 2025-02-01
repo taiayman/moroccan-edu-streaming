@@ -11,6 +11,7 @@
     "liveClasses": "Cours en direct",
     "schedule": "Emploi du temps",
     "profile": "Profil",
+    "teachers": "Enseignants",
     "login": "Connexion",
     "register": "S'inscrire",
     "logout": "Déconnexion",
@@ -94,11 +95,19 @@
     "title": "Tableau de bord",
     "welcome": "Bienvenue, {{name}}! 👋",
     "welcomeSubtitle": "Suivez vos progrès et gérez votre parcours d'apprentissage",
+    "selectTeacherForSchedule": "Sélectionnez un enseignant pour voir son emploi du temps",
     "teacher": {
       "dashboard": {
         "schedule": {
           "viewAll": "Voir tout"
         }
+      },
+      "students": {
+        "all": "Tous les étudiants"
+      },
+      "activity": {
+        "title": "Activité Récente",
+        "empty": "Aucune activité récente"
       }
     },
     "stats": {
@@ -257,6 +266,9 @@
   "liveClass": {
     "live": "EN DIRECT",
     "leave": "Quitter",
+    "join": "Rejoindre le cours",
+    "joining": "Connexion au cours...",
+    "title": "Cours en direct",
     "chat": "Chat",
     "participants": "Participants",
     "sendMessage": "Envoyer un message...",
@@ -417,6 +429,10 @@
             "create": "Créer",
             "creating": "Création en cours..."
           }
+        },
+        "edit": {
+          "title": "Modifier le devoir",
+          "subtitle": "Modifier les détails du devoir"
         }
       },
       "status": {

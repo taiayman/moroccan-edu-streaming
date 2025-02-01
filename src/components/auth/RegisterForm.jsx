@@ -76,6 +76,7 @@ const RegisterForm = () => {
     password: '',
     firstName: '',
     lastName: '',
+    phoneNumber: '',
   });
   const { t } = useTranslation();
 
@@ -88,12 +89,17 @@ const RegisterForm = () => {
   };
 
   const validateForm = () => {
-    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName) {
+    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName || !formData.phoneNumber) {
       setError(t('auth.errors.allFieldsRequired'));
       return false;
     }
     if (formData.password.length < 6) {
       setError(t('auth.errors.passwordLength'));
+      return false;
+    }
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(formData.phoneNumber)) {
+      setError(t('auth.errors.invalidPhone'));
       return false;
     }
     return true;
@@ -118,7 +124,8 @@ const RegisterForm = () => {
         password: formData.password,
         displayName: displayName,
         firstName: firstName,
-        lastName: lastName
+        lastName: lastName,
+        phoneNumber: formData.phoneNumber
       });
 
       localStorage.setItem('token', response.token);
@@ -126,7 +133,8 @@ const RegisterForm = () => {
         ...response.user,
         firstName,
         lastName,
-        displayName
+        displayName,
+        phoneNumber: formData.phoneNumber
       }));
       
       navigate(`/${getCurrentLanguage()}/auth/role-selection`);
@@ -361,6 +369,51 @@ const RegisterForm = () => {
                 margin="normal"
                 required
                 fullWidth
+                label={t('auth.phoneNumber')}
+                name="phoneNumber"
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                placeholder="0612345678"
+                InputLabelProps={{
+                  style: { fontFamily },
+                  shrink: true
+                }}
+                sx={{ 
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(26,32,44,0.9)',
+                    color: '#fff',
+                    borderRadius: 2,
+                    '& fieldset': {
+                      borderColor: 'rgba(255,255,255,0.1)',
+                      transition: 'all 0.2s ease'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(0,255,163,0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#00FFA3',
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255,255,255,0.7)',
+                    fontFamily,
+                    transform: 'translate(14px, -9px) scale(0.75)',
+                    '&.Mui-focused': {
+                      color: '#00FFA3'
+                    }
+                  }
+                }}
+                InputProps={{ 
+                  style: { fontFamily }
+                }}
+              />
+
+              <TextField
+                margin="normal"
+                required
+                fullWidth
                 name="password"
                 label={t('auth.password')}
                 type={showPassword ? 'text' : 'password'}
@@ -425,7 +478,7 @@ const RegisterForm = () => {
                 disabled={loading}
                 sx={{
                   py: 1.5,
-                  mb: 4,
+                  mb: 2,
                   backgroundColor: '#00FFA3',
                   color: '#0F172A',
                   textTransform: 'none',
@@ -447,7 +500,7 @@ const RegisterForm = () => {
                 )}
               </Button>
 
-              <Box sx={{ textAlign: 'center', mt: 'auto' }}>
+              <Box sx={{ textAlign: 'center', mb: 4 }}>
                 <Typography sx={{ 
                   color: 'rgba(255,255,255,0.7)', 
                   fontSize: '0.875rem',
@@ -468,6 +521,8 @@ const RegisterForm = () => {
                   </Link>
                 </Typography>
               </Box>
+
+              <Box sx={{ flex: 1 }} />
             </Box>
           </Container>
         </>

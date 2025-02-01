@@ -62,6 +62,9 @@ class AuthService {
       await setDoc(doc(db, 'users', user.uid), {
         email: userData.email,
         displayName: userData.displayName,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phoneNumber: userData.phoneNumber,
         isNewUser: true,
         createdAt: new Date().toISOString()
       });
@@ -73,6 +76,9 @@ class AuthService {
           id: user.uid,
           email: userData.email,
           displayName: userData.displayName,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          phoneNumber: userData.phoneNumber,
           isNewUser: true
         }
       };
