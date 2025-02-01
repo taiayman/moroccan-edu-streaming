@@ -19,8 +19,6 @@ import {
   AccountCircle as AccountIcon,
   Settings as SettingsIcon,
   Logout as LogoutIcon,
-  Notifications as NotificationsIcon,
-  Help as HelpIcon,
   Language as LanguageIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../store/authStore';
@@ -68,16 +66,6 @@ const Navbar = () => {
       icon: <AccountIcon fontSize="small" />,
       text: t('nav.profile'),
       action: () => navigate(`/${getCurrentLanguage()}/${user?.role || 'student'}/profile`)
-    },
-    { 
-      icon: <SettingsIcon fontSize="small" />, 
-      text: t('nav.settings'), 
-      action: () => navigate(`/${getCurrentLanguage()}/settings`) 
-    },
-    { 
-      icon: <HelpIcon fontSize="small" />, 
-      text: t('nav.help'), 
-      action: () => navigate(`/${getCurrentLanguage()}/help`) 
     }
   ];
 
@@ -86,9 +74,9 @@ const Navbar = () => {
       position="fixed"
       elevation={0}
       sx={{
-        backgroundColor: '#ffffff',
-        borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
-        // Remove any corner rounding for the AppBar
+        backgroundColor: 'rgba(30, 41, 59, 0.95)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
         borderRadius: 0
       }}
     >
@@ -97,9 +85,11 @@ const Navbar = () => {
         <Typography
           variant="h6"
           sx={{
-            color: '#000',
+            color: '#fff',
             fontWeight: 700,
-            cursor: 'pointer'
+            cursor: 'pointer',
+            fontFamily: '"Plus Jakarta Sans", sans-serif',
+            letterSpacing: '-0.02em'
           }}
           onClick={() => navigate(`/${getCurrentLanguage()}`)}
         >
@@ -114,10 +104,12 @@ const Navbar = () => {
             size="large"
             aria-label={t('nav.language')}
             sx={{
-              color: '#666',
-              borderRadius: 0,
+              color: 'rgba(148, 163, 184, 0.8)',
+              transition: 'all 0.2s ease-in-out',
               '&:hover': {
-                color: '#bb5c39'
+                color: '#00FFA3',
+                transform: 'translateY(-2px)',
+                backgroundColor: 'rgba(0, 255, 163, 0.08)'
               }
             }}
           >
@@ -131,10 +123,20 @@ const Navbar = () => {
               elevation: 0,
               sx: {
                 minWidth: 120,
-                backgroundColor: '#ffffff',
-                border: '1px solid rgba(0, 0, 0, 0.1)',
+                backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
                 mt: 1.5,
-                borderRadius: 0
+                borderRadius: '12px',
+                backdropFilter: 'blur(10px)',
+                '& .MuiMenuItem-root': {
+                  color: 'rgba(148, 163, 184, 0.8)',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 255, 163, 0.08)',
+                    color: '#00FFA3',
+                    transform: 'translateX(5px)'
+                  }
+                }
               }
             }}
           >
@@ -149,38 +151,6 @@ const Navbar = () => {
             </MenuItem>
           </Menu>
 
-          {/* Help Button */}
-          <Button
-            startIcon={<HelpIcon />}
-            sx={{
-              color: '#666',
-              textTransform: 'none',
-              // Remove corner rounding
-              borderRadius: 0,
-              '&:hover': {
-                color: '#bb5c39'
-              }
-            }}
-            onClick={() => navigate(`/${getCurrentLanguage()}/help`)}
-          >
-            {t('nav.help')}
-          </Button>
-
-          {/* Notifications */}
-          <IconButton
-            size="large"
-            aria-label={t('nav.notifications')}
-            sx={{
-              color: '#666',
-              borderRadius: 0, // Remove corner rounding
-              '&:hover': {
-                color: '#bb5c39'
-              }
-            }}
-          >
-            <NotificationsIcon />
-          </IconButton>
-
           {/* Profile Menu */}
           <Box sx={{ position: 'relative' }}>
             <IconButton
@@ -189,20 +159,22 @@ const Navbar = () => {
               aria-label={t('nav.openUserMenu')}
               sx={{
                 ml: 1,
-                borderRadius: 0, // Remove corner rounding
+                transition: 'all 0.2s ease-in-out',
                 '&:hover': {
-                  color: '#bb5c39'
+                  transform: 'translateY(-2px)'
                 }
               }}
             >
               <Avatar
                 sx={{
-                  width: 32,
-                  height: 32,
-                  backgroundColor: '#bb5c39',
+                  width: 36,
+                  height: 36,
+                  backgroundColor: 'rgba(0, 255, 163, 0.1)',
+                  color: '#00FFA3',
+                  border: '2px solid #00FFA3',
                   fontSize: '0.9rem',
-                  fontWeight: 500
-                  // Keep default rounded shape for the Avatar (remove borderRadius override)
+                  fontWeight: 600,
+                  fontFamily: '"Plus Jakarta Sans", sans-serif'
                 }}
               >
                 {user?.displayName?.charAt(0) || t('nav.defaultUserInitial')}
@@ -216,18 +188,25 @@ const Navbar = () => {
               PaperProps={{
                 elevation: 0,
                 sx: {
-                  minWidth: 200,
-                  backgroundColor: '#ffffff',
-                  border: '1px solid rgba(0, 0, 0, 0.1)',
+                  minWidth: 220,
+                  backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
                   mt: 1.5,
-                  // Remove corner rounding for the Menu
-                  borderRadius: 0,
+                  borderRadius: '12px',
+                  backdropFilter: 'blur(10px)',
                   '& .MuiMenuItem-root': {
                     px: 2,
                     py: 1.5,
                     gap: 1.5,
+                    color: 'rgba(148, 163, 184, 0.8)',
+                    transition: 'all 0.2s ease-in-out',
                     '&:hover': {
-                      backgroundColor: 'rgba(187, 92, 57, 0.05)'
+                      backgroundColor: 'rgba(0, 255, 163, 0.08)',
+                      color: '#00FFA3',
+                      transform: 'translateX(5px)',
+                      '& .MuiListItemIcon-root': {
+                        color: '#00FFA3'
+                      }
                     }
                   }
                 }
@@ -236,14 +215,27 @@ const Navbar = () => {
               anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
               <Box sx={{ px: 2, py: 1.5 }}>
-                <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
+                <Typography 
+                  variant="subtitle2" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: '#fff',
+                    fontFamily: '"Plus Jakarta Sans", sans-serif'
+                  }}
+                >
                   {user?.displayName || t('nav.defaultUserName')}
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#666' }}>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: 'rgba(148, 163, 184, 0.8)',
+                    fontFamily: '"Plus Jakarta Sans", sans-serif'
+                  }}
+                >
                   {user?.email}
                 </Typography>
               </Box>
-              <Divider sx={{ my: 1 }} />
+              <Divider sx={{ my: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
               {menuItems.map((item, index) => (
                 <MenuItem
                   key={index}
@@ -258,18 +250,21 @@ const Navbar = () => {
                   {item.text}
                 </MenuItem>
               ))}
-              <Divider sx={{ my: 1 }} />
+              <Divider sx={{ my: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
               <MenuItem
                 onClick={handleLogout}
                 sx={{
-                  color: '#bb5c39',
-                  borderRadius: 0, // Remove corner rounding
+                  color: '#FCA5A5 !important',
                   '&:hover': {
-                    backgroundColor: 'rgba(187, 92, 57, 0.05)'
+                    backgroundColor: 'rgba(239, 68, 68, 0.08) !important',
+                    color: '#EF4444 !important',
+                    '& .MuiListItemIcon-root': {
+                      color: '#EF4444 !important'
+                    }
                   }
                 }}
               >
-                <ListItemIcon sx={{ color: '#bb5c39' }}>
+                <ListItemIcon sx={{ color: '#FCA5A5' }}>
                   <LogoutIcon fontSize="small" />
                 </ListItemIcon>
                 {t('nav.logout')}

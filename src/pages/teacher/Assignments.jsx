@@ -40,7 +40,7 @@ import {
 import { getTeacherAssignments, createNewAssignment } from '../../api/teacher';
 import { doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db, COLLECTIONS } from '../../api/config';
-import { getCurrentLanguage } from '../../utils/navigation';
+import { getCurrentLanguage } from '../../i18n';
 
 const formatDate = (timestamp) => {
   if (!timestamp) return '';
@@ -57,6 +57,7 @@ const TeacherAssignments = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const isRTL = getCurrentLanguage() === 'ar';
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -195,476 +196,666 @@ const TeacherAssignments = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4, mt: { xs: 8, sm: 9 } }}>
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(`/${getCurrentLanguage()}/teacher/dashboard`)}
-          sx={{ mb: 2 }}
-        >
-          {t('teacherPages.assignments.backToDashboard')}
-        </Button>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <Box>
-            <Typography variant="h4" sx={{ fontWeight: 600, color: '#2f2f2f', mb: 1 }}>
-              {t('teacherPages.assignments.title')}
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              {t('teacherPages.assignments.description')}
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setNewAssignmentDialog(true)}
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(145deg, #0F172A 0%, #1E293B 100%)',
+        py: 4,
+        px: { xs: 2, sm: 4 },
+        direction: isRTL ? 'rtl' : 'ltr'
+      }}
+    >
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        {error && (
+          <Alert
+            severity="error"
             sx={{
-              backgroundColor: '#bb5c39',
-              '&:hover': { backgroundColor: '#a04b2e' }
+              mb: 3,
+              backgroundColor: 'rgba(239, 68, 68, 0.08)',
+              color: '#FCA5A5',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              borderRadius: '8px',
+              '& .MuiAlert-icon': { color: '#FCA5A5' }
             }}
           >
-            {t('teacherPages.assignments.createNew')}
-          </Button>
-        </Box>
-      </Box>
+            {error}
+          </Alert>
+        )}
 
-      {/* Search and Filters */}
-      <Box
-        sx={{
-          position: 'relative',
-          mb: 3,
-          '&:before': {
-            content: '""',
-            position: 'absolute',
-            top: '8px',
-            left: '8px',
-            right: '-8px',
-            bottom: '-8px',
-            backgroundColor: 'rgba(0, 0, 0, 0.1)',
-            borderRadius: '16px',
-            zIndex: 0
-          }
-        }}
-      >
+        {/* Header Section */}
+        <Box sx={{ 
+          mb: 4,
+          pt: 4,
+          pb: 1,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <Box>
+            <Button
+              startIcon={<ArrowBackIcon />}
+              onClick={() => navigate(`/${getCurrentLanguage()}/teacher/dashboard`)}
+              sx={{ 
+                mb: 2,
+                color: 'rgba(255, 255, 255, 0.7)',
+                '&:hover': {
+                  color: '#fff',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)'
+                }
+              }}
+            >
+              {t('teacherPages.assignments.backToDashboard')}
+            </Button>
+            <Typography 
+              variant="h4"
+              sx={{ 
+                color: '#fff',
+                fontWeight: 700,
+                mb: 1,
+                fontFamily: '"Plus Jakarta Sans", sans-serif'
+              }}
+            >
+              {t('teacherPages.assignments.title')}
+            </Typography>
+          </Box>
+          <IconButton
+            onClick={() => setNewAssignmentDialog(true)}
+            sx={{
+              backgroundColor: '#00FFA3',
+              color: '#0F172A',
+              '&:hover': { 
+                backgroundColor: '#00E68A',
+                transform: 'scale(1.1)'
+              },
+              transition: 'all 0.2s'
+            }}
+          >
+            <AddIcon />
+          </IconButton>
+        </Box>
+
+        {/* Search Box */}
         <Paper
           elevation={0}
           sx={{
             p: 3,
+            mb: 4,
             borderRadius: '16px',
-            position: 'relative',
-            zIndex: 1,
-            transition: 'all 0.2s',
-            '&:hover': {
-              transform: 'translate(-4px, -4px)'
+            backgroundColor: 'rgba(45, 55, 72, 0.5)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          }}
+        >
+          <TextField
+            fullWidth
+            placeholder={t('teacherPages.assignments.search')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: 'rgba(255, 255, 255, 0.7)' }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                color: '#fff',
+                borderRadius: '8px',
+                '& fieldset': {
+                  borderColor: 'rgba(255, 255, 255, 0.2)'
+                },
+                '&:hover fieldset': {
+                  borderColor: '#00FFA3'
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: '#00FFA3'
+                }
+              },
+              '& .MuiInputLabel-root': {
+                color: 'rgba(255, 255, 255, 0.7)'
+              },
+              '& .MuiInputLabel-root.Mui-focused': {
+                color: '#00FFA3'
+              }
+            }}
+          />
+        </Paper>
+
+        {/* Assignments List */}
+        <Grid container spacing={3}>
+          {filteredAssignments.map((assignment) => (
+            <Grid item xs={12} key={assignment.id}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  borderRadius: '16px',
+                  backgroundColor: 'rgba(45, 55, 72, 0.5)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  transition: 'all 0.2s',
+                  cursor: 'pointer',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    backgroundColor: 'rgba(45, 55, 72, 0.7)'
+                  }
+                }}
+                onClick={() => navigate(`/${getCurrentLanguage()}/teacher/assignments/${assignment.id}`)}
+              >
+                <Grid container spacing={3} alignItems="center">
+                  <Grid item xs={12} md={6}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Avatar
+                        sx={{
+                          bgcolor: 'rgba(0, 255, 163, 0.1)',
+                          color: '#00FFA3'
+                        }}
+                      >
+                        <AssignmentIcon />
+                      </Avatar>
+                      <Box>
+                        <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                          {assignment.title}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                          {t('teacherPages.assignments.created')} {formatDate(assignment.createdAt)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <PeopleIcon sx={{ color: '#00FFA3', fontSize: 20 }} />
+                      <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                        {assignment.submissions?.length || 0} {t('teacherPages.assignments.submissions', { count: assignment.submissions?.length || 0 })}
+                      </Typography>
+                    </Stack>
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditData(assignment);
+                          setEditDialogOpen(true);
+                        }}
+                        sx={{
+                          color: '#00FFA3',
+                          '&:hover': { backgroundColor: 'rgba(0, 255, 163, 0.1)' }
+                        }}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAssignment(assignment);
+                          setDeleteDialogOpen(true);
+                        }}
+                        sx={{
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          '&:hover': { 
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            color: '#ef4444'
+                          }
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </Grid>
+                </Grid>
+              </Paper>
+            </Grid>
+          ))}
+
+          {filteredAssignments.length === 0 && (
+            <Grid item xs={12}>
+              <Box
+                sx={{
+                  textAlign: 'center',
+                  py: 8,
+                  px: 3,
+                  color: 'rgba(255, 255, 255, 0.7)'
+                }}
+              >
+                <AssignmentIcon
+                  sx={{
+                    fontSize: 48,
+                    color: 'rgba(255, 255, 255, 0.2)',
+                    mb: 2
+                  }}
+                />
+                <Typography variant="h6" sx={{ color: '#fff' }} gutterBottom>
+                  {t('teacherPages.assignments.noAssignments')}
+                </Typography>
+                <Typography variant="body2">
+                  {t('teacherPages.assignments.empty')}
+                </Typography>
+              </Box>
+            </Grid>
+          )}
+        </Grid>
+
+        {/* Dialogs - Update their styles to match the dark theme */}
+        {/* Create Assignment Dialog */}
+        <Dialog
+          open={newAssignmentDialog}
+          onClose={() => setNewAssignmentDialog(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: '16px',
+              p: 0,
+              backgroundColor: 'rgba(45, 55, 72, 0.7)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              overflow: 'hidden'
             }
           }}
         >
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <TextField
-                fullWidth
-                placeholder={t('teacherPages.assignments.search')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#fff'
-                  }
-                }}
-              />
-            </Grid>
-          </Grid>
-        </Paper>
-      </Box>
-
-      {/* Assignments List */}
-      <Grid container spacing={3}>
-        {filteredAssignments.map((assignment) => (
-          <Grid item xs={12} key={assignment.id}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
-                borderRadius: '16px',
-                border: '1px solid rgba(0, 0, 0, 0.1)',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  transform: 'translateY(-4px)',
-                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
-                }
+          <Box
+            sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              py: 3,
+              px: 3,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
+          >
+            <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+              {t('teacherPages.assignments.dialogs.assignment.title')}
+            </Typography>
+            <IconButton
+              onClick={() => setNewAssignmentDialog(false)}
+              sx={{ 
+                color: 'rgba(255, 255, 255, 0.7)',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
               }}
             >
-              <Grid container spacing={3} alignItems="center">
-                <Grid item xs={12} md={6}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    <Avatar
-                      sx={{
-                        bgcolor: 'rgba(187, 92, 57, 0.1)',
-                        color: '#bb5c39'
-                      }}
-                    >
-                      <AssignmentIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                        {assignment.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {t('teacherPages.assignments.created')} {formatDate(assignment.createdAt)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <PeopleIcon sx={{ color: 'text.secondary', fontSize: 20 }} />
-                    <Typography variant="body2" color="text.secondary">
-                      {assignment.submissions?.length || 0} {t('teacherPages.assignments.submissions', { count: assignment.submissions?.length || 0 })}
-                    </Typography>
-                  </Stack>
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <Stack direction="row" spacing={1} justifyContent="flex-end">
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      onClick={() => navigate(`/${getCurrentLanguage()}/teacher/assignments/${assignment.id}`)}
-                      sx={{
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
-                        color: '#bb5c39',
-                        '&:hover': {
-                          borderColor: '#bb5c39',
-                          backgroundColor: 'rgba(187, 92, 57, 0.05)'
-                        }
-                      }}
-                    >
-                      {t('teacherPages.assignments.viewDetails')}
-                    </Button>
-                  </Stack>
-                </Grid>
-              </Grid>
-            </Paper>
-          </Grid>
-        ))}
-
-        {filteredAssignments.length === 0 && (
-          <Grid item xs={12}>
-            <Box
-              sx={{
-                textAlign: 'center',
-                py: 8,
-                px: 3
-              }}
-            >
-              <AssignmentIcon
-                sx={{
-                  fontSize: 48,
-                  color: 'rgba(0, 0, 0, 0.2)',
-                  mb: 2
-                }}
-              />
-              <Typography variant="h6" color="text.secondary" gutterBottom>
-                {t('teacherPages.assignments.noAssignments')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t('teacherPages.assignments.empty')}
-              </Typography>
-            </Box>
-          </Grid>
-        )}
-      </Grid>
-
-      {/* Create Assignment Dialog */}
-      <Dialog
-        open={newAssignmentDialog}
-        onClose={() => setNewAssignmentDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '16px'
-          }
-        }}
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6">{t('teacherPages.assignments.dialogs.assignment.title')}</Typography>
-            <IconButton onClick={() => setNewAssignmentDialog(false)}>
               <CloseIcon />
             </IconButton>
           </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ mt: 2 }}>
-            <TextField
-              fullWidth
-              label={t('teacherPages.assignments.dialogs.assignment.form.title')}
-              value={newAssignmentData.title}
-              onChange={(e) => setNewAssignmentData({ ...newAssignmentData, title: e.target.value })}
-              sx={{ mb: 3 }}
-            />
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              label={t('teacherPages.assignments.dialogs.assignment.form.description')}
-              value={newAssignmentData.description}
-              onChange={(e) => setNewAssignmentData({ ...newAssignmentData, description: e.target.value })}
-              sx={{ mb: 3 }}
-            />
-            <TextField
-              fullWidth
-              multiline
-              rows={8}
-              label={t('teacherPages.assignments.dialogs.assignment.form.content')}
-              value={newAssignmentData.content}
-              onChange={(e) => setNewAssignmentData({ ...newAssignmentData, content: e.target.value })}
-            />
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button
-            onClick={() => setNewAssignmentDialog(false)}
-            sx={{ color: 'text.secondary' }}
-          >
-            {t('teacherPages.assignments.dialogs.assignment.actions.cancel')}
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleCreateAssignment}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} /> : <SaveIcon />}
-            sx={{
-              backgroundColor: '#bb5c39',
-              '&:hover': { backgroundColor: '#a04b2e' }
-            }}
-          >
-            {loading ? t('teacherPages.assignments.dialogs.assignment.actions.creating') : t('teacherPages.assignments.dialogs.assignment.actions.create')}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
-      {/* Edit Dialog */}
-      <Dialog
-        open={editDialogOpen}
-        onClose={() => setEditDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        TransitionProps={{
-          enter: true,
-          exit: true
-        }}
-        PaperProps={{
-          sx: {
-            borderRadius: '20px',
-            p: 0,
-            backgroundColor: '#fff',
-            overflow: 'hidden',
-            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)'
-          }
-        }}
-      >
-        <Box
-          sx={{
-            background: 'linear-gradient(135deg, #bb5c39 0%, #a04b2e 100%)',
-            py: 4,
-            px: 3,
-            color: '#fff',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%)',
+          <DialogContent sx={{ p: 3 }}>
+            <Stack spacing={3}>
+              <TextField
+                fullWidth
+                label={t('teacherPages.assignments.dialogs.assignment.form.title')}
+                value={newAssignmentData.title}
+                onChange={(e) => setNewAssignmentData({ ...newAssignmentData, title: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: '#fff',
+                    '& fieldset': {
+                      borderColor: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#00FFA3'
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#00FFA3'
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#00FFA3'
+                  }
+                }}
+              />
+
+              <TextField
+                fullWidth
+                multiline
+                rows={4}
+                label={t('teacherPages.assignments.dialogs.assignment.form.description')}
+                value={newAssignmentData.description}
+                onChange={(e) => setNewAssignmentData({ ...newAssignmentData, description: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: '#fff',
+                    '& fieldset': {
+                      borderColor: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#00FFA3'
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#00FFA3'
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#00FFA3'
+                  }
+                }}
+              />
+
+              <TextField
+                fullWidth
+                multiline
+                rows={6}
+                label={t('teacherPages.assignments.dialogs.assignment.form.content')}
+                value={newAssignmentData.content}
+                onChange={(e) => setNewAssignmentData({ ...newAssignmentData, content: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: '#fff',
+                    '& fieldset': {
+                      borderColor: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#00FFA3'
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#00FFA3'
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#00FFA3'
+                  }
+                }}
+              />
+            </Stack>
+          </DialogContent>
+
+          <DialogActions sx={{ p: 3 }}>
+            <Button
+              onClick={() => setNewAssignmentDialog(false)}
+              variant="outlined"
+              sx={{
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderColor: '#00FFA3'
+                }
+              }}
+            >
+              {t('teacherPages.assignments.dialogs.assignment.actions.cancel')}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleCreateAssignment}
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+              sx={{
+                backgroundColor: '#00FFA3',
+                color: '#0F172A',
+                '&:hover': { backgroundColor: '#00E68A' },
+                '&.Mui-disabled': {
+                  backgroundColor: 'rgba(0, 255, 163, 0.3)',
+                  color: '#fff'
+                }
+              }}
+            >
+              {loading ? t('common.loading') : t('teacherPages.assignments.dialogs.assignment.actions.create')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Edit Assignment Dialog */}
+        <Dialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: '16px',
+              p: 0,
+              backgroundColor: 'rgba(45, 55, 72, 0.7)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              overflow: 'hidden'
             }
           }}
         >
-          <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-            Edit Assignment
-          </Typography>
-          <Typography variant="body2" sx={{ opacity: 0.9 }}>
-            Update assignment details
-          </Typography>
-        </Box>
-
-        <DialogContent sx={{ p: 3 }}>
-          <Box sx={{ mt: 2 }}>
-            <TextField
-              required
-              fullWidth
-              label="Assignment Title"
-              variant="outlined"
-              value={editData.title}
-              onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-              error={error && !editData.title}
-              helperText={error && !editData.title ? 'Title is required' : ''}
-              sx={{
-                mb: 3,
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
-              }}
-            />
-
-            <TextField
-              fullWidth
-              label="Description"
-              variant="outlined"
-              multiline
-              rows={4}
-              value={editData.description}
-              onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-              sx={{
-                mb: 3,
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
-              }}
-            />
-
-            <TextField
-              fullWidth
-              label="Assignment Content"
-              variant="outlined"
-              multiline
-              rows={8}
-              value={editData.content}
-              onChange={(e) => setEditData({ ...editData, content: e.target.value })}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: '#fff',
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
-              }}
-            />
-          </Box>
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-          <Button
-            onClick={() => setEditDialogOpen(false)}
-            variant="outlined"
+          <Box
             sx={{
-              borderColor: 'rgba(187, 92, 57, 0.5)',
-              color: '#bb5c39',
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              py: 3,
               px: 3,
-              '&:hover': { 
-                backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                borderColor: '#bb5c39'
-              }
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
             }}
           >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleEdit}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-            sx={{
-              backgroundColor: '#bb5c39',
-              px: 4,
-              '&:hover': {
-                backgroundColor: '#a04b2e'
-              },
-              '&.Mui-disabled': {
-                backgroundColor: 'rgba(187, 92, 57, 0.3)'
-              }
-            }}
-          >
-            {loading ? 'Saving...' : 'Save Changes'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+            <Box>
+              <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                {t('teacherPages.assignments.dialogs.edit.title')}
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                {t('teacherPages.assignments.dialogs.edit.subtitle')}
+              </Typography>
+            </Box>
+            <IconButton
+              onClick={() => setEditDialogOpen(false)}
+              sx={{ 
+                color: 'rgba(255, 255, 255, 0.7)',
+                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-        maxWidth="sm"
-        PaperProps={{
-          sx: {
-            borderRadius: '16px',
-            p: 2
-          }
-        }}
-      >
-        <DialogTitle>Delete Assignment</DialogTitle>
-        <DialogContent>
-          <Typography>
-            Are you sure you want to delete this assignment? This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => setDeleteDialogOpen(false)}
-            variant="outlined"
+          <DialogContent sx={{ p: 3 }}>
+            <Stack spacing={3}>
+              <TextField
+                required
+                fullWidth
+                label={t('teacherPages.assignments.dialogs.assignment.form.title')}
+                value={editData.title}
+                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                error={error && !editData.title}
+                helperText={error && !editData.title ? t('teacherPages.assignments.errors.titleRequired') : ''}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: '#fff',
+                    '& fieldset': {
+                      borderColor: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#00FFA3'
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#00FFA3'
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#00FFA3'
+                  }
+                }}
+              />
+
+              <TextField
+                fullWidth
+                multiline
+                rows={4}
+                label={t('teacherPages.assignments.dialogs.assignment.form.description')}
+                value={editData.description}
+                onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: '#fff',
+                    '& fieldset': {
+                      borderColor: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#00FFA3'
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#00FFA3'
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#00FFA3'
+                  }
+                }}
+              />
+
+              <TextField
+                fullWidth
+                multiline
+                rows={6}
+                label={t('teacherPages.assignments.dialogs.assignment.form.content')}
+                value={editData.content}
+                onChange={(e) => setEditData({ ...editData, content: e.target.value })}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: '#fff',
+                    '& fieldset': {
+                      borderColor: 'rgba(255, 255, 255, 0.2)'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: '#00FFA3'
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#00FFA3'
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#00FFA3'
+                  }
+                }}
+              />
+            </Stack>
+          </DialogContent>
+
+          <DialogActions sx={{ p: 3 }}>
+            <Button
+              onClick={() => setEditDialogOpen(false)}
+              variant="outlined"
+              sx={{
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderColor: '#00FFA3'
+                }
+              }}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleEdit}
+              variant="contained"
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+              sx={{
+                backgroundColor: '#00FFA3',
+                color: '#0F172A',
+                '&:hover': { backgroundColor: '#00E68A' },
+                '&.Mui-disabled': {
+                  backgroundColor: 'rgba(0, 255, 163, 0.3)',
+                  color: '#fff'
+                }
+              }}
+            >
+              {loading ? t('common.saving') : t('common.save')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          maxWidth="sm"
+          PaperProps={{
+            sx: {
+              borderRadius: '16px',
+              p: 0,
+              backgroundColor: 'rgba(45, 55, 72, 0.7)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              overflow: 'hidden'
+            }
+          }}
+        >
+          <Box
             sx={{
-              borderColor: 'rgba(187, 92, 57, 0.5)',
-              color: '#bb5c39',
-              '&:hover': { 
-                backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                borderColor: '#bb5c39'
-              }
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              py: 3,
+              px: 3
             }}
           >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDelete}
-            variant="contained"
-            disabled={loading}
-            sx={{
-              backgroundColor: '#d32f2f',
-              '&:hover': { backgroundColor: '#b71c1c' }
-            }}
-          >
-            {loading ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+            <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+              {t('teacherPages.assignments.dialogs.delete.title')}
+            </Typography>
+          </Box>
+
+          <DialogContent sx={{ p: 3 }}>
+            <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+              {t('teacherPages.assignments.dialogs.delete.message')}
+            </Typography>
+          </DialogContent>
+
+          <DialogActions sx={{ p: 3 }}>
+            <Button
+              onClick={() => setDeleteDialogOpen(false)}
+              variant="outlined"
+              sx={{
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderColor: '#00FFA3'
+                }
+              }}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleDelete}
+              variant="contained"
+              disabled={loading}
+              sx={{
+                backgroundColor: '#ef4444',
+                color: '#fff',
+                '&:hover': { backgroundColor: '#dc2626' },
+                '&.Mui-disabled': {
+                  backgroundColor: 'rgba(239, 68, 68, 0.3)',
+                  color: 'rgba(255, 255, 255, 0.5)'
+                }
+              }}
+            >
+              {loading ? t('common.deleting') : t('common.delete')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
+    </Box>
   );
 }
 

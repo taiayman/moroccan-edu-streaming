@@ -20,7 +20,6 @@ import {
   Edit as EditIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
-import { getEnrolledCourses } from '../../api/courses';
 import { getUpcomingAssignments } from '../../api/assignments';
 
 const StudentProfile = () => {
@@ -32,11 +31,8 @@ const StudentProfile = () => {
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
-        const [coursesData, assignmentsData] = await Promise.all([
-          getEnrolledCourses(user?.id),
-          getUpcomingAssignments(user?.id)
-        ]);
-        setCourses(coursesData || []);
+        const assignmentsData = await getUpcomingAssignments(user?.id);
+        setCourses([]);
         setAssignments(assignmentsData || []);
       } catch (error) {
         console.error('Error fetching student data:', error);
@@ -183,32 +179,9 @@ const StudentProfile = () => {
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                 Cours Inscrits
               </Typography>
-              <List>
-                {courses.map((course, index) => (
-                  <React.Fragment key={course.id}>
-                    <ListItem sx={{ px: 0 }}>
-                      <ListItemText
-                        primary={course.title}
-                        secondary={course.description}
-                      />
-                      <Chip 
-                        label={course.level} 
-                        size="small"
-                        sx={{ 
-                          backgroundColor: '#bb5c39',
-                          color: 'white'
-                        }}
-                      />
-                    </ListItem>
-                    {index < courses.length - 1 && <Divider />}
-                  </React.Fragment>
-                ))}
-                {courses.length === 0 && (
-                  <Typography variant="body2" color="text.secondary">
-                    Aucun cours inscrit
-                  </Typography>
-                )}
-              </List>
+              <Typography variant="body2" color="text.secondary">
+                La fonctionnalité des cours est temporairement indisponible
+              </Typography>
             </Paper>
           </Grid>
         </Grid>

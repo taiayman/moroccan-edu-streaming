@@ -20,11 +20,17 @@ import {
   MenuItem,
   CircularProgress,
   Alert,
-  Link,
   Paper,
   Avatar,
   FormControlLabel,
   Switch,
+  Tooltip,
+  useTheme,
+  ThemeProvider,
+  CssBaseline,
+  createTheme,
+  BottomNavigation,
+  BottomNavigationAction
 } from '@mui/material';
 import {
   School as SchoolIcon,
@@ -44,7 +50,7 @@ import {
   Save as SaveIcon,
   PictureAsPdf as PictureAsPdfIcon,
   CloudUpload as CloudUploadIcon,
-  Delete as DeleteIcon,
+  Delete as DeleteIcon
 } from '@mui/icons-material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import {
@@ -64,18 +70,75 @@ import {
   getTeacherCalendarNotes,
   saveCalendarEvent,
   saveCalendarNote,
-  deleteCalendarEvent,
+  deleteCalendarEvent
 } from '../../api/teacher';
 import { auth } from '../../api/config';
+import { motion } from 'framer-motion';
+import rtlPlugin from 'stylis-plugin-rtl';
+import { CacheProvider } from '@emotion/react';
+import createCache from '@emotion/cache';
+import { prefixer } from 'stylis';
+import { usePresence } from '../../hooks/usePresence';
+
+// Create rtl cache
+const cacheRtl = createCache({
+  key: 'muirtl',
+  stylisPlugins: [prefixer, rtlPlugin],
+});
+
+// Add Arabic font
+const fontFamily = "'Noto Kufi Arabic', sans-serif";
+
+// Create RTL theme with Arabic font
+const theme = createTheme({
+  direction: 'rtl',
+  typography: {
+    fontFamily: fontFamily,
+    h3: {
+      fontFamily: fontFamily,
+      fontWeight: 600,
+    },
+    h4: {
+      fontFamily: fontFamily,
+      fontWeight: 600,
+    },
+    h5: {
+      fontFamily: fontFamily,
+      fontWeight: 500,
+    },
+    h6: {
+      fontFamily: fontFamily,
+      fontWeight: 500,
+    },
+    body1: {
+      fontFamily: fontFamily,
+    },
+    button: {
+      fontFamily: fontFamily,
+      fontWeight: 500,
+    }
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: `
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
+        
+        body {
+          font-family: ${fontFamily};
+        }
+      `,
+    },
+  },
+});
 
 const formatRelativeTime = (timestamp, t) => {
   if (!timestamp) return t('common.time.unknown');
-  
+
   try {
     const now = new Date();
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) return t('common.time.unknown');
-    
+
     const diffInSeconds = Math.floor((now - date) / 1000);
 
     if (diffInSeconds < 60) {
@@ -103,20 +166,15 @@ const formatRelativeTime = (timestamp, t) => {
   }
 };
 
-const getDaysInMonth = (year, month) => {
-  return new Date(year, month + 1, 0).getDate();
-};
-
-const getFirstDayOfMonth = (year, month) => {
-  return new Date(year, month, 1).getDay();
-};
-
 const StatsCard = ({ stat }) => {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const today = new Date();
-  const [selectedDate, setSelectedDate] = useState(today);
-  const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(today));
+  const isRTL = getCurrentLanguage() === 'ar';
+  const theme = useTheme();
+
+  // Calendar-specific states
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentWeekStart, setCurrentWeekStart] = useState(getWeekStart(new Date()));
   const [isScheduleExpanded, setIsScheduleExpanded] = useState(true);
   const [isEditingNote, setIsEditingNote] = useState(false);
   const [dayNote, setDayNote] = useState('');
@@ -129,24 +187,23 @@ const StatsCard = ({ stat }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const isRTL = getCurrentLanguage() === 'ar';
 
-  // Get Monday of the current week
+  // Helper function to get Monday of the current week
   function getWeekStart(date) {
     const d = new Date(date);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is sunday
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
     return new Date(d.setDate(diff));
   }
 
-  // Get dates for the week
+  // Get array of 7 days in the current week
   const weekDates = Array.from({ length: 7 }, (_, i) => {
     const date = new Date(currentWeekStart);
     date.setDate(currentWeekStart.getDate() + i);
     return date;
   });
 
-  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weekDays = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
   const handlePrevWeek = () => {
     const newWeekStart = new Date(currentWeekStart);
@@ -162,48 +219,47 @@ const StatsCard = ({ stat }) => {
 
   const isToday = (date) => {
     const today = new Date();
-    return date.getDate() === today.getDate() && 
-           date.getMonth() === today.getMonth() && 
-           date.getFullYear() === today.getFullYear();
+    return (
+      date.getDate() === today.getDate() &&
+      date.getMonth() === today.getMonth() &&
+      date.getFullYear() === today.getFullYear()
+    );
   };
 
   const hasEvents = (date) => {
     if (!stat.schedule || !Array.isArray(stat.schedule)) return false;
     const dateStr = date.toISOString().split('T')[0];
-    return stat.schedule.some(event => event.date === dateStr);
+    return stat.schedule.some((event) => event.date === dateStr);
   };
 
   useEffect(() => {
     if (stat.isCalendar && user) {
       loadCalendarData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentWeekStart, user]);
 
-  // Add new effect for loading notes when date changes
   useEffect(() => {
     if (selectedDate && user) {
       const dateStr = selectedDate.toISOString().split('T')[0];
       setDayNote(savedNotes[dateStr] || '');
     }
-  }, [selectedDate, savedNotes]);
+  }, [selectedDate, savedNotes, user]);
 
   const loadCalendarData = async () => {
     try {
       setLoading(true);
       const endDate = new Date(currentWeekStart);
       endDate.setDate(currentWeekStart.getDate() + 6);
-      
+
       // Load events
       const events = await getTeacherCalendarEvents(user.id, currentWeekStart, endDate);
-      console.log('Loaded events:', events);
       stat.schedule = events;
-      
+
       // Load notes
       const notes = await getTeacherCalendarNotes(user.id, currentWeekStart, endDate);
-      console.log('Loaded notes:', notes);
       setSavedNotes(notes);
     } catch (err) {
-      console.error('Error loading calendar data:', err);
       setError('Failed to load calendar data');
     } finally {
       setLoading(false);
@@ -216,27 +272,32 @@ const StatsCard = ({ stat }) => {
       setError(null);
 
       if (!newEvent.title || !newEvent.time) {
-        setError('Title and time are required');
+        setError(t('calendar.addEvent.form.required'));
         return;
       }
 
       const eventData = {
-        ...newEvent,
-        date: selectedDate.toISOString().split('T')[0],
-        teacherId: user.id
+        title: newEvent.title,
+        time: newEvent.time,
+        description: newEvent.description,
+        date: selectedDate.toISOString().split('T')[0]
       };
 
-      console.log('Saving event data:', eventData);
-      const eventId = await saveCalendarEvent(user.id, eventData);
-      console.log('Event saved with ID:', eventId);
-      
-      // Reset form and refresh data
-    setNewEvent({ title: '', time: '', description: '' });
-    setIsAddEventOpen(false);
+      await saveCalendarEvent(user.id, eventData);
+
+      // Reset form and close dialog
+      setNewEvent({
+        title: '',
+        time: '',
+        description: ''
+      });
+      setIsAddEventOpen(false);
+
+      // Refresh calendar data
       await loadCalendarData();
     } catch (err) {
-      console.error('Error adding event:', err);
-      setError('Failed to add event');
+      console.error('Failed to add event:', err);
+      setError(t('calendar.addEvent.error'));
     } finally {
       setLoading(false);
     }
@@ -246,18 +307,13 @@ const StatsCard = ({ stat }) => {
     try {
       setLoading(true);
       const dateStr = selectedDate.toISOString().split('T')[0];
-      
       await saveCalendarNote(user.id, dateStr, dayNote);
-      
-      // Update local state
-      setSavedNotes(prev => ({
+      setSavedNotes((prev) => ({
         ...prev,
         [dateStr]: dayNote
       }));
-      
       setIsEditingNote(false);
     } catch (err) {
-      console.error('Error saving note:', err);
       setError('Failed to save note');
     } finally {
       setLoading(false);
@@ -267,13 +323,9 @@ const StatsCard = ({ stat }) => {
   const handleDeleteEvent = async (eventId) => {
     try {
       setLoading(true);
-      console.log('Deleting event:', eventId);
-      console.log('Teacher ID:', user.id);
       await deleteCalendarEvent(user.id, eventId);
-      console.log('Event deleted successfully');
       await loadCalendarData();
     } catch (err) {
-      console.error('Error deleting event:', err);
       setError(err.message || 'Failed to delete event');
     } finally {
       setLoading(false);
@@ -284,14 +336,13 @@ const StatsCard = ({ stat }) => {
     try {
       setLoading(true);
       const dateStr = selectedDate.toISOString().split('T')[0];
-      await saveCalendarNote(user.id, dateStr, ''); // Save empty note to delete it
-      setSavedNotes(prev => ({
+      await saveCalendarNote(user.id, dateStr, '');
+      setSavedNotes((prev) => ({
         ...prev,
         [dateStr]: ''
       }));
       setDayNote('');
     } catch (err) {
-      console.error('Error deleting note:', err);
       setError('Failed to delete note');
     } finally {
       setLoading(false);
@@ -302,646 +353,420 @@ const StatsCard = ({ stat }) => {
     setIsScheduleExpanded(!isScheduleExpanded);
   };
 
-  // Add debug output in the render to check events
-  console.log('Current schedule:', stat.schedule);
-  console.log('Selected date:', selectedDate?.toISOString().split('T')[0]);
-
   return (
-  <Box
-    sx={{
-      position: 'relative',
-      height: '100%',
-      direction: isRTL ? 'rtl' : 'ltr',
-        ...(stat.isCalendar && {
-      '&:before': {
-        content: '""',
-        position: 'absolute',
-        top: '8px',
-        [isRTL ? 'right' : 'left']: '8px',
-        [isRTL ? 'left' : 'right']: '-8px',
-        bottom: '-8px',
-        backgroundColor: stat.accent ? 'rgba(187, 92, 57, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-        borderRadius: '16px',
-        zIndex: 0
-      }
-        })
-    }}
-  >
-    <Paper
-      elevation={0}
-      sx={{
-        p: 3,
-        height: '100%',
-        backgroundColor: stat.accent ? '#bb5c39' : '#fff',
-        borderRadius: '16px',
-        position: 'relative',
-          zIndex: 2,
-        transition: 'all 0.2s',
-        border: '1px solid',
-        borderColor: stat.accent ? '#bb5c39' : 'rgba(0, 0, 0, 0.1)',
-        '&:hover': {
-          transform: isRTL ? 'translate(4px, -4px)' : 'translate(-4px, -4px)',
-          }
+    <Box sx={{ height: '100%', direction: isRTL ? 'rtl' : 'ltr' }}>
+      {/* Calendar Header */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 3
         }}
       >
-        {stat.isCalendar ? (
-          <>
-            {/* Calendar Header with Navigation */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <CalendarIcon sx={{ color: '#fff', fontSize: 24 }} />
-                <Typography variant="h6" sx={{ color: '#fff' }}>
-                  {t('dashboard.teacher.stats.calendar.title')}
-                </Typography>
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <IconButton onClick={handlePrevWeek} sx={{ color: '#fff' }}>
-                  <KeyboardArrowDownIcon sx={{ transform: 'rotate(90deg)' }} />
-                </IconButton>
-                <IconButton onClick={handleNextWeek} sx={{ color: '#fff' }}>
-                  <KeyboardArrowDownIcon sx={{ transform: 'rotate(-90deg)' }} />
-                </IconButton>
-              </Box>
-            </Box>
+        <Typography
+          variant="h6"
+          sx={{
+            color: '#fff',
+            fontWeight: 600,
+            fontFamily
+          }}
+        >
+          {new Date().toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' })}
+        </Typography>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <IconButton
+            onClick={handlePrevWeek}
+            sx={{
+              color: '#fff',
+              backgroundColor: 'rgba(0, 255, 163, 0.1)',
+              '&:hover': { backgroundColor: 'rgba(0, 255, 163, 0.2)' }
+            }}
+          >
+            <KeyboardArrowDownIcon sx={{ transform: 'rotate(-90deg)' }} />
+          </IconButton>
+          <IconButton
+            onClick={handleNextWeek}
+            sx={{
+              color: '#fff',
+              backgroundColor: 'rgba(0, 255, 163, 0.1)',
+              '&:hover': { backgroundColor: 'rgba(0, 255, 163, 0.2)' }
+            }}
+          >
+            <KeyboardArrowDownIcon sx={{ transform: 'rotate(90deg)' }} />
+          </IconButton>
+        </Box>
+      </Box>
 
-            {/* Calendar Grid */}
-            <Box sx={{ mb: 2 }}>
-              {/* Weekday Headers */}
-              <Grid container spacing={1.5} sx={{ px: 1, mb: 1 }}>
-                {weekDays.map((day, index) => (
-                  <Grid item xs key={index}>
-                    <Typography
-                      align="center"
-                      sx={{
-                        fontSize: '0.75rem',
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        fontWeight: 500
-                      }}
-                    >
-                      {day}
-                    </Typography>
-                  </Grid>
-                ))}
-              </Grid>
-
-              {/* Calendar Days */}
-              <Grid container spacing={1.5} sx={{ px: 1 }}>
-                {weekDates.map((date, index) => {
-                  const isCurrentDay = isToday(date);
-                  const isSelectedDay = selectedDate && 
-                    date.getDate() === selectedDate.getDate() && 
-                    date.getMonth() === selectedDate.getMonth() && 
-                    date.getFullYear() === selectedDate.getFullYear();
-                  const dayHasEvents = hasEvents(date);
-                  
-                  return (
-                    <Grid item xs key={index}>
-                      <Box
-                        onClick={() => setSelectedDate(new Date(date))}
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          gap: 0.5
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: '36px',
-                            height: '36px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            borderRadius: '50%',
-                            backgroundColor: isSelectedDay ? '#fff' : 'transparent',
-                            border: isSelectedDay ? '2px solid #fff' : 'none',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            position: 'relative',
-                            '&:hover': {
-                              backgroundColor: isSelectedDay ? '#fff' : 'rgba(255, 255, 255, 0.1)'
-                            },
-                            '&::after': dayHasEvents ? {
-                              content: '""',
-                              position: 'absolute',
-                              bottom: '2px',
-                              width: '4px',
-                              height: '4px',
-                              backgroundColor: isSelectedDay ? '#bb5c39' : '#fff',
-                              borderRadius: '50%'
-                            } : {},
-                            '&::before': isCurrentDay && !isSelectedDay ? {
-                              content: '""',
-                              position: 'absolute',
-                              top: '2px',
-                              width: '4px',
-                              height: '4px',
-                              backgroundColor: '#fff',
-                              borderRadius: '50%'
-                            } : {}
-                          }}
-                        >
-                          <Typography
-                            sx={{
-                              fontSize: '0.9rem',
-                              fontWeight: isCurrentDay || isSelectedDay ? 700 : 400,
-                              color: isSelectedDay ? '#bb5c39' : '#fff',
-                              lineHeight: 1
-                            }}
-                          >
-                            {date.getDate()}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                  );
-                })}
-              </Grid>
-            </Box>
-
-            {/* Today's Schedule */}
-            <Box
+      {/* Week Days */}
+      <Grid container spacing={1} sx={{ mb: 2 }}>
+        {weekDays.map((day, index) => (
+          <Grid item xs key={index}>
+            <Typography
+              align="center"
               sx={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                borderRadius: 2,
-                p: 2,
-                mt: 'auto'
+                fontSize: '0.75rem',
+                color: 'rgba(255, 255, 255, 0.7)',
+                fontWeight: 500,
+                fontFamily
               }}
             >
-              <Box
-                onClick={toggleSchedule}
+              {day}
+            </Typography>
+          </Grid>
+        ))}
+      </Grid>
+
+      {/* Calendar Days */}
+      <Grid container spacing={1}>
+        {weekDates.map((date, index) => {
+          const isCurrentDay = isToday(date);
+          const isSelectedDay =
+            date.getDate() === selectedDate.getDate() &&
+            date.getMonth() === selectedDate.getMonth() &&
+            date.getFullYear() === selectedDate.getFullYear();
+          const dayHasEvents = hasEvents(date);
+
+          return (
+            <Grid item xs key={index}>
+              <Paper
+                component={motion.div}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setSelectedDate(new Date(date))}
                 sx={{
+                  p: 1,
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
-                  justifyContent: 'space-between',
                   cursor: 'pointer',
-                  mb: isScheduleExpanded ? 2 : 0
+                  backgroundColor: isSelectedDay ? 'rgba(0, 255, 163, 0.1)' : 'rgba(45, 55, 72, 0.5)',
+                  border: isSelectedDay ? '1px solid #00FFA3' : '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '12px',
+                  position: 'relative',
+                  transition: 'all 0.2s ease',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 255, 163, 0.05)',
+                    border: '1px solid rgba(0, 255, 163, 0.5)'
+                  }
                 }}
               >
-                <Typography 
-                  variant="subtitle2" 
-                  sx={{ 
-                    color: '#fff', 
-                    fontSize: '0.9rem',
-                    fontWeight: 600
+                <Typography
+                  sx={{
+                    fontSize: '1rem',
+                    fontWeight: isCurrentDay || isSelectedDay ? 600 : 400,
+                    color: isCurrentDay ? '#00FFA3' : '#fff',
+                    mb: 0.5
                   }}
                 >
-                  {selectedDate.toLocaleDateString('en-US', { 
-                    weekday: 'long',
-                    month: 'short',
-                    day: 'numeric'
-                  })}
+                  {date.getDate()}
                 </Typography>
-                <IconButton 
-                  size="small" 
-                  sx={{ 
-                    color: '#fff',
-                    transform: isScheduleExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.2s'
-                  }}
-                >
-                  <KeyboardArrowDownIcon />
-                </IconButton>
-              </Box>
+                {dayHasEvents && (
+                  <Box
+                    sx={{
+                      width: 4,
+                      height: 4,
+                      borderRadius: '50%',
+                      backgroundColor: '#00FFA3',
+                      position: 'absolute',
+                      bottom: 4
+                    }}
+                  />
+                )}
+              </Paper>
+            </Grid>
+          );
+        })}
+      </Grid>
 
-              {isScheduleExpanded && (
-                <Stack spacing={1.5}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        fontSize: '0.75rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                      }}
-                    >
-                      {t('calendar.events')}
-                    </Typography>
-                    <IconButton
-                      size="small"
-                      onClick={() => setIsAddEventOpen(true)}
-                      sx={{ 
-                        color: '#fff',
-                        padding: 0,
-                        '&:hover': {
-                          backgroundColor: 'rgba(255, 255, 255, 0.1)'
-                        }
-                      }}
-                    >
-                      <AddIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-
-                  {stat.schedule && stat.schedule
-                      .filter(event => event.date === selectedDate.toISOString().split('T')[0])
-                      .map((event, index) => (
-                        <Box
-                          key={index}
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                          gap: 1.5,
-                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                          borderRadius: '8px',
-                          p: 1.5
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: '8px',
-                              height: '8px',
-                              backgroundColor: '#fff',
-                              borderRadius: '50%',
-                              opacity: 0.8
-                            }}
-                          />
-                        <Box sx={{ flex: 1 }}>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              color: 'rgba(255, 255, 255, 0.9)',
-                              fontSize: '0.85rem',
-                              fontWeight: 500,
-                              mb: 0.5
-                            }}
-                          >
-                            {event.title}
-                          </Typography>
-                          <Typography 
-                            variant="caption" 
-                            sx={{ 
-                              color: 'rgba(255, 255, 255, 0.7)',
-                              display: 'block'
-                            }}
-                          >
-                            {event.time}
-                            {event.description && (
-                              <span style={{ marginLeft: '8px', opacity: 0.8 }}>
-                                - {event.description}
-                              </span>
-                            )}
-                          </Typography>
-                        </Box>
-                        <IconButton
-                          size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteEvent(event.id);
-                          }}
-                          sx={{ 
-                            color: 'rgba(255, 255, 255, 0.7)',
-                            '&:hover': {
-                              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                              color: '#fff'
-                            }
-                          }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    ))}
-
-                  {(!stat.schedule || stat.schedule.filter(event => 
-                    event.date === selectedDate.toISOString().split('T')[0]
-                  ).length === 0) && (
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        color: 'rgba(255, 255, 255, 0.7)',
-                        fontSize: '0.85rem',
-                        textAlign: 'center',
-                        py: 1
-                      }}
-                    >
-                      {t('calendar.noEvents')}
-                    </Typography>
-                  )}
-
-                  {/* Notes Section */}
-                  <Box sx={{ mt: 2, pt: 2, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
-                          color: 'rgba(255, 255, 255, 0.7)',
-                          fontSize: '0.75rem',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}
-                      >
-                        {t('calendar.notes.title')}
-                      </Typography>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        {dayNote && !isEditingNote && (
-                      <IconButton
-                        size="small"
-                            onClick={handleDeleteNote}
-                            disabled={loading}
-                            sx={{
-                              color: 'rgba(255, 255, 255, 0.7)',
-                              padding: 0,
-                              '&:hover': {
-                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                                color: '#fff'
-                              },
-                              '&.Mui-disabled': {
-                                color: 'rgba(255, 255, 255, 0.5)'
-                              }
-                            }}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </IconButton>
-                        )}
-                        <IconButton 
-                          size="small" 
-                          onClick={() => {
-                            if (isEditingNote) {
-                              handleSaveNote();
-                            } else {
-                              setIsEditingNote(true);
-                            }
-                          }}
-                          disabled={loading}
-                          sx={{ 
-                            color: '#fff',
-                            padding: 0,
-                            '&.Mui-disabled': {
-                              color: 'rgba(255, 255, 255, 0.5)'
-                            }
-                          }}
-                        >
-                          {loading ? (
-                            <CircularProgress size={16} color="inherit" />
-                          ) : isEditingNote ? (
-                            <SaveIcon fontSize="small" />
-                          ) : (
-                            <EditIcon fontSize="small" />
-                          )}
-                      </IconButton>
-                      </Box>
-                    </Box>
-                    {isEditingNote ? (
-                      <TextField
-                        multiline
-                        rows={2}
-                        fullWidth
-                        value={dayNote}
-                        onChange={(e) => setDayNote(e.target.value)}
-                        variant="standard"
-                        placeholder={t('calendar.notes.placeholder')}
-                        sx={{
-                          '& .MuiInputBase-input': {
-                            color: '#fff',
-                            fontSize: '0.85rem',
-                          },
-                          '& .MuiInput-underline:before': {
-                            borderBottomColor: 'rgba(255, 255, 255, 0.2)',
-                          },
-                          '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
-                            borderBottomColor: 'rgba(255, 255, 255, 0.4)',
-                          },
-                          '& .MuiInput-underline:after': {
-                            borderBottomColor: '#fff',
-                          },
-                        }}
-                      />
-                    ) : (
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: 'rgba(255, 255, 255, 0.9)',
-                          fontSize: '0.85rem',
-                          minHeight: '40px',
-                          fontStyle: savedNotes[selectedDate.toISOString().split('T')[0]] ? 'normal' : 'italic'
-                        }}
-                      >
-                        {savedNotes[selectedDate.toISOString().split('T')[0]] || t('calendar.notes.noNotes')}
-                      </Typography>
-                    )}
-                  </Box>
-                </Stack>
-              )}
-            </Box>
-          </>
-        ) : (
-          <>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-              {React.cloneElement(stat.icon, { 
-                sx: { 
-                  fontSize: 32, 
-                  color: stat.accent ? '#fff' : '#000'
-                } 
-              })}
-            </Box>
-            <Typography variant="h3" sx={{ 
-              fontWeight: 700, 
-              mb: 2,
-              color: stat.accent ? '#fff' : '#000'
-            }}>
-              {stat.value}
-            </Typography>
-            <Typography variant="body1" sx={{ 
-              color: stat.accent ? 'rgba(255, 255, 255, 0.8)' : '#666',
-              mb: 2,
-              fontSize: '1rem'
-            }}>
-              {stat.title}
-            </Typography>
-            <Typography variant="caption" sx={{ 
-              color: stat.accent ? 'rgba(255, 255, 255, 0.8)' : '#666',
-              fontSize: '0.85rem'
-            }}>
-              {stat.change}
-            </Typography>
-          </>
-        )}
-    </Paper>
-
-    {/* Add Event Dialog */}
-    <Dialog
-      open={isAddEventOpen}
-      onClose={() => setIsAddEventOpen(false)}
-        TransitionProps={{
-          enter: true,
-          exit: true
-        }}
-      PaperProps={{
-        sx: {
-          backgroundColor: '#fff',
-            borderRadius: '20px',
-          width: '100%',
-            maxWidth: '400px',
-            overflow: 'hidden',
-            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)',
-            p: 0
-          }
-        }}
-      >
+      {/* Events List */}
+      <Box sx={{ mt: 3 }}>
         <Box
           sx={{
-            background: 'linear-gradient(135deg, #bb5c39 0%, #a04b2e 100%)',
-            py: 4,
-            px: 3,
-            color: '#fff',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%)',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            mb: 2
+          }}
+        >
+          <Typography
+            variant="subtitle2"
+            sx={{
+              color: 'rgba(255, 255, 255, 0.9)',
+              fontWeight: 500,
+              fontFamily
+            }}
+          >
+            {selectedDate.toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </Typography>
+          <IconButton
+            onClick={() => setIsAddEventOpen(true)}
+            sx={{
+              color: '#00FFA3',
+              backgroundColor: 'rgba(0, 255, 163, 0.1)',
+              '&:hover': { backgroundColor: 'rgba(0, 255, 163, 0.2)' }
+            }}
+          >
+            <AddIcon />
+          </IconButton>
+        </Box>
+
+        <Stack spacing={2}>
+          {stat.schedule &&
+            stat.schedule
+              .filter(
+                (event) =>
+                  event.date === selectedDate.toISOString().split('T')[0]
+              )
+              .map((event, index) => (
+                <Paper
+                  key={index}
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    backgroundColor: 'rgba(45, 55, 72, 0.5)',
+                    borderRadius: '12px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box
+                      sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        backgroundColor: '#00FFA3'
+                      }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography
+                        sx={{
+                          color: '#fff',
+                          fontWeight: 500,
+                          mb: 0.5,
+                          fontFamily
+                        }}
+                      >
+                        {event.title}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: 'rgba(255, 255, 255, 0.7)',
+                          fontFamily
+                        }}
+                      >
+                        {event.time}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Paper>
+              ))}
+          {(!stat.schedule ||
+            stat.schedule.filter(
+              (event) =>
+                event.date === selectedDate.toISOString().split('T')[0]
+            ).length === 0) && (
+            <Box
+              sx={{
+                textAlign: 'center',
+                py: 3,
+                color: 'rgba(255, 255, 255, 0.7)',
+                backgroundColor: 'rgba(45, 55, 72, 0.5)',
+                borderRadius: '12px',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+              }}
+            >
+              <Typography variant="body2" sx={{ fontFamily }}>
+                {t('calendar.noEvents')}
+              </Typography>
+            </Box>
+          )}
+        </Stack>
+
+        {/* Add Event Dialog */}
+        <Dialog
+          open={isAddEventOpen}
+          onClose={() => setIsAddEventOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: '16px',
+              p: 0,
+              backgroundColor: 'rgba(45, 55, 72, 0.7)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              overflow: 'hidden'
             }
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
+          <Box
+            sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              py: 3,
+              px: 3,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
+          >
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+              <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600, fontFamily }}>
                 {t('calendar.addEvent.title')}
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                {t('calendar.addEvent.subtitle')}
+              <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontFamily }}>
+                {selectedDate.toLocaleDateString('ar-SA', { weekday: 'long', day: 'numeric', month: 'long' })}
               </Typography>
             </Box>
-            <IconButton 
+            <IconButton
               onClick={() => setIsAddEventOpen(false)}
               size="small"
-              sx={{ 
-                color: 'white',
-                '&:hover': { 
-                  backgroundColor: 'rgba(255,255,255,0.1)'
-                }
+              sx={{
+                color: '#fff',
+                '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
               }}
             >
-            <CloseIcon />
-          </IconButton>
-        </Box>
-        </Box>
-
-        <DialogContent sx={{ p: 3 }}>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-          <TextField
-            label={t('calendar.addEvent.form.title')}
-            fullWidth
-            required
-            value={newEvent.title}
-            onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-            variant="outlined"
-            error={error && !newEvent.title}
-            helperText={error && !newEvent.title ? t('calendar.addEvent.form.titleRequired') : ''}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          <DialogContent sx={{ p: 3 }}>
+            <TextField
+              required
+              fullWidth
+              label={t('calendar.addEvent.form.title')}
+              value={newEvent.title}
+              onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
+              error={error && !newEvent.title}
+              helperText={error && !newEvent.title ? t('calendar.addEvent.form.titleRequired') : ''}
+              InputLabelProps={{
+                style: { fontFamily },
+                shrink: true
               }}
-          />
-          <TextField
-            label={t('calendar.addEvent.form.time')}
-            type="time"
-            fullWidth
-            required
-            value={newEvent.time}
-            onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-            error={error && !newEvent.time}
-            helperText={error && !newEvent.time ? t('calendar.addEvent.form.timeRequired') : ''}
-            InputLabelProps={{
-              shrink: true,
-            }}
-            variant="outlined"
               sx={{
+                mb: 3,
                 '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  color: '#fff',
+                  borderRadius: '12px',
+                  '& fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)'
+                  },
                   '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
+                    borderColor: '#00FFA3'
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
-            }}
-          />
-          <TextField
-            label={t('calendar.addEvent.form.description')}
-            fullWidth
-            multiline
-            rows={3}
-            value={newEvent.description}
-            onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-            variant="outlined"
-            placeholder={t('calendar.addEvent.form.placeholder.description')}
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
+                    borderColor: '#00FFA3'
+                  }
                 }
               }}
             />
-            {error && !error.includes('required') && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {error}
-              </Alert>
-            )}
-        </Stack>
-      </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-        <Button
-          onClick={() => setIsAddEventOpen(false)}
-          variant="outlined"
-          sx={{
-            borderColor: 'rgba(187, 92, 57, 0.5)',
-            color: '#bb5c39',
-            px: 3,
-            '&:hover': {
-              backgroundColor: 'rgba(187, 92, 57, 0.05)',
-              borderColor: '#bb5c39'
-            }
-          }}
-        >
-          {t('calendar.addEvent.actions.cancel')}
-        </Button>
-        <Button
-          variant="contained"
-          onClick={handleAddEvent}
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-          sx={{
-            backgroundColor: '#bb5c39',
-            px: 4,
-            '&:hover': {
-              backgroundColor: '#a04b2e'
-            },
-            '&.Mui-disabled': {
-              backgroundColor: 'rgba(187, 92, 57, 0.3)'
-            }
-          }}
-        >
-          {loading ? t('calendar.addEvent.actions.adding') : t('calendar.addEvent.actions.add')}
-        </Button>
-      </DialogActions>
-    </Dialog>
-  </Box>
-);
+            <TextField
+              required
+              fullWidth
+              type="time"
+              label={t('calendar.addEvent.form.time')}
+              value={newEvent.time}
+              onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
+              error={error && !newEvent.time}
+              helperText={error && !newEvent.time ? t('calendar.addEvent.form.timeRequired') : ''}
+              InputLabelProps={{
+                style: { fontFamily },
+                shrink: true
+              }}
+              sx={{
+                mb: 3,
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  color: '#fff',
+                  borderRadius: '12px',
+                  '& fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#00FFA3'
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#00FFA3'
+                  }
+                }
+              }}
+            />
+
+            <TextField
+              fullWidth
+              multiline
+              rows={3}
+              label={t('calendar.addEvent.form.description')}
+              value={newEvent.description}
+              onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
+              InputLabelProps={{
+                style: { fontFamily },
+                shrink: true
+              }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  color: '#fff',
+                  borderRadius: '12px',
+                  '& fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#00FFA3'
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#00FFA3'
+                  }
+                }
+              }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: 3, display: 'flex', gap: 2 }}>
+            <Button
+              onClick={() => setIsAddEventOpen(false)}
+              variant="outlined"
+              sx={{
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                minWidth: '100px',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderColor: '#00FFA3'
+                }
+              }}
+            >
+              {t('calendar.addEvent.actions.cancel')}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={handleAddEvent}
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+              sx={{
+                backgroundColor: '#00FFA3',
+                color: '#0F172A',
+                minWidth: '140px',
+                '& .MuiButton-startIcon': {
+                  marginRight: 1,
+                  marginLeft: 0
+                },
+                '&:hover': { 
+                  backgroundColor: '#00cc82' 
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: 'rgba(0, 255, 163, 0.3)'
+                }
+              }}
+            >
+              {loading ? t('calendar.addEvent.actions.adding') : t('calendar.addEvent.actions.add')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    </Box>
+  );
 };
 
 const TeacherDashboard = () => {
@@ -950,7 +775,8 @@ const TeacherDashboard = () => {
   const params = useParams();
   const { user } = useAuth();
   const isRTL = getCurrentLanguage() === 'ar';
-  
+  const theme = useTheme();
+
   // State management
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -979,7 +805,6 @@ const TeacherDashboard = () => {
     allowQuestions: true
   });
 
-  // Form states
   const [newCourseData, setNewCourseData] = useState({
     title: '',
     description: '',
@@ -993,25 +818,30 @@ const TeacherDashboard = () => {
     content: ''
   });
 
-  const [dragActive, setDragActive] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  const fileInputRef = useRef(null);
+  const [currentTab, setCurrentTab] = useState(0);
+
+  // Add presence hook
+  const { onlineUsers, loading: presenceLoading } = usePresence(
+    students.map(student => student.id)
+  );
 
   useEffect(() => {
     loadDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const loadDashboardData = async () => {
+    if (!user) return;
+
     try {
       setLoading(true);
       setError(null);
-      
-      // Get today's date range
+
       const today = new Date();
       const startOfDay = new Date(today.setHours(0, 0, 0, 0));
       const endOfDay = new Date(today.setHours(23, 59, 59, 999));
 
-      // Load data with individual error handling
       const results = await Promise.allSettled([
         getTeacherLessons(user.id),
         getTeacherSchedule(user.id, startOfDay, endOfDay),
@@ -1022,7 +852,6 @@ const TeacherDashboard = () => {
         getRecentActivities(user.id)
       ]);
 
-      // Process results and set data
       const [
         lessonsResult,
         scheduleResult,
@@ -1033,7 +862,6 @@ const TeacherDashboard = () => {
         activitiesResult
       ] = results;
 
-      // Handle each result individually
       if (lessonsResult.status === 'fulfilled') setLessons(lessonsResult.value);
       if (scheduleResult.status === 'fulfilled') setSchedule(scheduleResult.value);
       if (coursesResult.status === 'fulfilled') setCourses(coursesResult.value);
@@ -1041,31 +869,29 @@ const TeacherDashboard = () => {
       if (studentsResult.status === 'fulfilled') setStudents(studentsResult.value);
       if (activitiesResult.status === 'fulfilled') setActivities(activitiesResult.value);
 
-      // Check if we have any rejected promises
-      const failedRequests = results.filter(result => result.status === 'rejected');
+      const failedRequests = results.filter((result) => result.status === 'rejected');
       if (failedRequests.length > 0) {
-        console.warn('Some data failed to load:', failedRequests);
         setError('Some dashboard data could not be loaded. Please check your internet connection.');
       }
 
-      // Set stats even if some data is missing
+      // For demonstration, set stats for the calendar
       setStats([
         {
           title: 'Calendar',
           value: new Date().toLocaleDateString('en-US', { month: 'long' }),
           icon: <CalendarIcon />,
-          schedule: (scheduleResult.status === 'fulfilled' ? scheduleResult.value : []).map(item => ({
-            time: item.time,
-            title: item.subject
-          })),
+          schedule: (scheduleResult.status === 'fulfilled' ? scheduleResult.value : []).map(
+            (item) => ({
+              time: item.time,
+              title: item.subject
+            })
+          ),
           accent: true,
           isCalendar: true
         }
       ]);
-
     } catch (err) {
-      console.error('Error loading dashboard:', err);
-      setError('Failed to load dashboard data. Please check your internet connection and try again.');
+      setError('Failed to load dashboard data. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -1081,7 +907,7 @@ const TeacherDashboard = () => {
       setLoading(true);
       setError(null);
 
-      // Create Daily.co room
+      // Create a Daily.co room
       const roomData = {
         title: liveClassData.title,
         description: liveClassData.description,
@@ -1092,23 +918,18 @@ const TeacherDashboard = () => {
       };
 
       const result = await createDailyRoom(user.id, roomData);
-      console.log('Created Daily.co room:', result);
 
-      // Close the dialog before navigation
+      // Close dialog & reset
       setStartLiveClassDialog(false);
-      
-      // Reset form data
       setLiveClassData({
         title: '',
         description: '',
         subject: ''
       });
 
-      // Navigate to Daily.co room URL
+      // Navigate to the Daily.co room
       window.location.href = `/streaming/teacher.html?room=${result.roomName}`;
-
     } catch (error) {
-      console.error('Error creating room:', error);
       setError(error.message || 'Failed to create room');
     } finally {
       setLoading(false);
@@ -1134,77 +955,40 @@ const TeacherDashboard = () => {
   const handleCreateAssignment = async () => {
     try {
       if (!newAssignmentData.title) {
-        setError('Title is required');
+        setError(t('teacherPages.assignments.errors.titleRequired'));
         return;
       }
-      
+
       setLoading(true);
       setError(null);
 
-      const assignmentId = await createNewAssignment({
-        ...newAssignmentData,
+      await createNewAssignment({
+        title: newAssignmentData.title,
+        description: newAssignmentData.description,
+        content: newAssignmentData.content,
         teacherId: user.id,
-        dueDate: new Date().toISOString() // You might want to add a due date field to the form
+        status: 'active',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        submissionCount: 0
       });
 
-      console.log('Created assignment with ID:', assignmentId);
-      setNewAssignmentDialog(false);
+      // Reset form and close dialog
       setNewAssignmentData({
         title: '',
         description: '',
         content: ''
       });
+      setNewAssignmentDialog(false);
+
+      // Refresh assignments list
       await loadDashboardData();
+
     } catch (err) {
-      console.error('Error creating assignment:', err);
-      setError('Failed to create assignment');
+      console.error('Failed to create assignment:', err);
+      setError(t('teacherPages.assignments.errors.createFailed'));
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDrag = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
-    } else if (e.type === "dragleave") {
-      setDragActive(false);
-    }
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    setUploadError('');
-
-    const file = e.dataTransfer.files[0];
-    handleFile(file);
-  };
-
-  const handleFileInput = (e) => {
-    const file = e.target.files[0];
-    handleFile(file);
-  };
-
-  const handleFile = (file) => {
-    if (file?.type !== 'application/pdf') {
-      setUploadError('Please upload a PDF file');
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) { // 10MB limit
-      setUploadError('File size should be less than 10MB');
-      return;
-    }
-    setNewAssignmentData(prev => ({ ...prev, pdf: file }));
-    setUploadError('');
-  };
-
-  const handleRemovePdf = () => {
-    setNewAssignmentData(prev => ({ ...prev, pdf: null }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
     }
   };
 
@@ -1218,7 +1002,7 @@ const TeacherDashboard = () => {
       setLoading(true);
       setError(null);
 
-      // Create Daily.co room with stream data
+      // Create Daily.co room
       const roomData = {
         title: streamData.channelName,
         description: streamData.description,
@@ -1231,12 +1015,9 @@ const TeacherDashboard = () => {
       };
 
       const result = await createDailyRoom(user.id, roomData);
-      console.log('Created Daily.co room:', result);
-      
-      // Close dialog before navigation
+
+      // Close & reset
       setStartStreamDialog(false);
-      
-      // Reset form data
       setStreamData({
         channelName: '',
         description: '',
@@ -1244,11 +1025,9 @@ const TeacherDashboard = () => {
         allowQuestions: true
       });
 
-      // Navigate to streaming page with room name
+      // Navigate to streaming page
       window.location.href = `/streaming/teacher.html?room=${result.roomName}`;
-
     } catch (error) {
-      console.error('Stream start failed:', error);
       setError('Failed to start stream: ' + error.message);
     } finally {
       setLoading(false);
@@ -1257,894 +1036,899 @@ const TeacherDashboard = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
+      <Box
+        sx={{
+          minHeight: '100vh',
+          background: 'linear-gradient(145deg, #0F172A 0%, #1E293B 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <CircularProgress sx={{ color: '#4a90e2' }} />
       </Box>
     );
   }
 
   return (
-    <Container 
-      maxWidth="xl" 
-      sx={{ 
-        py: 4, 
-        mt: { xs: 8, sm: 9 },
-        direction: isRTL ? 'rtl' : 'ltr'
-      }}
-    >
-      {error && (
-        <Alert severity="error" sx={{ mb: 3, textAlign: isRTL ? 'right' : 'left' }}>
-          {error}
-        </Alert>
-      )}
-
-      <Grid container spacing={3}>
-        {/* Quick Actions and Assignments Section */}
-        <Grid item xs={12} md={7}>
-          <Box
-            sx={{
-              position: 'relative',
-              '&:before': {
-                content: '""',
-                position: 'absolute',
-                top: '8px',
-                [isRTL ? 'right' : 'left']: '8px',
-                [isRTL ? 'left' : 'right']: '-8px',
-                bottom: '-8px',
-                backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                borderRadius: '16px',
-                zIndex: 0
-              }
-            }}
-          >
-            <Paper
-              elevation={0}
-              sx={{
-                p: 3,
-                borderRadius: '16px',
-                border: '1px solid rgba(0, 0, 0, 0.1)',
-                position: 'relative',
-                backgroundColor: '#fff',
-                zIndex: 1,
-                height: '100%',
-                transition: 'all 0.2s',
-                '&:hover': {
-                  transform: isRTL ? 'translate(4px, -4px)' : 'translate(-4px, -4px)'
+    <CacheProvider value={cacheRtl}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <style>
+          {`
+            @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
+            
+            * {
+              font-family: ${fontFamily};
+            }
+          `}
+        </style>
+        <Box
+          sx={{
+            minHeight: '100vh',
+            background: 'linear-gradient(145deg, #1a1f2c 0%, #2d3748 100%)',
+            display: 'flex',
+            flexDirection: 'column',
+            position: 'relative',
+            pb: 7 // Add padding for bottom navigation
+          }}
+        >
+          {/* Main Content */}
+          <Box sx={{ 
+            flex: 1, 
+            px: 2, 
+            py: 3, 
+            overflowY: 'auto',
+            pt: { xs: 12, sm: 14 } // Much more top padding for mobile status bar and safe area
+          }}>
+            {/* Quick Actions - Now as touch-friendly cards */}
+            <Grid container spacing={2} sx={{ mb: 3 }}>
+              {[
+                {
+                  icon: <LiveTvIcon sx={{ fontSize: 28, color: '#00FFA3' }} />,
+                  text: t('dashboard.teacher.quickActions.liveClass.title'),
+                  action: () => setStartStreamDialog(true)
+                },
+                {
+                  icon: <AssignmentIcon sx={{ fontSize: 28, color: '#00FFA3' }} />,
+                  text: t('dashboard.teacher.quickActions.assignment.title'),
+                  action: () => setNewAssignmentDialog(true)
                 }
-              }}
-            >
-              {/* Quick Actions */}
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="h6" sx={{ mb: 3, textAlign: isRTL ? 'right' : 'left' }}>
-                  {t('dashboard.teacher.quickActions.title')}
-                </Typography>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} md={6}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 2.5,
-                        borderRadius: '12px',
-                        border: '1px solid rgba(187, 92, 57, 0.2)',
-                        backgroundColor: 'rgba(187, 92, 57, 0.03)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          backgroundColor: 'rgba(187, 92, 57, 0.08)',
-                          transform: 'translateY(-2px)'
-                        }
-                      }}
-                      onClick={() => setStartStreamDialog(true)}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                        <Avatar
-                          sx={{
-                            bgcolor: '#bb5c39',
-                            width: 40,
-                            height: 40
-                          }}
-                        >
-                          <LiveTvIcon />
-                        </Avatar>
-                        <Box sx={{ ml: 2 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#bb5c39' }}>
-                            {t('dashboard.teacher.quickActions.liveClass.title')}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                            {t('dashboard.teacher.quickActions.liveClass.subtitle')}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Paper
-                      elevation={0}
-                      sx={{
-                        p: 2.5,
-                        borderRadius: '12px',
-                        border: '1px solid rgba(187, 92, 57, 0.2)',
-                        backgroundColor: 'rgba(187, 92, 57, 0.03)',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                        '&:hover': {
-                          backgroundColor: 'rgba(187, 92, 57, 0.08)',
-                          transform: 'translateY(-2px)'
-                        }
-                      }}
-                      onClick={() => setNewAssignmentDialog(true)}
-                    >
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
-                        <Avatar
-                          sx={{
-                            bgcolor: '#bb5c39',
-                            width: 40,
-                            height: 40
-                          }}
-                        >
-                          <AssignmentIcon />
-                        </Avatar>
-                        <Box sx={{ ml: 2 }}>
-                          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#bb5c39' }}>
-                            {t('dashboard.teacher.quickActions.assignment.title')}
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                            {t('dashboard.teacher.quickActions.assignment.subtitle')}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Paper>
-                  </Grid>
-                </Grid>
-              </Box>
-
-              {/* Assignments Overview */}
-              <Box>
-                <Box sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center', 
-                  mb: 3,
-                  flexDirection: isRTL ? 'row-reverse' : 'row'
-                }}>
-                  <Box>
-                    <Typography variant="h6" sx={{ textAlign: isRTL ? 'right' : 'left' }}>
-                      {t('dashboard.teacher.assignments.title')}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ textAlign: isRTL ? 'right' : 'left' }}>
-                      {t('dashboard.teacher.assignments.subtitle')}
-                    </Typography>
-                  </Box>
-                  <IconButton
-                    onClick={() => navigate(`/${getCurrentLanguage()}/teacher/assignments`)}
+              ].map((action, index) => (
+                <Grid item xs={6} key={index}>
+                  <Paper
+                    component={motion.div}
+                    whileTap={{ scale: 0.95 }}
+                    elevation={0}
+                    onClick={action.action}
                     sx={{
-                      color: '#bb5c39',
-                      transform: isRTL ? 'rotate(180deg)' : 'none',
-                      '&:hover': { backgroundColor: 'rgba(187, 92, 57, 0.1)' }
+                      p: 2,
+                      height: '100%',
+                      borderRadius: '12px',
+                      bgcolor: 'rgba(45, 55, 72, 0.9)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 1,
+                      textAlign: 'center'
                     }}
                   >
-                    <ArrowForwardIcon />
-                  </IconButton>
-                </Box>
+                    <Avatar
+                      sx={{
+                        bgcolor: 'rgba(0, 255, 163, 0.1)',
+                        width: 44,
+                        height: 44,
+                        mb: 1
+                      }}
+                    >
+                      {action.icon}
+                    </Avatar>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: '#fff',
+                        fontWeight: 500,
+                        fontSize: '0.875rem',
+                        lineHeight: 1.2
+                      }}
+                    >
+                      {action.text}
+                    </Typography>
+                  </Paper>
+                </Grid>
+              ))}
+            </Grid>
 
-                <Grid container spacing={2}>
-                {assignments.slice(0, 3).map((assignment, index) => (
-                    <Grid item xs={12} key={index}>
+            {/* Content based on current tab */}
+            <Box sx={{ display: currentTab === 0 ? 'block' : 'none' }}>
+              {/* Calendar View */}
+              <Typography
+                variant="h6"
+                sx={{
+                  color: '#fff',
+                  fontWeight: 600,
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}
+              >
+                <CalendarIcon sx={{ color: '#00FFA3' }} />
+                {t('dashboard.schedule.title')}
+              </Typography>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 3,
+                  borderRadius: '12px',
+                  bgcolor: 'rgba(45, 55, 72, 0.9)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.05)'
+                }}
+              >
+                {stats
+                  .filter((stat) => stat.isCalendar)
+                  .map((stat, index) => (
+                    <StatsCard key={index} stat={stat} />
+                  ))}
+              </Paper>
+            </Box>
+
+            <Box sx={{ display: currentTab === 1 ? 'block' : 'none' }}>
+              {/* Assignments View */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: '#fff',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1
+                  }}
+                >
+                  <AssignmentIcon sx={{ color: '#00FFA3' }} />
+                  {t('dashboard.teacher.assignments.title')}
+                </Typography>
+                <IconButton
+                  onClick={() => setNewAssignmentDialog(true)}
+                  sx={{
+                    color: '#00FFA3',
+                    backgroundColor: 'rgba(0, 255, 163, 0.1)',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 255, 163, 0.2)',
+                    }
+                  }}
+                >
+                  <AddIcon />
+                </IconButton>
+              </Box>
+              <Stack spacing={2}>
+                {assignments.map((assignment, index) => (
                   <Paper
+                    key={assignment.id}
                     elevation={0}
+                    onClick={() => navigate(`/${getCurrentLanguage()}/teacher/assignments/${assignment.id}`)}
                     sx={{
                       p: 2,
                       borderRadius: '12px',
-                      border: '1px solid rgba(0, 0, 0, 0.1)',
-                      backgroundColor: '#fff',
+                      bgcolor: 'rgba(45, 55, 72, 0.9)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
-                      '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                        transform: 'translateY(-2px)'
+                      '&:active': {
+                        transform: 'scale(0.98)'
                       }
                     }}
-                    onClick={() => navigate(`/${getCurrentLanguage()}/teacher/assignments/${assignment.id}`)}
                   >
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                        {assignment.title}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" display="block">
-                        {t('teacherPages.assignments.created')} {formatRelativeTime(assignment.createdAt, t)}
-                      </Typography>
-                    </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box 
-                        sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: 0.5,
-                          color: 'text.secondary',
-                          fontSize: '0.75rem'
-                        }}
-                      >
-                        <PeopleIcon sx={{ fontSize: 16 }} />
-                        {assignment.submissions?.length || 0} {t('dashboard.teacher.assignments.submissions', { count: assignment.submissions?.length || 0 })}
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        color: '#fff',
+                        fontWeight: 500,
+                        mb: 1
+                      }}
+                    >
+                      {assignment.title}
+                    </Typography>
+                    <Typography variant="caption" sx={{
+                      color: 'rgba(255, 255, 255, 0.7)',
+                      display: 'block',
+                      mb: 1
+                    }}>
+                      {t('teacherPages.assignments.created')} {formatRelativeTime(assignment.createdAt, t)}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                        <PeopleIcon sx={{ fontSize: 16, color: '#00FFA3' }} />
+                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                          {assignment.submissions?.length || 0}
+                        </Typography>
                       </Box>
                       <Chip
                         label={t(`teacherPages.assignments.status.${assignment.status?.toLowerCase() || 'active'}`)}
                         size="small"
                         sx={{
-                          backgroundColor: 'rgba(187, 92, 57, 0.1)',
-                          color: '#bb5c39',
-                          fontWeight: 500
+                          backgroundColor: 'rgba(0, 255, 163, 0.1)',
+                          color: '#00FFA3',
+                          fontSize: '0.75rem'
                         }}
                       />
-                          </Box>
                     </Box>
                   </Paper>
-                    </Grid>
                 ))}
                 {assignments.length === 0 && (
-                    <Grid item xs={12}>
-                  <Box 
-                    sx={{ 
-                      textAlign: 'center', 
+                  <Box
+                    sx={{
+                      textAlign: 'center',
                       py: 4,
-                      color: 'text.secondary'
+                      color: 'rgba(255, 255, 255, 0.7)',
+                      bgcolor: 'rgba(45, 55, 72, 0.5)',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255, 255, 255, 0.05)'
                     }}
                   >
-                    <AssignmentIcon sx={{ fontSize: 48, color: 'rgba(0, 0, 0, 0.2)', mb: 1 }} />
+                    <MenuBookIcon sx={{ fontSize: 48, mb: 2, opacity: 0.5, color: '#00FFA3' }} />
                     <Typography variant="body2">
                       {t('dashboard.teacher.assignments.empty')}
                     </Typography>
                   </Box>
-                    </Grid>
                 )}
-                </Grid>
-              </Box>
-            </Paper>
-          </Box>
-        </Grid>
-
-        {/* Calendar Card */}
-        <Grid item xs={12} md={5}>
-          {stats
-            .filter(stat => stat.isCalendar)
-            .map((stat, index) => (
-              <StatsCard key={index} stat={stat} />
-            ))}
-        </Grid>
-      </Grid>
-
-      <Grid container spacing={3} sx={{ mt: 2 }}>
-      {/* Dialogs */}
-        <Grid item xs={12}>
-      <Dialog
-        open={newCourseDialog}
-        onClose={() => setNewCourseDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '16px',
-            p: 2,
-            backgroundColor: '#fff',
-            direction: isRTL ? 'rtl' : 'ltr'
-          }
-        }}
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar
-                sx={{
-                  bgcolor: 'rgba(187, 92, 57, 0.1)',
-                  color: '#bb5c39',
-                  width: 48,
-                  height: 48
-                }}
-              >
-                <MenuBookIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="h6" sx={{ color: '#2f2f2f', fontWeight: 600 }}>
-                  {t('dashboard.teacher.dialogs.course.title')}
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  {t('dashboard.teacher.dialogs.course.subtitle')}
-                </Typography>
-              </Box>
+              </Stack>
             </Box>
-            <IconButton 
-              onClick={() => setNewCourseDialog(false)} 
-              size="small"
-              sx={{
-                '&:hover': { backgroundColor: 'rgba(187, 92, 57, 0.1)' }
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          <Box
-            sx={{
-              mt: 2,
-              p: 3,
-              borderRadius: '12px',
-              backgroundColor: 'rgba(187, 92, 57, 0.03)',
-              border: '1px solid rgba(187, 92, 57, 0.1)'
-            }}
-          >
-            <Stack spacing={3}>
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    mb: 1,
-                    color: '#2f2f2f',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1
-                  }}
-                >
-                  <MenuBookIcon sx={{ fontSize: 20, color: '#bb5c39' }} />
-                  {t('dashboard.teacher.dialogs.course.form.title')}
-                  <Typography
-                    component="span"
-                    variant="caption"
-                    sx={{
-                      color: '#bb5c39',
-                      ml: 0.5
-                    }}
-                  >
-                    *
-                  </Typography>
-                </Typography>
-                <TextField
-                  required
-                  fullWidth
-                  placeholder="Enter course title"
-                  value={newCourseData.title}
-                  onChange={(e) => setNewCourseData({ ...newCourseData, title: e.target.value })}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: '#fff',
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#bb5c39',
-                      }
-                    }
-                  }}
-                />
-              </Box>
 
-              <Box>
+            <Box sx={{ display: currentTab === 2 ? 'block' : 'none' }}>
+              {/* Students View */}
+              <Box sx={{ mb: 3 }}>
                 <Typography
-                  variant="subtitle2"
+                  variant="h6"
                   sx={{
-                    mb: 1,
-                    color: '#2f2f2f',
+                    color: '#fff',
+                    fontWeight: 600,
+                    mb: 2,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1
                   }}
                 >
-                  <AssignmentIcon sx={{ fontSize: 20, color: '#bb5c39' }} />
-                  {t('dashboard.teacher.dialogs.course.form.description')}
+                  <PeopleIcon sx={{ color: '#00FFA3' }} />
+                  {t('dashboard.teacher.students.online')} ({Object.values(onlineUsers).filter(u => u.isOnline).length})
                 </Typography>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  placeholder="Add course description"
-                  value={newCourseData.description}
-                  onChange={(e) => setNewCourseData({ ...newCourseData, description: e.target.value })}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: '#fff',
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#bb5c39',
-                      }
-                    }
-                  }}
-                />
-              </Box>
-
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    mb: 1,
-                    color: '#2f2f2f',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1
-                  }}
-                >
-                  <TrendingUpIcon sx={{ fontSize: 20, color: '#bb5c39' }} />
-                  {t('dashboard.teacher.dialogs.course.form.level')}
-                </Typography>
-                <TextField
-                  select
-                  fullWidth
-                  placeholder="Select course level"
-                  value={newCourseData.level}
-                  onChange={(e) => setNewCourseData({ ...newCourseData, level: e.target.value })}
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      backgroundColor: '#fff',
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#bb5c39',
-                      }
-                    }
-                  }}
-                >
-                  {[
-                    { value: 'beginner', label: 'Beginner', icon: <SchoolIcon /> },
-                    { value: 'intermediate', label: 'Intermediate', icon: <SchoolIcon /> },
-                    { value: 'advanced', label: 'Advanced', icon: <SchoolIcon /> }
-                  ].map((option) => (
-                    <MenuItem 
-                      key={option.value} 
-                      value={option.value}
+                <Stack spacing={2}>
+                  {students
+                    .filter(student => onlineUsers[student.id]?.isOnline)
+                    .map((student) => (
+                      <Paper
+                        key={student.id}
+                        elevation={0}
+                        sx={{
+                          p: 2,
+                          borderRadius: '12px',
+                          bgcolor: 'rgba(45, 55, 72, 0.9)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)'
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          <Box sx={{ position: 'relative' }}>
+                            <Avatar sx={{ bgcolor: 'rgba(0, 255, 163, 0.1)', color: '#00FFA3' }}>
+                              {student.displayName?.charAt(0) || 'S'}
+                            </Avatar>
+                            <Box
+                              sx={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: '50%',
+                                backgroundColor: '#00FFA3',
+                                border: '2px solid rgba(45, 55, 72, 0.9)',
+                                position: 'absolute',
+                                bottom: 0,
+                                right: 0
+                              }}
+                            />
+                          </Box>
+                          <Box sx={{ flex: 1 }}>
+                            <Typography sx={{ color: '#fff', fontWeight: 500, fontFamily }}>
+                              {student.displayName}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontFamily }}>
+                              {student.email}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Paper>
+                    ))}
+                  {Object.values(onlineUsers).filter(u => u.isOnline).length === 0 && (
+                    <Box
                       sx={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1,
-                        py: 1.5
+                        textAlign: 'center',
+                        py: 3,
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        bgcolor: 'rgba(45, 55, 72, 0.5)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
                       }}
                     >
-                      {React.cloneElement(option.icon, { 
-                        sx: { 
-                          fontSize: 20,
-                          color: '#bb5c39'
-                        } 
-                      })}
-                      {option.label}
-                    </MenuItem>
-                  ))}
-                </TextField>
+                      <Typography variant="body2" sx={{ fontFamily }}>
+                        {t('dashboard.teacher.students.noOnline')}
+                      </Typography>
+                    </Box>
+                  )}
+                </Stack>
               </Box>
-            </Stack>
-          </Box>
-        </DialogContent>
-        <DialogActions 
-          sx={{ 
-            px: 3, 
-            pb: 3,
-            gap: 2
-          }}
-        >
-          <Button
-            onClick={() => setNewCourseDialog(false)}
-            variant="outlined"
-            sx={{
-              borderColor: 'rgba(187, 92, 57, 0.5)',
-              color: '#bb5c39',
-              '&:hover': { 
-                backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                borderColor: '#bb5c39'
-              }
-            }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleCreateCourse}
-            disabled={loading}
-            startIcon={<SaveIcon />}
-            sx={{
-              backgroundColor: '#bb5c39',
-              '&:hover': { backgroundColor: '#a04b2e' },
-              '&.Mui-disabled': {
-                backgroundColor: 'rgba(187, 92, 57, 0.3)',
-                color: '#fff'
-              }
-            }}
-          >
-            {loading ? t('common.loading') : t('dashboard.teacher.dialogs.course.actions.create')}
-          </Button>
-        </DialogActions>
-      </Dialog>
 
-      {/* Create Assignment Dialog */}
-      <Dialog
-        open={newAssignmentDialog}
-        onClose={() => setNewAssignmentDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        TransitionProps={{
-          enter: true,
-          exit: true
-        }}
-        PaperProps={{
-          sx: {
-            borderRadius: '20px',
-            p: 0,
-            backgroundColor: '#fff',
-            overflow: 'hidden',
-            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)'
-          }
-        }}
-      >
-        <Box
-                sx={{
-            background: 'linear-gradient(135deg, #bb5c39 0%, #a04b2e 100%)',
-            py: 4,
-            px: 3,
-            color: '#fff',
-            position: 'relative',
-            overflow: 'hidden',
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'radial-gradient(circle at top right, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 60%)',
-            }
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-              <Box>
-              <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-                  {t('dashboard.teacher.dialogs.assignment.title')}
-                </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                  {t('dashboard.teacher.dialogs.assignment.subtitle')}
-                </Typography>
-            </Box>
-            <IconButton 
-              onClick={() => setNewAssignmentDialog(false)} 
-              size="small"
-              sx={{
-                color: 'white',
-                '&:hover': { 
-                  backgroundColor: 'rgba(255,255,255,0.1)'
-                }
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </Box>
-
-        <DialogContent sx={{ p: 3 }}>
-          <Box sx={{ mt: 2 }}>
-            <TextField
-                  required
-              fullWidth
-              label={t('dashboard.teacher.dialogs.assignment.form.title')}
-              variant="outlined"
-              value={newAssignmentData.title}
-              onChange={(e) => setNewAssignmentData({ ...newAssignmentData, title: e.target.value })}
-                  error={error && !newAssignmentData.title}
-                  helperText={error && !newAssignmentData.title ? 'Title is required' : ''}
-                  sx={{
-                mb: 3,
-                    '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
-                      },
-                  '&.Mui-focused fieldset': {
-                        borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                    }
-                  }}
-                />
-
-            <TextField
-              fullWidth
-              label={t('dashboard.teacher.dialogs.assignment.form.description')}
-              variant="outlined"
-              multiline
-              rows={4}
-              placeholder={t('dashboard.teacher.dialogs.assignment.form.placeholder.description')}
-              value={newAssignmentData.description}
-              onChange={(e) => setNewAssignmentData({ ...newAssignmentData, description: e.target.value })}
-              sx={{
-                mb: 3,
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
-              }}
-            />
-
-            <TextField
-              fullWidth
-              label={t('dashboard.teacher.dialogs.assignment.form.content')}
-              variant="outlined"
-              multiline
-              rows={8}
-              placeholder={t('dashboard.teacher.dialogs.assignment.form.placeholder.content')}
-              value={newAssignmentData.content}
-              onChange={(e) => setNewAssignmentData({ ...newAssignmentData, content: e.target.value })}
-              sx={{ 
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: '#fff',
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                      borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
-              }}
-            />
-          </Box>
-        </DialogContent>
-
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-          <Button
-            onClick={() => setNewAssignmentDialog(false)}
-            variant="outlined"
-            sx={{
-              borderColor: 'rgba(187, 92, 57, 0.5)',
-              color: '#bb5c39',
-              px: 3,
-              '&:hover': { 
-                backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                borderColor: '#bb5c39'
-              }
-            }}
-          >
-            {t('dashboard.teacher.dialogs.assignment.actions.cancel')}
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleCreateAssignment}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-            sx={{
-              backgroundColor: '#bb5c39',
-              px: 4,
-              '&:hover': {
-                backgroundColor: '#a04b2e'
-              },
-              '&.Mui-disabled': {
-                backgroundColor: 'rgba(187, 92, 57, 0.3)',
-                color: '#fff'
-              }
-            }}
-          >
-            {loading ? t('common.loading') : t('dashboard.teacher.dialogs.assignment.actions.create')}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Stream Dialog */}
-      <Dialog
-        open={startStreamDialog}
-        onClose={() => setStartStreamDialog(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '16px',
-            p: 2
-          }
-        }}
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <Avatar
-                sx={{
-                  bgcolor: 'rgba(187, 92, 57, 0.1)',
-                  color: '#bb5c39',
-                  width: 48,
-                  height: 48
-                }}
-              >
-                <LiveTvIcon />
-              </Avatar>
-              <Box>
-                <Typography variant="h6" sx={{ color: '#2f2f2f', fontWeight: 600 }}>
-                  Start Live Stream
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                  Create a new live streaming session
-                </Typography>
-              </Box>
-            </Box>
-            <IconButton 
-              onClick={() => setStartStreamDialog(false)}
-              size="small"
-              sx={{
-                '&:hover': { backgroundColor: 'rgba(187, 92, 57, 0.1)' }
-              }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-
-        <DialogContent>
-          <Box
-            sx={{
-              mt: 2,
-              p: 3,
-              borderRadius: '12px',
-              backgroundColor: 'rgba(187, 92, 57, 0.03)',
-              border: '1px solid rgba(187, 92, 57, 0.1)'
-            }}
-          >
-            <Stack spacing={3}>
               <Box>
                 <Typography
-                  variant="subtitle2"
+                  variant="h6"
                   sx={{
-                    mb: 1,
-                    color: '#2f2f2f',
+                    color: '#fff',
+                    fontWeight: 600,
+                    mb: 2,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1
                   }}
                 >
-                  <LiveTvIcon sx={{ fontSize: 20, color: '#bb5c39' }} />
-                  Stream Title
-                  <Typography
-                    component="span"
-                    variant="caption"
+                  <PeopleIcon sx={{ color: '#00FFA3' }} />
+                  {t('dashboard.teacher.students.all')} ({students.length})
+                </Typography>
+                <Stack spacing={2}>
+                  {students.map((student) => (
+                    <Paper
+                      key={student.id}
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        borderRadius: '12px',
+                        bgcolor: 'rgba(45, 55, 72, 0.9)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ position: 'relative' }}>
+                          <Avatar sx={{ bgcolor: 'rgba(0, 255, 163, 0.1)', color: '#00FFA3' }}>
+                            {student.displayName?.charAt(0) || 'S'}
+                          </Avatar>
+                          {onlineUsers[student.id]?.isOnline && (
+                            <Box
+                              sx={{
+                                width: 10,
+                                height: 10,
+                                borderRadius: '50%',
+                                backgroundColor: '#00FFA3',
+                                border: '2px solid rgba(45, 55, 72, 0.9)',
+                                position: 'absolute',
+                                bottom: 0,
+                                right: 0
+                              }}
+                            />
+                          )}
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Typography sx={{ color: '#fff', fontWeight: 500, fontFamily }}>
+                            {student.displayName}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)', fontFamily }}>
+                            {student.email}
+                          </Typography>
+                          {!onlineUsers[student.id]?.isOnline && onlineUsers[student.id]?.lastSeen && (
+                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)', display: 'block', fontFamily }}>
+                              {t('dashboard.teacher.students.lastSeen')} {formatRelativeTime(onlineUsers[student.id].lastSeen, t)}
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    </Paper>
+                  ))}
+                  {students.length === 0 && (
+                    <Box
+                      sx={{
+                        textAlign: 'center',
+                        py: 4,
+                        color: 'rgba(255, 255, 255, 0.7)',
+                        bgcolor: 'rgba(45, 55, 72, 0.5)',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      <PeopleIcon sx={{ fontSize: 48, mb: 2, opacity: 0.5, color: '#00FFA3' }} />
+                      <Typography variant="body2" sx={{ fontFamily }}>
+                        {t('dashboard.teacher.students.empty')}
+                      </Typography>
+                    </Box>
+                  )}
+                </Stack>
+              </Box>
+            </Box>
+
+            <Box sx={{ display: currentTab === 3 ? 'block' : 'none' }}>
+              {/* Activity View */}
+              <Typography
+                variant="h6"
+                sx={{
+                  color: '#fff',
+                  fontWeight: 600,
+                  mb: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1
+                }}
+              >
+                <TrendingUpIcon sx={{ color: '#00FFA3' }} />
+                {t('dashboard.teacher.activity.title')}
+              </Typography>
+              <Stack spacing={2}>
+                {activities.map((activity, index) => (
+                  <Paper
+                    key={index}
+                    elevation={0}
                     sx={{
-                      color: '#bb5c39',
-                      ml: 0.5
+                      p: 2,
+                      borderRadius: '12px',
+                      bgcolor: 'rgba(45, 55, 72, 0.9)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)'
                     }}
                   >
-                    *
+                    <Box sx={{ display: 'flex', gap: 2 }}>
+                      <Box
+                        sx={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          bgcolor: '#00FFA3',
+                          mt: 1
+                        }}
+                      />
+                      <Box sx={{ flex: 1 }}>
+                        <Typography sx={{ color: '#fff', mb: 0.5 }}>
+                          {activity.description}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                          {formatRelativeTime(activity.timestamp, t)}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Paper>
+                ))}
+                {activities.length === 0 && (
+                  <Box
+                    sx={{
+                      textAlign: 'center',
+                      py: 4,
+                      color: 'rgba(255, 255, 255, 0.7)',
+                      bgcolor: 'rgba(45, 55, 72, 0.5)',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(255, 255, 255, 0.05)'
+                    }}
+                  >
+                    <TrendingUpIcon sx={{ fontSize: 48, mb: 2, opacity: 0.5, color: '#00FFA3' }} />
+                    <Typography variant="body2">
+                      {t('dashboard.teacher.activity.empty')}
+                    </Typography>
+                  </Box>
+                )}
+              </Stack>
+            </Box>
+
+            {/* Create Assignment Dialog */}
+            <Dialog
+              open={newAssignmentDialog}
+              onClose={() => setNewAssignmentDialog(false)}
+              maxWidth="sm"
+              fullWidth
+              PaperProps={{
+                sx: {
+                  borderRadius: '16px',
+                  p: 0,
+                  backgroundColor: 'rgba(45, 55, 72, 0.7)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  overflow: 'hidden'
+                }
+              }}
+            >
+              <Box
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                  py: 3,
+                  px: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}
+              >
+                <Box>
+                  <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600, fontFamily }}>
+                    {t('teacherPages.assignments.dialogs.assignment.title')}
                   </Typography>
-                </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontFamily }}>
+                    {t('dashboard.teacher.dialogs.assignment.subtitle')}
+                  </Typography>
+                </Box>
+                <IconButton
+                  onClick={() => setNewAssignmentDialog(false)}
+                  size="small"
+                  sx={{
+                    color: '#fff',
+                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+              <DialogContent sx={{ p: 3 }}>
                 <TextField
                   required
                   fullWidth
-                  placeholder="Enter stream title"
+                  label={t('teacherPages.assignments.dialogs.assignment.form.title')}
+                  variant="outlined"
+                  value={newAssignmentData.title}
+                  onChange={(e) =>
+                    setNewAssignmentData({ ...newAssignmentData, title: e.target.value })
+                  }
+                  error={error && !newAssignmentData.title}
+                  helperText={error && !newAssignmentData.title ? t('teacherPages.assignments.errors.titleRequired') : ''}
+                  InputLabelProps={{
+                    style: { fontFamily },
+                    shrink: true
+                  }}
+                  sx={{
+                    mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      color: '#fff',
+                      borderRadius: '12px',
+                      '& fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.2)'
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#00FFA3'
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#00FFA3'
+                      }
+                    }
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  label={t('teacherPages.assignments.dialogs.assignment.form.description')}
+                  variant="outlined"
+                  multiline
+                  rows={4}
+                  value={newAssignmentData.description}
+                  onChange={(e) =>
+                    setNewAssignmentData({ ...newAssignmentData, description: e.target.value })
+                  }
+                  InputLabelProps={{
+                    style: { fontFamily },
+                    shrink: true
+                  }}
+                  sx={{
+                    mb: 3,
+                    '& .MuiOutlinedInput-root': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      color: '#fff',
+                      borderRadius: '12px',
+                      '& fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.2)'
+                      },
+                      '&:hover fieldset': {
+                        borderColor: '#00FFA3'
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#00FFA3'
+                      }
+                    }
+                  }}
+                />
+              </DialogContent>
+              <DialogActions sx={{ p: 3, display: 'flex', gap: 2 }}>
+                <Button
+                  onClick={() => setNewAssignmentDialog(false)}
+                  variant="outlined"
+                  sx={{
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    color: '#fff',
+                    minWidth: '100px',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      borderColor: '#00FFA3'
+                    }
+                  }}
+                >
+                  {t('teacherPages.assignments.dialogs.assignment.actions.cancel')}
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleCreateAssignment}
+                  disabled={loading}
+                  startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+                  sx={{
+                    backgroundColor: '#00FFA3',
+                    color: '#0F172A',
+                    minWidth: '140px',
+                    '& .MuiButton-startIcon': {
+                      marginRight: 1,
+                      marginLeft: 0
+                    },
+                    '&:hover': { 
+                      backgroundColor: '#00cc82' 
+                    },
+                    '&.Mui-disabled': {
+                      backgroundColor: 'rgba(0, 255, 163, 0.3)'
+                    }
+                  }}
+                >
+                  {loading ? t('teacherPages.assignments.dialogs.assignment.actions.creating') : t('teacherPages.assignments.dialogs.assignment.actions.create')}
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* Start Live Stream Dialog */}
+            <Dialog
+              open={startStreamDialog}
+              onClose={() => setStartStreamDialog(false)}
+              maxWidth="sm"
+              fullWidth
+              PaperProps={{
+                sx: {
+                  borderRadius: '16px',
+                  p: 0,
+                  backgroundColor: 'rgba(45, 55, 72, 0.7)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  overflow: 'hidden'
+                }
+              }}
+            >
+              <Box
+                sx={{
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                  py: 3,
+                  px: 3,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}
+              >
+                <Box>
+                  <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600, fontFamily }}>
+                    {t('teacherPages.streaming.startStream.title')}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontFamily }}>
+                    {t('dashboard.teacher.dialogs.liveClass.subtitle')}
+                  </Typography>
+                </Box>
+                <IconButton
+                  onClick={() => setStartStreamDialog(false)}
+                  size="small"
+                  sx={{
+                    color: '#fff',
+                    '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
+                  }}
+                >
+                  <CloseIcon />
+                </IconButton>
+              </Box>
+              <DialogContent sx={{ p: 3 }}>
+                <TextField
+                  required
+                  fullWidth
+                  label={t('teacherPages.streaming.startStream.streamTitle')}
+                  variant="outlined"
                   value={streamData.channelName}
                   onChange={(e) => setStreamData({ ...streamData, channelName: e.target.value })}
                   error={error && !streamData.channelName}
-                  helperText={error && !streamData.channelName ? 'Stream title is required' : ''}
+                  helperText={error && !streamData.channelName ? t('dashboard.teacher.dialogs.liveClass.form.titleRequired') : ''}
+                  InputLabelProps={{
+                    style: { fontFamily },
+                    shrink: true
+                  }}
                   sx={{
+                    mb: 3,
                     '& .MuiOutlinedInput-root': {
-                      backgroundColor: '#fff',
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      color: '#fff',
+                      borderRadius: '12px',
+                      '& fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.2)'
                       },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#bb5c39',
+                      '&:hover fieldset': {
+                        borderColor: '#00FFA3'
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#00FFA3'
                       }
                     }
                   }}
                 />
-              </Box>
 
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    mb: 1,
-                    color: '#2f2f2f',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1
-                  }}
-                >
-                  <MenuBookIcon sx={{ fontSize: 20, color: '#bb5c39' }} />
-                  Description
-                </Typography>
                 <TextField
                   fullWidth
+                  label={t('dashboard.teacher.dialogs.liveClass.form.description')}
+                  variant="outlined"
                   multiline
                   rows={4}
-                  placeholder="Add stream description"
                   value={streamData.description}
                   onChange={(e) => setStreamData({ ...streamData, description: e.target.value })}
+                  placeholder={t('dashboard.teacher.dialogs.liveClass.form.placeholder.description')}
+                  InputLabelProps={{
+                    style: { fontFamily },
+                    shrink: true
+                  }}
                   sx={{
+                    mb: 3,
                     '& .MuiOutlinedInput-root': {
-                      backgroundColor: '#fff',
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      color: '#fff',
+                      borderRadius: '12px',
+                      '& fieldset': {
+                        borderColor: 'rgba(255, 255, 255, 0.2)'
                       },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#bb5c39',
+                      '&:hover fieldset': {
+                        borderColor: '#00FFA3'
+                      },
+                      '&.Mui-focused fieldset': {
+                        borderColor: '#00FFA3'
                       }
                     }
                   }}
                 />
-              </Box>
 
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  sx={{
-                    mb: 2,
-                    color: '#2f2f2f'
-                  }}
-                >
-                  Stream Settings
-                </Typography>
-                <Stack spacing={2}>
+                <Box sx={{ mb: 3 }}>
                   <FormControlLabel
                     control={
                       <Switch
                         checked={streamData.enableChat}
                         onChange={(e) => setStreamData({ ...streamData, enableChat: e.target.checked })}
+                        sx={{
+                          '& .MuiSwitch-switchBase.Mui-checked': {
+                            color: '#00FFA3',
+                            '& + .MuiSwitch-track': {
+                              backgroundColor: 'rgba(0, 255, 163, 0.5)'
+                            }
+                          }
+                        }}
                       />
                     }
-                    label="Enable Chat"
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={streamData.allowQuestions}
-                        onChange={(e) => setStreamData({ ...streamData, allowQuestions: e.target.checked })}
-                      />
+                    label={
+                      <Typography sx={{ color: '#fff', fontFamily }}>
+                        {t('teacherPages.streaming.chat.title')}
+                      </Typography>
                     }
-                    label="Allow Student Questions"
                   />
-                </Stack>
-              </Box>
-            </Stack>
-          </Box>
-        </DialogContent>
+                </Box>
 
-        <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button
-            onClick={() => setStartStreamDialog(false)}
-            variant="outlined"
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={streamData.allowQuestions}
+                      onChange={(e) => setStreamData({ ...streamData, allowQuestions: e.target.checked })}
+                      sx={{
+                        '& .MuiSwitch-switchBase.Mui-checked': {
+                          color: '#00FFA3',
+                          '& + .MuiSwitch-track': {
+                            backgroundColor: 'rgba(0, 255, 163, 0.5)'
+                          }
+                        }
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography sx={{ color: '#fff', fontFamily }}>
+                      {t('teacherPages.streaming.participants.title')}
+                    </Typography>
+                  }
+                />
+              </DialogContent>
+              <DialogActions sx={{ p: 3, display: 'flex', gap: 2 }}>
+                <Button
+                  onClick={() => setStartStreamDialog(false)}
+                  variant="outlined"
+                  sx={{
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    color: '#fff',
+                    minWidth: '100px',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      borderColor: '#00FFA3'
+                    }
+                  }}
+                >
+                  {t('common.cancel')}
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleStartStream}
+                  disabled={loading}
+                  sx={{
+                    backgroundColor: '#00FFA3',
+                    color: '#0F172A',
+                    minWidth: 'unset',
+                    width: '48px',
+                    height: '48px',
+                    padding: 0,
+                    borderRadius: 2,
+                    '&:hover': { 
+                      backgroundColor: '#00cc82' 
+                    },
+                    '&.Mui-disabled': {
+                      backgroundColor: 'rgba(0, 255, 163, 0.3)'
+                    }
+                  }}
+                >
+                  {loading ? <CircularProgress size={24} color="inherit" /> : <PlayIcon />}
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+          </Box>
+
+          {/* Bottom Navigation */}
+          <Paper
             sx={{
-              borderColor: 'rgba(187, 92, 57, 0.5)',
-              color: '#bb5c39',
-              '&:hover': { 
-                backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                borderColor: '#bb5c39'
-              }
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              backgroundColor: 'rgba(26,32,44,0.95)',
+              backdropFilter: 'blur(10px)',
+              borderTop: '1px solid rgba(255,255,255,0.1)',
+              zIndex: 1000
             }}
+            elevation={0}
           >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleStartStream}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <PlayArrowIcon />}
-            sx={{
-              backgroundColor: '#bb5c39',
-              '&:hover': { backgroundColor: '#a04b2e' },
-              '&.Mui-disabled': {
-                backgroundColor: 'rgba(187, 92, 57, 0.3)',
-                color: '#fff'
-              }
-            }}
-          >
-            {loading ? 'Starting Stream...' : 'Start Stream'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-        </Grid>
-      </Grid>
-    </Container>
+            <BottomNavigation
+              value={currentTab}
+              onChange={(event, newValue) => {
+                setCurrentTab(newValue);
+              }}
+              sx={{
+                backgroundColor: 'transparent',
+                height: 65,
+                '& .MuiBottomNavigationAction-root': {
+                  color: 'rgba(255,255,255,0.5)',
+                  '&.Mui-selected': {
+                    color: '#00FFA3'
+                  }
+                }
+              }}
+            >
+              <BottomNavigationAction
+                label={t('nav.schedule')}
+                icon={<CalendarIcon />}
+                sx={{ minWidth: 'auto' }}
+              />
+              <BottomNavigationAction
+                label={t('nav.assignments')}
+                icon={<AssignmentIcon />}
+                sx={{ minWidth: 'auto' }}
+              />
+              <BottomNavigationAction
+                label={t('nav.students')}
+                icon={<PeopleIcon />}
+                sx={{ minWidth: 'auto' }}
+              />
+              <BottomNavigationAction
+                label={t('nav.activity')}
+                icon={<TrendingUpIcon />}
+                sx={{ minWidth: 'auto' }}
+              />
+            </BottomNavigation>
+          </Paper>
+        </Box>
+      </ThemeProvider>
+    </CacheProvider>
   );
 };
 

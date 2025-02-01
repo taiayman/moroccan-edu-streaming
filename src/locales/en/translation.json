@@ -30,6 +30,7 @@
     "delete": "Delete",
     "loading": "Loading...",
     "created": "Created",
+    "back": "Back",
       "assignments": {
         "title": "Assignments",
         "subtitle": "Manage student assignments",
@@ -132,6 +133,13 @@
   },
   "assignment": {
     "backToAssignments": "Back to Assignments",
+    "details": {
+      "description": "Assignment Description",
+      "requirements": "Assignment Requirements",
+      "yourSubmission": "Your Submission",
+      "status": "Status",
+      "submittedOn": "Submitted on"
+    },
     "due": "Due",
     "description": "Description",
     "noDescription": "No description available.",
@@ -312,23 +320,15 @@
           }
         }
       }
-    }
-  },
-  "schedule": {
-    "title": "Schedule",
-    "daysOfWeek": {
-      "monday": "Monday",
-      "tuesday": "Tuesday",
-      "wednesday": "Wednesday",
-      "thursday": "Thursday",
-      "friday": "Friday",
-      "saturday": "Saturday",
-      "sunday": "Sunday"
     },
-    "noClassesScheduled": "No classes scheduled",
-    "noCoursesFound": "No courses found in the schedule.",
-    "professor": "Prof.",
-    "teacherPrefix": "Prof."
+    "assignments": {
+      "title": "Assignments",
+      "complete": "Complete"
+    },
+    "schedule": {
+      "title": "Schedule",
+      "day": "Day"
+    }
   },
   "calendar": {
     "events": "Events",

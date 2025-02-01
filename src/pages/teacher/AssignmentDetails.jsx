@@ -163,8 +163,16 @@ const AssignmentDetails = () => {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <CircularProgress />
+      <Box
+        sx={{
+          minHeight: '100vh',
+          background: 'linear-gradient(145deg, #0F172A 0%, #1E293B 100%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
+      >
+        <CircularProgress sx={{ color: '#00FFA3' }} />
       </Box>
     );
   }
@@ -185,252 +193,193 @@ const AssignmentDetails = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4, mt: { xs: 8, sm: 9 } }}>
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
-
-      {/* Header */}
-      <Box sx={{ mb: 4 }}>
-        <Button
-          startIcon={<ArrowBackIcon />}
-          onClick={() => navigate(`/${getCurrentLanguage()}/teacher/assignments`)}
-          sx={{ mb: 2 }}
-        >
-          {t('teacherPages.assignmentDetails.back')}
-        </Button>
-
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-              <Avatar
-                sx={{
-                  bgcolor: 'rgba(187, 92, 57, 0.1)',
-                  color: '#bb5c39',
-                  width: 64,
-                  height: 64
-                }}
-              >
-                <AssignmentIcon sx={{ fontSize: 32 }} />
-              </Avatar>
-              <Box sx={{ flex: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 600, color: '#2f2f2f' }}>
-                    {assignment.title}
-                  </Typography>
-                </Box>
-                <Stack direction="row" spacing={3} alignItems="center">
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <CalendarIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      {t('teacherPages.assignmentDetails.created')} {formatDate(assignment.createdAt)}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <PeopleIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      {t('teacherPages.assignmentDetails.submissionCount', { count: assignment.submissions?.length || 0 })}
-                    </Typography>
-                  </Box>
-                  <Chip
-                    label={t(`teacherPages.assignmentDetails.status.${assignment.status || 'active'}`)}
-                    size="small"
-                    sx={{
-                      backgroundColor: 'rgba(187, 92, 57, 0.1)',
-                      color: '#bb5c39',
-                      fontWeight: 500
-                    }}
-                  />
-                </Stack>
-              </Box>
-            </Box>
-          </Grid>
-        </Grid>
-      </Box>
-
-      {/* Content */}
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          <Box
+    <Box
+      sx={{
+        minHeight: '100vh',
+        background: 'linear-gradient(145deg, #0F172A 0%, #1E293B 100%)',
+        py: 4,
+        px: { xs: 2, sm: 4 }
+      }}
+    >
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        {error && (
+          <Alert
+            severity="error"
             sx={{
-              position: 'relative',
               mb: 3,
-              '&:before': {
-                content: '""',
-                position: 'absolute',
-                top: '8px',
-                left: '8px',
-                right: '-8px',
-                bottom: '-8px',
-                backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                borderRadius: '16px',
-                zIndex: 0
+              backgroundColor: 'rgba(239, 68, 68, 0.08)',
+              color: '#FCA5A5',
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              borderRadius: '8px',
+              '& .MuiAlert-icon': { color: '#FCA5A5' }
+            }}
+          >
+            {error}
+          </Alert>
+        )}
+
+        {/* Header Section */}
+        <Box sx={{ 
+          mb: 4,
+          pt: 4,
+          pb: 1,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start'
+        }}>
+          <Button
+            startIcon={<ArrowBackIcon />}
+            sx={{ 
+              color: 'rgba(255, 255, 255, 0.7)',
+              '&:hover': {
+                color: '#00FFA3',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)'
               }
             }}
           >
+            {t('teacherPages.assignmentDetails.back')}
+          </Button>
+          <Avatar
+            sx={{
+              bgcolor: 'rgba(0, 255, 163, 0.1)',
+              color: '#00FFA3',
+              width: 64,
+              height: 64
+            }}
+          >
+            <AssignmentIcon sx={{ fontSize: 32 }} />
+          </Avatar>
+        </Box>
+
+        {/* Content Grid */}
+        <Grid container spacing={4}>
+          {/* Left Column - Description and Content */}
+          <Grid item xs={12} lg={8}>
             <Paper
-              elevation={0}
               sx={{
                 p: 3,
+                mb: 3,
                 borderRadius: '16px',
-                border: '1px solid rgba(0, 0, 0, 0.1)',
-                backgroundColor: '#fff',
-                position: 'relative',
-                zIndex: 1,
-                transition: 'all 0.2s',
-                '&:hover': {
-                  transform: 'translate(-4px, -4px)'
-                }
+                backgroundColor: 'rgba(45, 55, 72, 0.5)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
               }}
             >
-              <Typography variant="h6" sx={{ mb: 2, color: '#2f2f2f' }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  mb: 2, 
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontFamily: '"Plus Jakarta Sans", sans-serif'
+                }}
+              >
                 {t('teacherPages.assignmentDetails.description')}
               </Typography>
-              <Typography variant="body1" sx={{ color: '#666', whiteSpace: 'pre-wrap' }}>
+              <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', whiteSpace: 'pre-wrap' }}>
                 {assignment.description || t('teacherPages.assignmentDetails.noDescription')}
               </Typography>
             </Paper>
-          </Box>
 
-          <Box
-            sx={{
-              position: 'relative',
-              '&:before': {
-                content: '""',
-                position: 'absolute',
-                top: '8px',
-                left: '8px',
-                right: '-8px',
-                bottom: '-8px',
-                backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                borderRadius: '16px',
-                zIndex: 0
-              }
-            }}
-          >
             <Paper
-              elevation={0}
               sx={{
                 p: 3,
                 borderRadius: '16px',
-                border: '1px solid rgba(0, 0, 0, 0.1)',
-                backgroundColor: '#fff',
-                position: 'relative',
-                zIndex: 1,
-                transition: 'all 0.2s',
-                '&:hover': {
-                  transform: 'translate(-4px, -4px)'
-                }
+                backgroundColor: 'rgba(45, 55, 72, 0.5)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
               }}
             >
-              <Typography variant="h6" sx={{ mb: 2, color: '#2f2f2f' }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  mb: 2, 
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontFamily: '"Plus Jakarta Sans", sans-serif'
+                }}
+              >
                 {t('teacherPages.assignmentDetails.content')}
               </Typography>
-              <Typography variant="body1" sx={{ color: '#666', whiteSpace: 'pre-wrap' }}>
+              <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', whiteSpace: 'pre-wrap' }}>
                 {assignment.content || t('teacherPages.assignmentDetails.noContent')}
               </Typography>
             </Paper>
-          </Box>
-        </Grid>
+          </Grid>
 
-        <Grid item xs={12} md={4}>
-          <Box
-            sx={{
-              position: 'relative',
-              '&:before': {
-                content: '""',
-                position: 'absolute',
-                top: '8px',
-                left: '8px',
-                right: '-8px',
-                bottom: '-8px',
-                backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                borderRadius: '16px',
-                zIndex: 0
-              }
-            }}
-          >
+          {/* Right Column - Stats */}
+          <Grid item xs={12} lg={4}>
             <Paper
-              elevation={0}
               sx={{
                 p: 3,
                 borderRadius: '16px',
-                border: '1px solid rgba(0, 0, 0, 0.1)',
-                backgroundColor: '#fff',
-                position: 'relative',
-                zIndex: 1,
-                transition: 'all 0.2s',
-                '&:hover': {
-                  transform: 'translate(-4px, -4px)'
-                },
-                position: 'sticky',
-                top: { xs: 88, sm: 96 }
+                backgroundColor: 'rgba(45, 55, 72, 0.5)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
               }}
             >
-              <Typography variant="h6" sx={{ mb: 3, color: '#2f2f2f' }}>
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  mb: 3, 
+                  color: '#fff',
+                  fontWeight: 600,
+                  fontFamily: '"Plus Jakarta Sans", sans-serif'
+                }}
+              >
                 {t('teacherPages.assignmentDetails.submissionStats.title')}
               </Typography>
-              <Stack spacing={2}>
+              <Stack spacing={3}>
                 <Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
                     {t('teacherPages.assignmentDetails.submissionStats.total')}
                   </Typography>
-                  <Typography variant="h5" sx={{ color: '#2f2f2f', fontWeight: 600 }}>
+                  <Typography variant="h4" sx={{ color: '#00FFA3', fontWeight: 600 }}>
                     {assignment.totalStudents || 0}
                   </Typography>
                 </Box>
-                <Divider />
+                <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
                 <Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
                     {t('teacherPages.assignmentDetails.submissionStats.submitted')}
                   </Typography>
-                  <Typography variant="h5" sx={{ color: '#2f2f2f', fontWeight: 600 }}>
+                  <Typography variant="h4" sx={{ color: '#00FFA3', fontWeight: 600 }}>
                     {assignment.submissions?.length || 0}
                   </Typography>
                 </Box>
-                <Divider />
-                <Box>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                    {t('teacherPages.assignmentDetails.status.label')}
-                  </Typography>
-                  <Chip
-                    label={t(`teacherPages.assignmentDetails.status.${assignment.status || 'active'}`)}
-                    sx={{
-                      backgroundColor: 'rgba(187, 92, 57, 0.1)',
-                      color: '#bb5c39',
-                      fontWeight: 500
-                    }}
-                  />
-                </Box>
               </Stack>
             </Paper>
-          </Box>
+          </Grid>
         </Grid>
-      </Grid>
 
-      {/* Submissions Section */}
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h5" sx={{ mb: 3, color: '#2f2f2f', fontWeight: 600 }}>
-          {t('teacherPages.assignmentDetails.submissions')} ({submissions.length})
-        </Typography>
+        {/* Submissions Section */}
+        <Box sx={{ mt: 6 }}>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              mb: 3, 
+              color: '#fff',
+              fontWeight: 600,
+              fontFamily: '"Plus Jakarta Sans", sans-serif'
+            }}
+          >
+            {t('teacherPages.assignmentDetails.submissions')} ({submissions.length})
+          </Typography>
 
-        {submissions.length > 0 ? (
-          <Grid container spacing={2}>
+          <Grid container spacing={3}>
             {submissions.map((submission) => (
               <Grid item xs={12} key={submission.id}>
                 <Paper
-                  elevation={0}
                   sx={{
                     p: 3,
-                    borderRadius: '12px',
-                    border: '1px solid rgba(0, 0, 0, 0.1)',
-                    backgroundColor: '#fff',
+                    borderRadius: '16px',
+                    backgroundColor: 'rgba(45, 55, 72, 0.3)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
                     transition: 'all 0.2s',
                     '&:hover': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                      transform: 'translateY(-2px)'
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 4px 12px rgba(0, 255, 163, 0.1)'
                     }
                   }}
                 >
@@ -439,17 +388,22 @@ const AssignmentDetails = () => {
                       <Stack direction="row" spacing={2} alignItems="center">
                         <Avatar
                           src={submission.student?.photoURL}
-                          sx={{ width: 40, height: 40 }}
+                          sx={{ 
+                            width: 40, 
+                            height: 40,
+                            bgcolor: 'rgba(0, 255, 163, 0.1)',
+                            color: '#00FFA3'
+                          }}
                         >
                           <PersonOutlineIcon />
                         </Avatar>
                         <Box>
-                          <Typography variant="subtitle2">
+                          <Typography sx={{ color: '#fff', fontWeight: 500 }}>
                             {submission.student?.displayName || t('teacherPages.assignmentDetails.unknownStudent')}
                           </Typography>
                           <Stack direction="row" spacing={1} alignItems="center">
-                            <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                            <Typography variant="caption" color="text.secondary">
+                            <AccessTimeIcon sx={{ fontSize: 14, color: 'rgba(255, 255, 255, 0.5)' }} />
+                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
                               {formatDate(submission.submittedAt)}
                             </Typography>
                           </Stack>
@@ -458,20 +412,20 @@ const AssignmentDetails = () => {
                     </Grid>
                     
                     <Grid item xs={12} md={6}>
-                      <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+                      <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)', mb: 1 }}>
                         {submission.content.substring(0, 100)}
                         {submission.content.length > 100 ? '...' : ''}
                       </Typography>
                       {submission.status === 'graded' && (
                         <Stack direction="row" spacing={2} alignItems="center">
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <GradeIcon sx={{ fontSize: 16, color: '#4caf50' }} />
-                            <Typography variant="body2" color="success.main">
-                              {t('teacherPages.assignmentDetails.grading.grade')}: {submission.grade}/100
+                            <GradeIcon sx={{ fontSize: 16, color: '#00FFA3' }} />
+                            <Typography sx={{ color: '#00FFA3' }}>
+                              {submission.grade}/100
                             </Typography>
                           </Box>
                           {submission.feedback && (
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
                               "{submission.feedback}"
                             </Typography>
                           )}
@@ -493,8 +447,12 @@ const AssignmentDetails = () => {
                           }}
                           startIcon={submission.grade ? <GradeIcon /> : <CheckCircleIcon />}
                           sx={{
-                            backgroundColor: '#bb5c39',
-                            '&:hover': { backgroundColor: '#a04b2e' }
+                            backgroundColor: '#00FFA3',
+                            color: '#0F172A',
+                            '&:hover': { 
+                              backgroundColor: '#00E68A',
+                              transform: 'scale(1.05)'
+                            }
                           }}
                         >
                           {submission.grade ? t('teacherPages.assignmentDetails.grading.update') : t('teacherPages.assignmentDetails.grading.grade')}
@@ -505,142 +463,161 @@ const AssignmentDetails = () => {
                 </Paper>
               </Grid>
             ))}
-          </Grid>
-        ) : (
-          <Paper
-            elevation={0}
-            sx={{
-              p: 4,
-              borderRadius: '12px',
-              border: '1px solid rgba(0, 0, 0, 0.1)',
-              backgroundColor: '#fff',
-              textAlign: 'center'
-            }}
-          >
-            <Typography color="text.secondary">
-              {t('teacherPages.assignmentDetails.noSubmissions')}
-            </Typography>
-          </Paper>
-        )}
-      </Box>
 
-      {/* Grade Submission Dialog */}
-      <Dialog
-        open={gradeDialogOpen}
-        onClose={() => setGradeDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: '20px',
-            p: 0,
-            backgroundColor: '#fff',
-            overflow: 'hidden',
-            boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)'
-          }
-        }}
-      >
-        <Box
-          sx={{
-            background: 'linear-gradient(135deg, #bb5c39 0%, #a04b2e 100%)',
-            py: 3,
-            px: 3,
-            color: '#fff'
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              {t('teacherPages.assignmentDetails.grading.title')}
-            </Typography>
-            <IconButton
-              onClick={() => setGradeDialogOpen(false)}
-              sx={{ color: 'white' }}
-            >
-              <CloseIcon />
-            </IconButton>
-          </Box>
-          <Typography variant="body2" sx={{ mt: 1, opacity: 0.9 }}>
-            {selectedSubmission?.student?.displayName}
-          </Typography>
+            {submissions.length === 0 && (
+              <Grid item xs={12}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    borderRadius: '16px',
+                    backgroundColor: 'rgba(45, 55, 72, 0.5)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    textAlign: 'center'
+                  }}
+                >
+                  <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                    {t('teacherPages.assignmentDetails.noSubmissions')}
+                  </Typography>
+                </Paper>
+              </Grid>
+            )}
+          </Grid>
         </Box>
 
-        <DialogContent sx={{ p: 3 }}>
-          <Stack spacing={3}>
-            <TextField
-              label={t('teacherPages.assignmentDetails.grading.grade')}
-              type="number"
-              value={gradeData.grade}
-              onChange={(e) => setGradeData({ ...gradeData, grade: e.target.value })}
-              inputProps={{ min: 0, max: 100 }}
-              fullWidth
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
-              }}
-            />
-            <TextField
-              label={t('teacherPages.assignmentDetails.grading.feedback')}
-              multiline
-              rows={4}
-              value={gradeData.feedback}
-              onChange={(e) => setGradeData({ ...gradeData, feedback: e.target.value })}
-              fullWidth
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&:hover fieldset': {
-                    borderColor: 'rgba(187, 92, 57, 0.5)',
-                  },
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#bb5c39',
-                  },
-                },
-                '& .MuiInputLabel-root.Mui-focused': {
-                  color: '#bb5c39',
-                }
-              }}
-            />
-          </Stack>
-        </DialogContent>
+        {/* Grade Submission Dialog */}
+        <Dialog
+          open={gradeDialogOpen}
+          onClose={() => setGradeDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            sx: {
+              borderRadius: '16px',
+              backgroundColor: 'rgba(45, 55, 72, 0.9)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)'
+            }
+          }}
+        >
+          <Box
+            sx={{
+              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+              py: 3,
+              px: 3,
+              color: '#fff'
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                {t('teacherPages.assignmentDetails.grading.title')}
+              </Typography>
+              <IconButton
+                onClick={() => setGradeDialogOpen(false)}
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' }
+                }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
+            <Typography variant="body2" sx={{ mt: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
+              {selectedSubmission?.student?.displayName}
+            </Typography>
+          </Box>
 
-        <DialogActions sx={{ p: 3, pt: 1 }}>
-          <Button
-            onClick={() => setGradeDialogOpen(false)}
-            variant="outlined"
-            sx={{
-              borderColor: 'rgba(187, 92, 57, 0.5)',
-              color: '#bb5c39',
-              '&:hover': {
-                backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                borderColor: '#bb5c39'
-              }
-            }}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            onClick={handleGradeSubmission}
-            variant="contained"
-            startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
-            disabled={loading}
-            sx={{
-              backgroundColor: '#bb5c39',
-              '&:hover': { backgroundColor: '#a04b2e' }
-            }}
-          >
-            {loading ? t('teacherPages.assignmentDetails.grading.saving') : t('teacherPages.assignmentDetails.grading.save')}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </Container>
+          <DialogContent sx={{ p: 3 }}>
+            <Stack spacing={3}>
+              <TextField
+                label={t('teacherPages.assignmentDetails.grading.grade')}
+                type="number"
+                value={gradeData.grade}
+                onChange={(e) => setGradeData({ ...gradeData, grade: e.target.value })}
+                inputProps={{ min: 0, max: 100 }}
+                fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: '#fff',
+                    '&:hover fieldset': {
+                      borderColor: '#00FFA3'
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#00FFA3'
+                  }
+                }}
+              />
+              <TextField
+                label={t('teacherPages.assignmentDetails.grading.feedback')}
+                multiline
+                rows={4}
+                value={gradeData.feedback}
+                onChange={(e) => setGradeData({ ...gradeData, feedback: e.target.value })}
+                fullWidth
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    color: '#fff',
+                    '&:hover fieldset': {
+                      borderColor: '#00FFA3'
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255, 255, 255, 0.7)'
+                  },
+                  '& .MuiInputLabel-root.Mui-focused': {
+                    color: '#00FFA3'
+                  }
+                }}
+              />
+            </Stack>
+          </DialogContent>
+
+          <DialogActions sx={{ p: 3 }}>
+            <Button
+              onClick={() => setGradeDialogOpen(false)}
+              variant="outlined"
+              sx={{
+                borderColor: 'rgba(255, 255, 255, 0.2)',
+                color: '#fff',
+                '&:hover': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderColor: '#00FFA3'
+                }
+              }}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              onClick={handleGradeSubmission}
+              variant="contained"
+              startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
+              disabled={loading}
+              sx={{
+                backgroundColor: '#00FFA3',
+                color: '#0F172A',
+                '&:hover': { 
+                  backgroundColor: '#00E68A'
+                },
+                '&.Mui-disabled': {
+                  backgroundColor: 'rgba(0, 255, 163, 0.3)',
+                  color: '#fff'
+                }
+              }}
+            >
+              {loading ? t('teacherPages.assignmentDetails.grading.saving') : t('teacherPages.assignmentDetails.grading.save')}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
+    </Box>
   );
 };
 

@@ -22,7 +22,6 @@ import {
   startLiveClass as startHMSClass, 
   endLiveClass as endHMSClass,
   createRoom,
-  getManagementToken 
 } from './streaming';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
@@ -133,14 +132,16 @@ export const gradeSubmission = async (assignmentId, submissionId, gradeData) => 
 export const getTeacherStudents = async (teacherId) => {
   try {
     const q = query(
-      collection(db, COLLECTIONS.STUDENTS),
-      where('teacherId', '==', teacherId)
+      collection(db, COLLECTIONS.USERS),
+      where('role', '==', 'student'),
+      orderBy('displayName', 'asc')
     );
     
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      ...doc.data(),
+      displayName: doc.data().displayName || 'Unknown Student'  // Fallback name
     }));
   } catch (error) {
     console.error('Error getting teacher students:', error);
@@ -167,12 +168,19 @@ export const createNewCourse = async (courseData) => {
 // Create new assignment
 export const createNewAssignment = async (assignmentData) => {
   try {
+    // Create a new document reference with auto-generated ID
     const assignmentRef = doc(collection(db, COLLECTIONS.ASSIGNMENTS));
-    await updateDoc(assignmentRef, {
+    
+    // Add the document with the provided data
+    await setDoc(assignmentRef, {
       ...assignmentData,
-      createdAt: Timestamp.now(),
-      updatedAt: Timestamp.now()
+      id: assignmentRef.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'active',
+      submissionCount: 0
     });
+
     return assignmentRef.id;
   } catch (error) {
     console.error('Error creating assignment:', error);
@@ -247,18 +255,13 @@ export const getTeacherLessons = async (teacherId) => {
 // Start a live class
 export const startLiveClass = async (teacherId, classData) => {
   try {
-    // Create a room in 100ms
+    // Create a room in Firestore
     const room = await createRoom(teacherId, classData.classId);
     
-    // Get management token for teacher
-    const token = await getManagementToken(room.id, teacherId);
-
     // Create the live class document in Firestore
     const docRef = await addDoc(collection(db, COLLECTIONS.LIVE_CLASSES), {
       ...classData,
       roomId: room.id,
-      roomName: room.name,
-      token,
       status: 'active',
       startTime: serverTimestamp(),
       teacherId,
@@ -267,8 +270,7 @@ export const startLiveClass = async (teacherId, classData) => {
 
     return {
       classId: docRef.id,
-      roomId: room.id,
-      token
+      roomId: room.id
     };
   } catch (error) {
     console.error('Error starting live class:', error);
@@ -286,8 +288,10 @@ export const endLiveClass = async (classId) => {
       throw new Error('Class not found');
     }
 
-    const classData = classDoc.data();
-    await endHMSClass(classId, classData.roomId);
+    await updateDoc(classRef, {
+      status: 'ended',
+      endedAt: serverTimestamp()
+    });
   } catch (error) {
     console.error('Error ending class:', error);
     throw error;
@@ -584,11 +588,35 @@ export const createDailyRoom = async (teacherId, roomData) => {
 // End a Daily.co room
 export const endDailyRoom = async (roomId) => {
   try {
+    // Get the room details first
     const roomRef = doc(db, COLLECTIONS.DAILYCO_ROOMS, roomId);
+    const roomDoc = await getDoc(roomRef);
+    
+    if (!roomDoc.exists()) {
+      throw new Error('Room not found');
+    }
+
+    const roomData = roomDoc.data();
+    const roomName = roomData.roomName;
+
+    // Use Daily.co API token directly
+    const DAILY_API_TOKEN = process.env.REACT_APP_DAILY_API_KEY;
+
+    // Call Daily.co API to delete the room
+    await axios.delete(`https://api.daily.co/v1/rooms/${roomName}`, {
+      headers: {
+        'Authorization': `Bearer ${DAILY_API_TOKEN}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    // Update Firestore document
     await updateDoc(roomRef, {
       status: 'ended',
       endedAt: serverTimestamp()
     });
+
+    return true;
   } catch (error) {
     console.error('Error ending Daily.co room:', error);
     throw error;

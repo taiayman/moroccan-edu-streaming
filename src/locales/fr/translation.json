@@ -29,13 +29,14 @@
     "edit": "Modifier",
     "delete": "Supprimer",
     "loading": "Chargement...",
-      "assignments": {
-        "title": "Devoirs",
-        "subtitle": "Gérer les devoirs des étudiants",
-        "submissions": "soumission",
-        "submissions_plural": "soumissions",
-        "empty": "Aucun devoir disponible"
-      },
+    "back": "Retour",
+    "assignments": {
+      "title": "Devoirs",
+      "subtitle": "Gérer les devoirs des étudiants",
+      "submissions": "soumission",
+      "submissions_plural": "soumissions",
+      "empty": "Aucun devoir disponible"
+    },
     "error": {
       "default": "Une erreur est survenue",
       "failed": "L'opération a échoué"
@@ -222,6 +223,14 @@
           }
         }
       }
+    },
+    "assignments": {
+      "title": "Devoirs",
+      "complete": "Terminé"
+    },
+    "schedule": {
+      "title": "Emploi du temps",
+      "day": "Jour"
     }
   },
   "roleSelection": {
@@ -266,6 +275,13 @@
   },
   "assignment": {
     "backToAssignments": "Retour aux devoirs",
+    "details": {
+      "description": "Description du devoir",
+      "requirements": "Exigences du devoir",
+      "yourSubmission": "Votre soumission",
+      "status": "Statut",
+      "submittedOn": "Soumis le"
+    },
     "due": "À rendre le",
     "description": "Description",
     "noDescription": "Aucune description disponible.",

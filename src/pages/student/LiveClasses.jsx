@@ -23,7 +23,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { getActiveLiveClasses, getDailyRoom } from '../../api/student';
 import { getCurrentLanguage } from '../../i18n';
 import { auth } from '../../api/config';
-import ShimmerCard from '../../components/common/ShimmerCard';
 
 const LiveClasses = () => {
   const navigate = useNavigate();
@@ -88,13 +87,14 @@ const LiveClasses = () => {
       elevation={0}
       sx={{
         p: 3,
-        border: '1px solid rgba(0, 0, 0, 0.1)',
-        borderRadius: '12px',
+        borderRadius: '8px',
+        backgroundColor: 'rgba(45, 55, 72, 0.9)',
+        backdropFilter: 'blur(10px)',
+        border: '1px solid rgba(255, 255, 255, 0.05)',
         transition: 'all 0.2s',
         '&:hover': {
-          borderColor: '#bb5c39',
           transform: 'translateY(-2px)',
-          boxShadow: '0 4px 12px rgba(187, 92, 57, 0.1)'
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
         }
       }}
     >
@@ -103,20 +103,23 @@ const LiveClasses = () => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
             <Avatar
               sx={{
-                bgcolor: 'rgba(187, 92, 57, 0.1)',
-                color: '#bb5c39'
+                bgcolor: 'rgba(74, 144, 226, 0.1)',
+                color: '#4a90e2',
+                width: 48,
+                height: 48
               }}
             >
               <SchoolIcon />
             </Avatar>
             <Box>
               <Typography variant="h6" sx={{ 
-                fontWeight: 600,
-                color: '#2f2f2f'
+                fontWeight: 500,
+                color: '#fff',
+                letterSpacing: '0.3px'
               }}>
                 {liveClass.title}
               </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
                 {liveClass.teacherName || 'Teacher'}
               </Typography>
             </Box>
@@ -127,11 +130,11 @@ const LiveClasses = () => {
               icon={<TimerIcon sx={{ fontSize: '18px !important' }} />}
               label={`Started ${new Date(liveClass.startTime).toLocaleTimeString()}`}
               sx={{ 
-                backgroundColor: 'rgba(187, 92, 57, 0.1)',
-                color: '#bb5c39',
-                borderRadius: '8px',
+                backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                color: '#4a90e2',
+                borderRadius: '4px',
                 '& .MuiChip-icon': {
-                  color: '#bb5c39'
+                  color: '#4a90e2'
                 }
               }}
             />
@@ -139,9 +142,9 @@ const LiveClasses = () => {
               icon={<LiveTvIcon sx={{ fontSize: '18px !important' }} />}
               label="Live"
               sx={{
-                backgroundColor: '#bb5c39',
+                backgroundColor: '#4a90e2',
                 color: '#fff',
-                borderRadius: '8px',
+                borderRadius: '4px',
                 '& .MuiChip-icon': {
                   color: '#fff'
                 }
@@ -161,8 +164,8 @@ const LiveClasses = () => {
                 left: '6px',
                 right: '-6px',
                 bottom: '-6px',
-                backgroundColor: 'rgba(187, 92, 57, 0.2)',
-                borderRadius: '8px',
+                backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                borderRadius: '4px',
                 zIndex: 0
               }
             }}
@@ -175,18 +178,19 @@ const LiveClasses = () => {
               sx={{
                 py: 1.5,
                 px: 3,
-                backgroundColor: '#bb5c39',
+                backgroundColor: '#4a90e2',
                 color: '#fff',
                 position: 'relative',
                 zIndex: 1,
-                border: '1px solid rgba(187, 92, 57, 0.1)',
-                transition: 'all 0.2s ease-in-out',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                transition: 'all 0.2s',
+                borderRadius: '4px',
                 '&:hover': {
-                  backgroundColor: '#a04b2e',
+                  backgroundColor: '#357abd',
                   transform: 'translate(-2px, -2px)',
                 },
                 '&.Mui-disabled': {
-                  backgroundColor: 'rgba(187, 92, 57, 0.5)',
+                  backgroundColor: 'rgba(74, 144, 226, 0.3)',
                   color: '#fff'
                 }
               }}
@@ -202,15 +206,17 @@ const LiveClasses = () => {
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      backgroundColor: '#f8f9fa',
+      background: 'linear-gradient(145deg, #1a1f2c 0%, #2d3748 100%)',
       pt: { xs: '80px', sm: '90px' },
       pb: 4
     }}>
       <Container maxWidth="xl">
         <Typography variant="h4" sx={{ 
-          fontWeight: 700, 
+          fontWeight: 500, 
           mb: 3,
-          color: '#2f2f2f'
+          color: '#fff',
+          fontFamily: '"Roboto", sans-serif',
+          letterSpacing: '0.5px'
         }}>
           Live Classes
         </Typography>
@@ -220,8 +226,11 @@ const LiveClasses = () => {
             severity="error" 
             sx={{ 
               mb: 3,
+              backgroundColor: 'rgba(211, 47, 47, 0.1)',
+              color: '#ff5252',
+              border: '1px solid rgba(211, 47, 47, 0.2)',
               borderRadius: '8px',
-              border: '1px solid rgba(211, 47, 47, 0.1)'
+              '& .MuiAlert-icon': { color: '#ff5252' }
             }}
           >
             {error}
@@ -231,7 +240,16 @@ const LiveClasses = () => {
         {loading ? (
           <Stack spacing={3}>
             {[1, 2, 3].map((index) => (
-              <ShimmerCard key={index} height={160} />
+              <Paper
+                key={index}
+                sx={{
+                  p: 3,
+                  height: 160,
+                  borderRadius: '8px',
+                  backgroundColor: 'rgba(45, 55, 72, 0.5)',
+                  animation: 'pulse 1.5s infinite'
+                }}
+              />
             ))}
           </Stack>
         ) : (
@@ -241,39 +259,9 @@ const LiveClasses = () => {
                 <ClassCard key={liveClass.id} liveClass={liveClass} />
               ))
             ) : (
-              <Box 
-                sx={{ 
-                  textAlign: 'center',
-                  py: 8,
-                  backgroundColor: 'rgba(187, 92, 57, 0.03)',
-                  borderRadius: '12px',
-                  border: '1px dashed rgba(187, 92, 57, 0.2)'
-                }}
-              >
-                <LiveTvIcon sx={{ 
-                  fontSize: 48, 
-                  color: 'rgba(187, 92, 57, 0.2)',
-                  mb: 2
-                }} />
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
-                    color: '#666',
-                    fontWeight: 500
-                  }}
-                >
-                  No live classes available at the moment
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: '#888',
-                    mt: 1
-                  }}
-                >
-                  Check back later for upcoming classes
-                </Typography>
-              </Box>
+              <Typography variant="body1" sx={{ color: '#fff', textAlign: 'center' }}>
+                No live classes available at the moment.
+              </Typography>
             )}
           </Stack>
         )}

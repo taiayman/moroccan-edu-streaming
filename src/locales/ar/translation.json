@@ -29,6 +29,7 @@
     "edit": "تعديل",
     "delete": "حذف",
     "loading": "جاري التحميل...",
+    "back": "رجوع",
     "assignments": {
       "created": "تم الإنشاء في"
     },
@@ -261,17 +262,30 @@
     "teachers": {
       "title": "المعلمون",
       "schedule": "جدول {{name}}"
+    },
+    "assignments": {
+      "title": "الواجبات",
+      "complete": "تم الانتهاء"
+    },
+    "schedule": {
+      "title": "الجدول الزمني",
+      "day": "اليوم"
     }
   },
   "assignment": {
     "backToAssignments": "العودة إلى الواجبات",
+    "details": {
+      "description": "وصف الواجب",
+      "requirements": "متطلبات الواجب",
+      "yourSubmission": "تسليمك",
+      "status": "الحالة",
+      "submittedOn": "تم التسليم في"
+    },
     "due": "تاريخ التسليم",
     "description": "الوصف",
     "noDescription": "لا يوجد وصف متاح.",
     "content": "محتوى الواجب",
     "noContent": "لا يوجد محتوى متاح.",
-    "yourSubmission": "تسليمك",
-    "submittedOn": "تم التسليم في",
     "grade": "الدرجة",
     "notSubmitted": "لم تقم بتسليم هذا الواجب بعد",
     "alreadySubmitted": "لقد قمت بتسليم هذا الواجب بالفعل",

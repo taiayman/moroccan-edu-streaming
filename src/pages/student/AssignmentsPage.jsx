@@ -168,7 +168,7 @@ const AssignmentsPage = () => {
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      backgroundColor: '#f2f0e9',
+      background: 'linear-gradient(145deg, #1a1f2c 0%, #2d3748 100%)',
       pt: '90px',
       pb: 4
     }}>
@@ -181,10 +181,16 @@ const AssignmentsPage = () => {
 
         {/* Header */}
         <Box sx={{ mb: 4 }}>
-          <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+          <Typography variant="h4" sx={{ 
+            fontWeight: 600, 
+            mb: 1,
+            color: '#fff',
+            fontFamily: '"Roboto", sans-serif',
+            letterSpacing: '0.5px'
+          }}>
             {t('assignment.myAssignments')}
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
             {t('assignment.viewAndSubmit')}
           </Typography>
         </Box>
@@ -201,8 +207,8 @@ const AssignmentsPage = () => {
               left: '8px',
               right: '-8px',
               bottom: '-8px',
-              backgroundColor: 'rgba(0, 0, 0, 0.1)',
-              borderRadius: '16px',
+              backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              borderRadius: '8px',
               zIndex: 0
             }
           }}
@@ -211,14 +217,16 @@ const AssignmentsPage = () => {
             elevation={0}
             sx={{
               p: 3,
-              borderRadius: '16px',
-              border: '1px solid rgba(0, 0, 0, 0.1)',
-              backgroundColor: '#fff',
+              borderRadius: '8px',
+              bgcolor: 'rgba(45, 55, 72, 0.9)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
               position: 'relative',
               zIndex: 1,
               transition: 'all 0.2s',
               '&:hover': {
-                transform: 'translate(-4px, -4px)'
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
               }
             }}
           >
@@ -237,28 +245,70 @@ const AssignmentsPage = () => {
                       </InputAdornment>
                     }
                     sx={{
-                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                      backgroundColor: 'rgba(45, 55, 72, 0.9)',
+                      borderRadius: '4px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      '&:hover': {
+                        borderColor: '#4a90e2',
+                      },
+                      '&.Mui-focused': {
+                        borderColor: '#4a90e2',
+                        boxShadow: '0 0 0 2px rgba(74, 144, 226, 0.2)'
+                      },
                       '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(0, 0, 0, 0.1)',
+                        border: 'none'
                       },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                      '& .MuiSelect-select': {
+                        color: '#fff',
+                        padding: '12px 14px'
                       },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#bb5c39',
+                      '& .MuiSvgIcon-root': {
+                        color: '#4a90e2'
+                      }
+                    }}
+                    MenuProps={{
+                      PaperProps: {
+                        sx: {
+                          backgroundColor: 'rgba(45, 55, 72, 0.95)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255, 255, 255, 0.05)',
+                          borderRadius: '4px',
+                          marginTop: '8px',
+                          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
+                        }
                       }
                     }}
                   >
                     {teachers.map((teacher) => (
-                      <MenuItem key={teacher.id} value={teacher.id}>
+                      <MenuItem
+                        key={teacher.id}
+                        value={teacher.id}
+                        sx={{
+                          '&:hover': {
+                            backgroundColor: 'rgba(74, 144, 226, 0.1)'
+                          },
+                          '&.Mui-selected': {
+                            backgroundColor: 'rgba(74, 144, 226, 0.2)'
+                          }
+                        }}
+                      >
                         <Stack direction="row" spacing={1} alignItems="center">
                           <Avatar
-                            src={teacher.photoURL}
-                            sx={{ width: 24, height: 24 }}
+                            sx={{
+                              width: 32,
+                              height: 32,
+                              bgcolor: 'rgba(74, 144, 226, 0.1)',
+                              color: '#4a90e2'
+                            }}
                           >
                             {teacher.displayName?.charAt(0)}
                           </Avatar>
-                          <Typography>{teacher.displayName}</Typography>
+                          <Box>
+                            <Typography sx={{ color: '#fff' }}>{teacher.displayName}</Typography>
+                            <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                              {teacher.email}
+                            </Typography>
+                          </Box>
                         </Stack>
                       </MenuItem>
                     ))}
@@ -280,15 +330,18 @@ const AssignmentsPage = () => {
                   }}
                   sx={{
                     '& .MuiOutlinedInput-root': {
-                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
+                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
                       '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.04)'
+                        backgroundColor: 'rgba(0, 0, 0, 0.3)'
                       },
                       '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(187, 92, 57, 0.5)',
+                        borderColor: '#4a90e2',
                       },
                       '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#bb5c39',
+                        borderColor: '#4a90e2',
+                      },
+                      '& .MuiInputBase-input': {
+                        color: '#fff'
                       }
                     }
                   }}
@@ -309,8 +362,8 @@ const AssignmentsPage = () => {
               left: '8px',
               right: '-8px',
               bottom: '-8px',
-              backgroundColor: 'rgba(0, 0, 0, 0.1)',
-              borderRadius: '16px',
+              backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              borderRadius: '8px',
               zIndex: 0
             }
           }}
@@ -319,14 +372,16 @@ const AssignmentsPage = () => {
             elevation={0}
             sx={{
               p: 3,
-              borderRadius: '16px',
-              border: '1px solid rgba(0, 0, 0, 0.1)',
-              backgroundColor: '#fff',
+              borderRadius: '8px',
+              bgcolor: 'rgba(45, 55, 72, 0.9)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
               position: 'relative',
               zIndex: 1,
               transition: 'all 0.2s',
               '&:hover': {
-                transform: 'translate(-4px, -4px)'
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)'
               }
             }}
           >
@@ -337,14 +392,15 @@ const AssignmentsPage = () => {
                     elevation={0}
                     sx={{
                       p: 3,
-                      borderRadius: '12px',
-                      border: '1px solid rgba(0, 0, 0, 0.1)',
-                      backgroundColor: '#fff',
+                      borderRadius: '6px',
+                      bgcolor: 'rgba(45, 55, 72, 0.5)',
+                      border: '1px solid rgba(255, 255, 255, 0.05)',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       '&:hover': {
-                        backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                        transform: 'translateY(-2px)'
+                        bgcolor: 'rgba(255, 255, 255, 0.03)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)'
                       }
                     }}
                     onClick={() => navigate(`/${getCurrentLanguage()}/student/assignments/${assignment.id}`)}
@@ -354,8 +410,8 @@ const AssignmentsPage = () => {
                         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
                           <Avatar
                             sx={{
-                              bgcolor: 'rgba(187, 92, 57, 0.1)',
-                              color: '#bb5c39',
+                              bgcolor: 'rgba(74, 144, 226, 0.1)',
+                              color: '#4a90e2',
                               width: 48,
                               height: 48
                             }}
@@ -363,12 +419,17 @@ const AssignmentsPage = () => {
                             <AssignmentIcon />
                           </Avatar>
                           <Box>
-                            <Typography variant="h6" sx={{ mb: 0.5, color: '#2f2f2f' }}>
+                            <Typography variant="h6" sx={{ 
+                              mb: 0.5, 
+                              color: '#fff',
+                              fontWeight: 500,
+                              letterSpacing: '0.3px'
+                            }}>
                               {assignment.title}
                             </Typography>
                             <Stack direction="row" spacing={2} alignItems="center">
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <CalendarIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                                <CalendarIcon sx={{ fontSize: 16, color: 'rgba(255, 255, 255, 0.5)' }} />
                                 <Typography variant="caption" color="text.secondary">
                                   {t('assignment.due')} {formatDate(assignment.dueDate)}
                                 </Typography>
@@ -377,12 +438,8 @@ const AssignmentsPage = () => {
                                 label={t(`assignment.status.${assignment.status}`)}
                                 size="small"
                                 sx={{
-                                  backgroundColor: assignment.status === 'submitted' 
-                                    ? 'rgba(76, 175, 80, 0.1)' 
-                                    : 'rgba(187, 92, 57, 0.1)',
-                                  color: assignment.status === 'submitted' 
-                                    ? '#4caf50' 
-                                    : '#bb5c39',
+                                  backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                                  color: '#4a90e2',
                                   fontWeight: 500
                                 }}
                               />
@@ -391,8 +448,8 @@ const AssignmentsPage = () => {
                                   label={`Grade: ${assignment.grade}`}
                                   size="small"
                                   sx={{
-                                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
-                                    color: '#2196f3',
+                                    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                                    color: '#4a90e2',
                                     fontWeight: 500
                                   }}
                                 />
@@ -415,13 +472,13 @@ const AssignmentsPage = () => {
                             }}
                             disabled={['submitted', 'graded'].includes(assignment.status)}
                             sx={{
-                              backgroundColor: ['submitted', 'graded'].includes(assignment.status) ? '#ccc' : '#bb5c39',
+                              backgroundColor: '#4a90e2',
+                              color: '#fff',
                               '&:hover': {
-                                backgroundColor: ['submitted', 'graded'].includes(assignment.status) ? '#ccc' : '#a04b2e'
+                                backgroundColor: '#357abd'
                               },
                               '&.Mui-disabled': {
-                                backgroundColor: '#ccc',
-                                color: '#666'
+                                backgroundColor: 'rgba(74, 144, 226, 0.3)'
                               }
                             }}
                           >
@@ -431,17 +488,17 @@ const AssignmentsPage = () => {
                           </Button>
                           <Button
                             variant="outlined"
+                            sx={{
+                              borderColor: 'rgba(74, 144, 226, 0.5)',
+                              color: '#4a90e2',
+                              '&:hover': { 
+                                backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                                borderColor: '#4a90e2'
+                              }
+                            }}
                             onClick={(e) => {
                               e.stopPropagation();
                               navigate(`/${getCurrentLanguage()}/student/assignments/${assignment.id}`);
-                            }}
-                            sx={{
-                              borderColor: 'rgba(187, 92, 57, 0.5)',
-                              color: '#bb5c39',
-                              '&:hover': { 
-                                backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                                borderColor: '#bb5c39'
-                              }
                             }}
                           >
                             View Details
@@ -459,11 +516,11 @@ const AssignmentsPage = () => {
                     sx={{ 
                       textAlign: 'center', 
                       py: 8,
-                      backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                      borderRadius: '12px'
+                      backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                      borderRadius: '6px'
                     }}
                   >
-                    <AssignmentIcon sx={{ fontSize: 64, color: 'rgba(0, 0, 0, 0.2)', mb: 2 }} />
+                    <AssignmentIcon sx={{ fontSize: 64, color: 'rgba(255, 255, 255, 0.2)', mb: 2 }} />
                     <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
                       No assignments found
                     </Typography>
@@ -483,24 +540,19 @@ const AssignmentsPage = () => {
           onClose={() => setSubmissionDialog(false)}
           maxWidth="sm"
           fullWidth
-          TransitionProps={{
-            enter: true,
-            exit: true
-          }}
           PaperProps={{
             sx: {
-              borderRadius: '20px',
-              p: 0,
-              backgroundColor: '#fff',
-              overflow: 'hidden',
-              boxShadow: '0 10px 40px -10px rgba(0,0,0,0.2)'
+              borderRadius: '8px',
+              backgroundColor: 'rgba(45, 55, 72, 0.95)',
+              backdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255, 255, 255, 0.05)'
             }
           }}
         >
           <Box
             sx={{
-              background: 'linear-gradient(135deg, #bb5c39 0%, #a04b2e 100%)',
-              py: 4,
+              background: 'linear-gradient(135deg, #4a90e2 0%, #357abd 100%)',
+              py: 3,
               px: 3,
               color: '#fff',
               position: 'relative',
@@ -516,7 +568,7 @@ const AssignmentsPage = () => {
               }
             }}
           >
-            <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+            <Typography variant="h5" sx={{ fontWeight: 500, mb: 1, letterSpacing: '0.5px' }}>
               Submit Assignment
             </Typography>
             <Typography variant="body2" sx={{ opacity: 0.9 }}>
@@ -537,16 +589,17 @@ const AssignmentsPage = () => {
                 placeholder="Write your answer here..."
                 sx={{
                   '& .MuiOutlinedInput-root': {
-                    backgroundColor: '#fff',
+                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                    color: '#fff',
                     '&:hover fieldset': {
-                      borderColor: 'rgba(187, 92, 57, 0.5)',
+                      borderColor: '#4a90e2'
                     },
                     '&.Mui-focused fieldset': {
-                      borderColor: '#bb5c39',
-                    },
+                      borderColor: '#4a90e2'
+                    }
                   },
-                  '& .MuiInputLabel-root.Mui-focused': {
-                    color: '#bb5c39',
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255, 255, 255, 0.7)'
                   }
                 }}
               />
@@ -555,17 +608,16 @@ const AssignmentsPage = () => {
 
           <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
             <Button
-              onClick={() => setSubmissionDialog(false)}
               variant="outlined"
               sx={{
-                borderColor: 'rgba(187, 92, 57, 0.5)',
-                color: '#bb5c39',
-                px: 3,
+                borderColor: 'rgba(74, 144, 226, 0.5)',
+                color: '#4a90e2',
                 '&:hover': { 
-                  backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                  borderColor: '#bb5c39'
+                  backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                  borderColor: '#4a90e2'
                 }
               }}
+              onClick={() => setSubmissionDialog(false)}
             >
               Cancel
             </Button>
@@ -575,13 +627,13 @@ const AssignmentsPage = () => {
               disabled={submitting || !submissionContent.trim()}
               startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : <SaveIcon />}
               sx={{
-                backgroundColor: '#bb5c39',
-                px: 4,
+                backgroundColor: '#4a90e2',
+                color: '#fff',
                 '&:hover': {
-                  backgroundColor: '#a04b2e'
+                  backgroundColor: '#357abd'
                 },
                 '&.Mui-disabled': {
-                  backgroundColor: 'rgba(187, 92, 57, 0.3)'
+                  backgroundColor: 'rgba(74, 144, 226, 0.3)'
                 }
               }}
             >

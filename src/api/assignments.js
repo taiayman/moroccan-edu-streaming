@@ -150,3 +150,21 @@ export const updateAssignmentStatus = async (studentId, assignmentId, status, su
     throw new Error('Failed to update assignment status');
   }
 };
+
+/**
+ * Get assignment details for a specific assignment
+ */
+export const getAssignmentDetails = async (assignmentId) => {
+  try {
+    const docRef = doc(db, COLLECTIONS.ASSIGNMENTS, assignmentId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() };
+    }
+    throw new Error('Assignment not found');
+  } catch (error) {
+    console.error('Error getting assignment details:', error);
+    throw error;
+  }
+};

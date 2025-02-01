@@ -16,13 +16,64 @@ import {
   InputAdornment,
   Alert,
   CircularProgress,
+  Paper,
 } from '@mui/material';
-import { Visibility, VisibilityOff, Google as GoogleIcon } from '@mui/icons-material';
+import { 
+  Visibility, 
+  VisibilityOff, 
+  Google as GoogleIcon,
+  ArrowBack as ArrowBackIcon
+} from '@mui/icons-material';
 import { signInWithPopup } from 'firebase/auth';
 import { getDoc, doc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../../api/config';
 import { createUserProfile } from '../../api/users';
 import { navigateByRole } from '../../utils/navigation';
+import { motion } from 'framer-motion';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import rtlPlugin from 'stylis-plugin-rtl';
+import { CacheProvider } from '@emotion/react';
+import createCache from '@emotion/cache';
+import { prefixer } from 'stylis';
+
+// Create rtl cache
+const cacheRtl = createCache({
+  key: 'muirtl',
+  stylisPlugins: [prefixer, rtlPlugin],
+});
+
+// Add Arabic font
+const fontFamily = "'Noto Kufi Arabic', sans-serif";
+
+// Create RTL theme with Arabic font
+const theme = createTheme({
+  direction: 'rtl',
+  typography: {
+    fontFamily: fontFamily,
+    h3: {
+      fontFamily: fontFamily,
+      fontWeight: 600,
+    },
+    body1: {
+      fontFamily: fontFamily,
+    },
+    button: {
+      fontFamily: fontFamily,
+      fontWeight: 500,
+    }
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: `
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
+        
+        body {
+          font-family: ${fontFamily};
+        }
+      `,
+    },
+  },
+});
 
 const LoginForm = () => {
   const navigate = useNavigate();
@@ -129,264 +180,282 @@ const LoginForm = () => {
   };
 
   return (
-    <Container 
-      maxWidth={false} 
-      sx={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#f2f0e9'
-      }}
-    >
-      <Box
-        sx={{
-          width: '100%',
-          maxWidth: '480px',
-          p: { xs: 3, sm: 6 },
-          m: 'auto'
-        }}
-      >
-        <Box sx={{ mb: 5 }}>
-          <Typography 
-            variant="h3" 
-            sx={{ 
-              fontWeight: 700, 
-              mb: 2,
-              fontSize: { xs: '2rem', sm: '2.5rem' },
-              color: '#000'
-            }}
-          >
-            {t('auth.signIn')}
-          </Typography>
-          <Typography
-            variant="body1"
+    <CacheProvider value={cacheRtl}>
+      <ThemeProvider theme={theme}>
+        <>
+          <style>
+            {`
+              @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
+              
+              * {
+                font-family: ${fontFamily};
+              }
+            `}
+          </style>
+          <Container 
+            maxWidth={false} 
             sx={{
-              color: '#666',
-              fontSize: '1.1rem'
+              minHeight: '100vh',
+              display: 'flex',
+              flexDirection: 'column',
+              background: 'linear-gradient(145deg, #1a1f2c 0%, #2d3748 100%)',
+              position: 'relative',
+              px: 0
             }}
           >
-            {t('auth.welcomeBack')}
-          </Typography>
-        </Box>
-
-        {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 3,
-              backgroundColor: 'rgba(187, 92, 57, 0.05)',
-              color: '#bb5c39',
-              '& .MuiAlert-icon': {
-                color: '#bb5c39'
-              }
-            }}
-          >
-            {error}
-          </Alert>
-        )}
-
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          label={t('auth.emailAddress')}
-          name="email"
-          autoComplete="email"
-          autoFocus
-          value={formData.email}
-          onChange={handleChange}
-          sx={{ 
-            mb: 2,
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: 'rgba(255, 255, 255, 0.5)',
-              '& fieldset': {
-                borderColor: 'rgba(0, 0, 0, 0.1)',
-              },
-              '&:hover fieldset': {
-                borderColor: '#000',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#000',
-              }
-            },
-            '& .MuiInputLabel-root.Mui-focused': {
-              color: '#000'
-            }
-          }}
-        />
-
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          name="password"
-          label={t('auth.password')}
-          type={showPassword ? 'text' : 'password'}
-          autoComplete="current-password"
-          value={formData.password}
-          onChange={handleChange}
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="toggle password visibility"
-                  onClick={() => setShowPassword(!showPassword)}
-                  edge="end"
-                >
-                  {showPassword ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-          sx={{ 
-            mb: 3,
-            '& .MuiOutlinedInput-root': {
-              backgroundColor: 'rgba(255, 255, 255, 0.5)',
-              '& fieldset': {
-                borderColor: 'rgba(0, 0, 0, 0.1)',
+            {/* App Bar */}
+            <Paper
+              elevation={0}
+              sx={{
+                backgroundColor: 'rgba(26,32,44,0.95)',
+                backdropFilter: 'blur(10px)',
+                borderBottom: '1px solid rgba(255,255,255,0.1)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 1000,
+                px: 2,
+                py: 1.5,
                 borderRadius: 0
-              },
-              '&:hover fieldset': {
-                borderColor: '#000',
-              },
-              '&.Mui-focused fieldset': {
-                borderColor: '#000',
-              }
-            },
-            '& .MuiInputLabel-root.Mui-focused': {
-              color: '#000'
-            }
-          }}
-        />
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600, fontFamily }}>
+                  {t('auth.signIn')}
+                </Typography>
+              </Box>
+            </Paper>
 
-        <Box sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          mb: 3
-        }}>
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+            <Box
+              component={motion.div}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              sx={{
+                width: '100%',
+                maxWidth: '420px',
+                mx: 'auto',
+                px: 2,
+                py: 4,
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+            >
+              <Typography
+                variant="body1"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  fontSize: '0.95rem',
+                  mb: 4,
+                  textAlign: 'center'
+                }}
+              >
+                {t('auth.welcomeBack')}
+              </Typography>
+
+              {error && (
+                <Alert 
+                  severity="error" 
+                  sx={{ 
+                    mb: 3,
+                    backgroundColor: 'rgba(239,68,68,0.1)', 
+                    color: '#ef4444',
+                    border: '1px solid #ef4444'
+                  }}
+                >
+                  {error}
+                </Alert>
+              )}
+
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                label={t('auth.emailAddress')}
+                name="email"
+                autoComplete="email"
+                autoFocus
+                value={formData.email}
+                onChange={handleChange}
+                InputLabelProps={{
+                  style: { fontFamily },
+                  shrink: true
+                }}
                 sx={{ 
-                  '&.Mui-checked': { 
-                    color: '#bb5c39' 
+                  mb: 2,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(26,32,44,0.9)',
+                    color: '#fff',
+                    borderRadius: 2,
+                    '& fieldset': {
+                      borderColor: 'rgba(255,255,255,0.1)',
+                      transition: 'all 0.2s ease'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(0,255,163,0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#00FFA3',
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255,255,255,0.7)',
+                    fontFamily,
+                    transform: 'translate(14px, -9px) scale(0.75)',
+                    '&.Mui-focused': {
+                      color: '#00FFA3'
+                    }
+                  }
+                }}
+                InputProps={{ 
+                  style: { fontFamily }
+                }}
+              />
+
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                name="password"
+                label={t('auth.password')}
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                value={formData.password}
+                onChange={handleChange}
+                InputProps={{
+                  style: { fontFamily },
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <IconButton
+                        onClick={() => setShowPassword(!showPassword)}
+                        edge="start"
+                        sx={{ 
+                          color: 'rgba(255,255,255,0.7)',
+                          ml: -1,
+                          mr: 1
+                        }}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ 
+                  mb: 4,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(26,32,44,0.9)',
+                    color: '#fff',
+                    borderRadius: 2,
+                    '& fieldset': {
+                      borderColor: 'rgba(255,255,255,0.1)',
+                      transition: 'all 0.2s ease'
+                    },
+                    '&:hover fieldset': {
+                      borderColor: 'rgba(0,255,163,0.5)',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#00FFA3',
+                    },
+                    '& input': {
+                      paddingLeft: '14px'
+                    }
+                  },
+                  '& .MuiInputLabel-root': {
+                    color: 'rgba(255,255,255,0.7)',
+                    fontFamily,
+                    '&.Mui-focused': {
+                      color: '#00FFA3'
+                    }
                   }
                 }}
               />
-            }
-            label={
-              <Typography sx={{ color: '#666' }}>
-                {t('auth.rememberMe')}
-              </Typography>
-            }
-          />
-          <Link 
-            to="/auth/forgot-password" 
-            style={{ 
-              textDecoration: 'none',
-              color: '#bb5c39',
-              fontWeight: 500
-            }}
-          >
-            {t('auth.forgotPassword')}
-          </Link>
-        </Box>
 
-        <Box
-          sx={{
-            position: 'relative',
-            mb: 3,
-            '&:before': {
-              content: '""',
-              position: 'absolute',
-              top: '6px',
-              left: '6px',
-              right: '-6px',
-              bottom: '-6px',
-              backgroundColor: '#bb5c39',
-              opacity: 0.1,
-              zIndex: 0
-            }
-          }}
-        >
-          <Button
-            fullWidth
-            variant="contained"
-            disabled={loading}
-            onClick={handleLogin}
-            sx={{
-              py: 1.75,
-              backgroundColor: '#bb5c39',
-              color: '#fff',
-              textTransform: 'none',
-              fontSize: '1rem',
-              fontWeight: 600,
-              position: 'relative',
-              zIndex: 1,
-              boxShadow: 'none',
-              border: 'none',
-              borderRadius: 0,
-              transition: 'all 0.2s ease-in-out',
-              '&:hover': {
-                backgroundColor: '#a94f30'
-              }
-            }}
-          >
-            {loading ? (
-              <CircularProgress size={24} sx={{ color: '#fff' }} />
-            ) : (
-              t('auth.signIn')
-            )}
-          </Button>
-        </Box>
+              <Button
+                fullWidth
+                variant="contained"
+                disabled={loading}
+                onClick={handleLogin}
+                sx={{
+                  py: 1.5,
+                  mb: 2,
+                  backgroundColor: '#00FFA3',
+                  color: '#0F172A',
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                  borderRadius: 2,
+                  '&:hover': {
+                    backgroundColor: '#00cc82'
+                  },
+                  '&:active': {
+                    transform: 'scale(0.98)'
+                  }
+                }}
+              >
+                {loading ? (
+                  <CircularProgress size={24} sx={{ color: '#0F172A' }} />
+                ) : (
+                  t('auth.signIn')
+                )}
+              </Button>
 
-        <Box sx={{ mb: 4 }}>
-          <Button
-            fullWidth
-            variant="outlined"
-            startIcon={<GoogleIcon />}
-            onClick={handleGoogleLogin}
-            sx={{
-              py: 1.5,
-              color: '#000',
-              borderColor: '#000',
-              backgroundColor: 'transparent',
-              textTransform: 'none',
-              fontSize: '1rem',
-              fontWeight: 500,
-              borderRadius: 0,
-              '&:hover': {
-                backgroundColor: 'rgba(187, 92, 57, 0.05)',
-                borderColor: '#bb5c39',
-                color: '#bb5c39'
-              }
-            }}
-          >
-            {t('auth.continueWithGoogle')}
-          </Button>
-        </Box>
+              <Button
+                fullWidth
+                variant="outlined"
+                startIcon={<GoogleIcon sx={{ mr: 1.5 }} />}
+                onClick={handleGoogleLogin}
+                sx={{
+                  py: 1.5,
+                  mb: 4,
+                  color: '#fff',
+                  borderColor: 'rgba(255,255,255,0.1)',
+                  backgroundColor: 'rgba(26,32,44,0.9)',
+                  textTransform: 'none',
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                  borderRadius: 2,
+                  '& .MuiButton-startIcon': {
+                    marginRight: '12px',
+                    marginLeft: '4px'
+                  },
+                  '&:hover': {
+                    backgroundColor: 'rgba(26,32,44,0.95)',
+                    borderColor: '#00FFA3'
+                  },
+                  '&:active': {
+                    transform: 'scale(0.98)'
+                  }
+                }}
+              >
+                {t('auth.continueWithGoogle')}
+              </Button>
 
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography sx={{ color: '#666' }}>
-            {t('auth.noAccount')}{' '}
-            <Link
-              to={`/${getCurrentLanguage()}/auth/register`}
-              style={{
-                textDecoration: 'none',
-                color: '#bb5c39',
-                fontWeight: 500
-              }}
-            >
-              {t('auth.signUpFree')}
-            </Link>
-          </Typography>
-        </Box>
-      </Box>
-    </Container>
+              <Box sx={{ textAlign: 'center', mt: 'auto' }}>
+                <Typography sx={{ 
+                  color: 'rgba(255,255,255,0.7)', 
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  fontFamily
+                }}>
+                  {t('auth.noAccount')}{' '}
+                  <Link
+                    to={`/${getCurrentLanguage()}/auth/register`}
+                    style={{
+                      textDecoration: 'none',
+                      color: '#00FFA3',
+                      fontWeight: 500,
+                      fontFamily
+                    }}
+                  >
+                    {t('auth.signUpFree')}
+                  </Link>
+                </Typography>
+              </Box>
+            </Box>
+          </Container>
+        </>
+      </ThemeProvider>
+    </CacheProvider>
   );
 };
 
