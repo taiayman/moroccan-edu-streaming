@@ -82,19 +82,22 @@ const Navbar = () => {
     >
       <Toolbar sx={{ justifyContent: 'space-between' }}>
         {/* Logo/Brand */}
-        <Typography
-          variant="h6"
+        <Box
+          component="img"
+          src="/images/logo.jpg"
+          alt="Logo"
           sx={{
-            color: '#fff',
-            fontWeight: 700,
+            width: 40,
+            height: 40,
             cursor: 'pointer',
-            fontFamily: '"Plus Jakarta Sans", sans-serif',
-            letterSpacing: '-0.02em'
+            borderRadius: '12px', // Squircle effect
+            transition: 'transform 0.2s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.05)'
+            }
           }}
           onClick={() => navigate(`/${getCurrentLanguage()}`)}
-        >
-          {t('nav.brand')}
-        </Typography>
+        />
 
         {/* Right Section */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
