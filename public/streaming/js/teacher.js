@@ -239,6 +239,13 @@ function handleAppMessage(event) {
 function handleError(error) {
   console.error('Daily error:', error);
   showError(error.message || 'An error occurred');
+  if (error.message?.includes('does not exist')) {
+    setTimeout(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const lang = urlParams.get('lang') || 'en';
+      window.location.href = `/${lang}/teacher/dashboard`;
+    }, 3000);
+  }
 }
 
 // UI Updates
@@ -526,7 +533,11 @@ async function endStream() {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     await callFrame.leave();
-    window.location.href = '/dashboard';
+    
+    // Get the language parameter from the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const lang = urlParams.get('lang') || 'en'; // Default to 'en' if not specified
+    window.location.href = `/${lang}/teacher/dashboard`;
   }
 }
 

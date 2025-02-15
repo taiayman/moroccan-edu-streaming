@@ -228,7 +228,9 @@ function handleAppMessage(event) {
   } else if (data.type === 'meeting-ended') {
     showNotification('The teacher has ended the class');
     setTimeout(() => {
-      leaveStream();
+      const urlParams = new URLSearchParams(window.location.search);
+      const lang = urlParams.get('lang') || 'en';
+      window.location.href = `/${lang}/student/dashboard`;
     }, 3000);
   }
 }
@@ -238,7 +240,9 @@ function handleError(error) {
   showError(error.message || 'An error occurred');
   if (error.message?.includes('does not exist')) {
     setTimeout(() => {
-      window.location.href = '/dashboard';
+      const urlParams = new URLSearchParams(window.location.search);
+      const lang = urlParams.get('lang') || 'en';
+      window.location.href = `/${lang}/student/dashboard`;
     }, 3000);
   }
 }
@@ -482,7 +486,10 @@ function updateMediaControlsState() {
 async function leaveStream() {
   if (callFrame) {
     await callFrame.leave();
-    window.location.href = '/dashboard';
+    // Get the language parameter from the URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const lang = urlParams.get('lang') || 'en'; // Default to 'en' if not specified
+    window.location.href = `/${lang}/student/dashboard`;
   }
 }
 
