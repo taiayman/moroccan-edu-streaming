@@ -1,0 +1,914 @@
+
+
+=== File: src/pages/parent/Dashboard.jsx ===
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import {
+  Box,
+  Typography,
+  Grid,
+  Paper,
+  Container,
+  Tabs,
+  Tab,
+  LinearProgress,
+  Stack,
+  Button
+} from '@mui/material';
+import {
+  EmailOutlined as EmailIcon,
+  NotificationsNoneOutlined as NotificationsIcon,
+  ChatOutlined as ChatIcon,
+} from '@mui/icons-material';
+import { motion } from 'framer-motion';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import rtlPlugin from 'stylis-plugin-rtl';
+import { CacheProvider } from '@emotion/react';
+import createCache from '@emotion/cache';
+import { prefixer } from 'stylis';
+
+// Create rtl cache
+const cacheRtl = createCache({
+  key: 'muirtl',
+  stylisPlugins: [prefixer, rtlPlugin],
+});
+
+// Add Arabic font
+const fontFamily = "'Noto Kufi Arabic', sans-serif";
+
+// Create RTL theme with Arabic font
+const theme = createTheme({
+  direction: 'rtl',
+  typography: {
+    fontFamily: fontFamily,
+    h3: {
+      fontFamily: fontFamily,
+      fontWeight: 600,
+    },
+    body1: {
+      fontFamily: fontFamily,
+    },
+    button: {
+      fontFamily: fontFamily,
+      fontWeight: 500,
+    }
+  },
+  components: {
+    MuiCssBaseline: {
+      styleOverrides: `
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
+        
+        body {
+          font-family: ${fontFamily};
+        }
+      `,
+    },
+  },
+});
+
+const ParentDashboard = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [activeChild, setActiveChild] = useState(0);
+
+  const children = [
+    {
+      id: 1,
+      name: 'Sara Alami',
+      grade: 'Niveau 2',
+      avatar: '/api/placeholder/40/40',
+      attendance: 95,
+      overallGrade: 88,
+      subjects: [
+        { name: 'Mathématiques', grade: 92, status: 'excellent' },
+        { name: 'Physique', grade: 85, status: 'good' },
+        { name: 'Français', grade: 88, status: 'good' }
+      ],
+      recentActivities: [
+        {
+          type: 'grade',
+          text: 'Note: 18/20 en Mathématiques',
+          time: 'Aujourd\'hui'
+        },
+        {
+          type: 'attendance',
+          text: 'Présent au cours de Physique',
+          time: 'Hier'
+        }
+      ]
+    },
+    {
+      id: 2,
+      name: 'Karim Alami',
+      grade: 'Niveau 1',
+      avatar: '/api/placeholder/40/40',
+      attendance: 92,
+      overallGrade: 85,
+      subjects: [
+        { name: 'Mathématiques', grade: 84, status: 'good' },
+        { name: 'Physique', grade: 88, status: 'good' },
+        { name: 'Français', grade: 82, status: 'good' }
+      ],
+      recentActivities: [
+        {
+          type: 'assignment',
+          text: 'Devoir rendu en Physique',
+          time: 'Aujourd\'hui'
+        }
+      ]
+    }
+  ];
+
+  const currentChild = children[activeChild];
+
+  const getGradeColor = (grade) => {
+    if (grade >= 90) return '#00FFA3';
+    if (grade >= 80) return '#00FFA3';
+    if (grade >= 70) return '#00FFA3';
+    return '#F44336';
+  };
+
+  return (
+    <CacheProvider value={cacheRtl}>
+      <ThemeProvider theme={theme}>
+        <Box sx={{ 
+          minHeight: '100vh',
+          background: 'linear-gradient(145deg, #1a1f2c 0%, #2d3748 100%)',
+          position: 'relative',
+          color: '#fff'
+        }}>
+          {/* App Bar */}
+          <Paper
+            elevation={0}
+            sx={{
+              backgroundColor: 'rgba(26,32,44,0.95)',
+              backdropFilter: 'blur(10px)',
+              borderBottom: '1px solid rgba(255,255,255,0.1)',
+              position: 'sticky',
+              top: 0,
+              zIndex: 1000,
+              px: 2,
+              py: 1.5,
+              borderRadius: 0
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600, fontFamily }}>
+                Tableau de Bord Parent
+              </Typography>
+            </Box>
+          </Paper>
+
+          <Container 
+            maxWidth="lg"
+            component={motion.div}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            sx={{ pt: 4, pb: 4 }}
+          >
+            {/* Child Selection */}
+            <Paper
+              component={motion.div}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              elevation={0}
+              sx={{
+                mb: 4,
+                p: 3,
+                borderRadius: 2,
+                backgroundColor: 'rgba(26,32,44,0.9)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  transform: 'translateY(-2px)',
+                }
+              }}
+            >
+              <Typography variant="h5" sx={{ mb: 3, fontWeight: 500, color: '#fff' }}>
+                Mes Enfants
+              </Typography>
+              <Tabs
+                value={activeChild}
+                onChange={(_, newValue) => setActiveChild(newValue)}
+                sx={{
+                  '.MuiTabs-indicator': {
+                    backgroundColor: '#00FFA3'
+                  }
+                }}
+              >
+                {children.map((child) => (
+                  <Tab
+                    key={child.id}
+                    label={
+                      <Box sx={{ textAlign: 'left', py: 1 }}>
+                        <Typography sx={{ fontWeight: 500, color: '#fff' }}>
+                          {child.name}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                          {child.grade}
+                        </Typography>
+                      </Box>
+                    }
+                    sx={{
+                      textTransform: 'none',
+                      minWidth: 200,
+                      alignItems: 'flex-start',
+                      '&.Mui-selected': {
+                        color: '#00FFA3'
+                      }
+                    }}
+                  />
+                ))}
+              </Tabs>
+            </Paper>
+
+            <Grid container spacing={4}>
+              {/* Left Column - Academic Progress */}
+              <Grid item xs={12} md={8}>
+                {/* Overview */}
+                <Paper
+                  component={motion.div}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    mb: 4,
+                    borderRadius: 2,
+                    backgroundColor: 'rgba(26,32,44,0.9)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      transform: 'translateY(-2px)',
+                    }
+                  }}
+                >
+                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 500, color: '#fff' }}>
+                    Vue d'Ensemble
+                  </Typography>
+                  <Grid container spacing={3}>
+                    <Grid item xs={6}>
+                      <Box>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }} gutterBottom>
+                          Note Moyenne
+                        </Typography>
+                        <Typography variant="h3" sx={{ 
+                          fontWeight: 500,
+                          color: '#00FFA3'
+                        }}>
+                          {currentChild.overallGrade}%
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Box>
+                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }} gutterBottom>
+                          Assiduité
+                        </Typography>
+                        <Typography variant="h3" sx={{ fontWeight: 500, color: '#00FFA3' }}>
+                          {currentChild.attendance}%
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Paper>
+
+                {/* Subject Performance */}
+                <Paper
+                  component={motion.div}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.3 }}
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    mb: 4,
+                    borderRadius: 2,
+                    backgroundColor: 'rgba(26,32,44,0.9)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      transform: 'translateY(-2px)',
+                    }
+                  }}
+                >
+                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 500, color: '#fff' }}>
+                    Performance par Matière
+                  </Typography>
+                  <Stack spacing={3}>
+                    {currentChild.subjects.map((subject) => (
+                      <Box key={subject.name}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                          <Typography sx={{ color: '#fff' }}>{subject.name}</Typography>
+                          <Typography sx={{ 
+                            color: '#00FFA3',
+                            fontWeight: 500
+                          }}>
+                            {subject.grade}%
+                          </Typography>
+                        </Box>
+                        <LinearProgress
+                          variant="determinate"
+                          value={subject.grade}
+                          sx={{
+                            height: 6,
+                            borderRadius: 3,
+                            backgroundColor: 'rgba(255,255,255,0.1)',
+                            '& .MuiLinearProgress-bar': {
+                              backgroundColor: '#00FFA3'
+                            }
+                          }}
+                        />
+                      </Box>
+                    ))}
+                  </Stack>
+                </Paper>
+
+                {/* Recent Activities */}
+                <Paper
+                  component={motion.div}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.4 }}
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    backgroundColor: 'rgba(26,32,44,0.9)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      border: '1px solid rgba(255,255,255,0.2)',
+                    }
+                  }}
+                >
+                  <Typography variant="h6" sx={{ mb: 3, fontWeight: 500, color: '#fff' }}>
+                    Activités Récentes
+                  </Typography>
+                  <Stack spacing={2}>
+                    {currentChild.recentActivities.map((activity, idx) => (
+                      <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography sx={{ color: '#fff' }}>{activity.text}</Typography>
+                        <Typography sx={{ color: 'rgba(255,255,255,0.7)' }}>{activity.time}</Typography>
+                      </Box>
+                    ))}
+                  </Stack>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                {/* Actions */}
+                <Paper
+                  component={motion.div}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.5 }}
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    borderRadius: 2,
+                    backgroundColor: 'rgba(26,32,44,0.9)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      border: '1px solid rgba(255,255,255,0.2)',
+                    }
+                  }}
+                >
+                  <Stack spacing={2}>
+                    {[{
+                      icon: <ChatIcon />,
+                      text: 'Contacter les Professeurs',
+                      path: '/parent/contact-teachers'
+                    }, {
+                      icon: <EmailIcon />,
+                      text: 'Boîte de Réception',
+                      path: '/parent/inbox'
+                    }, {
+                      icon: <NotificationsIcon />,
+                      text: 'Notifications',
+                      path: '/parent/notifications'
+                    }].map((action) => (
+                      <Button
+                        key={action.text}
+                        startIcon={action.icon}
+                        onClick={() => navigate(action.path)}
+                        variant="outlined"
+                        sx={{
+                          justifyContent: 'flex-start',
+                          py: 1.5,
+                          px: 2,
+                          color: '#000',
+                          borderColor: 'rgba(0, 0, 0, 0.12)',
+                          textTransform: 'none',
+                          '&:hover': {
+                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                            borderColor: 'rgba(0, 0, 0, 0.24)'
+                          }
+                        }}
+                      >
+                        {action.text}
+                      </Button>
+                    ))}
+                  </Stack>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Container>
+        </Box>
+      </ThemeProvider>
+    </CacheProvider>
+  );
+};
+
+export default ParentDashboard;
+
+
+=== File: src/store/authStore.js ===
+
+// This file is deprecated. Auth functionality has moved to hooks/useAuth.js
+export { useAuth, AuthProvider } from '../hooks/useAuth';
+
+
+=== File: src/utils/navigation.js ===
+
+export const getCurrentLanguage = () => {
+  const path = window.location.pathname;
+  const match = path.match(/^\/(ar|en|fr)\//);
+  return match ? match[1] : 'ar';
+};
+
+export const navigateByRole = (navigate, role) => {
+  const lang = getCurrentLanguage();
+  switch (role.toLowerCase()) {
+    case 'admin':
+      navigate(`/${lang}/admin/dashboard`);
+      break;
+    case 'teacher': 
+      navigate(`/${lang}/teacher/dashboard`);
+      break;
+    case 'parent':
+      navigate(`/${lang}/parent/dashboard`);
+      break;
+    case 'student':
+      navigate(`/${lang}/student/dashboard`);
+      break;
+    default:
+      console.error('Unknown role:', role);
+      navigate(`/${lang}/auth/login`);
+      break;
+  }
+};
+
+export const isAuthorizedForRoute = (user, path) => {
+  if (!user) return false;
+  
+  // Remove language prefix for role checking
+  const pathWithoutLang = path.replace(/^\/(ar|en|fr)\//, '/');
+  
+  if (pathWithoutLang.startsWith('/admin') && user.role !== 'admin') return false;
+  if (pathWithoutLang.startsWith('/teacher') && user.role !== 'teacher') return false;
+  if (pathWithoutLang.startsWith('/parent') && user.role !== 'parent') return false;
+  if (pathWithoutLang.startsWith('/student') && user.role !== 'student') return false;
+  
+  return true;
+};
+
+
+=== File: src/components/layout/Navbar.jsx ===
+
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import {
+  AppBar,
+  Box,
+  Toolbar,
+  IconButton,
+  Typography,
+  Menu,
+  MenuItem,
+  Avatar,
+  Button,
+  Divider,
+  ListItemIcon,
+  Select
+} from '@mui/material';
+import {
+  AccountCircle as AccountIcon,
+  Settings as SettingsIcon,
+  Logout as LogoutIcon,
+  Language as LanguageIcon
+} from '@mui/icons-material';
+import { useAuth } from '../../store/authStore';
+import { getCurrentLanguage } from '../../utils/navigation';
+
+const Navbar = () => {
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const { t, i18n } = useTranslation();
+  const [anchorEl, setAnchorEl] = React.useState(null);
+  const [languageAnchorEl, setLanguageAnchorEl] = React.useState(null);
+
+  const handleMenu = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLanguageMenu = (event) => {
+    setLanguageAnchorEl(event.currentTarget);
+  };
+
+  const handleLanguageClose = () => {
+    setLanguageAnchorEl(null);
+  };
+
+  const handleLanguageChange = (lang) => {
+    i18n.changeLanguage(lang);
+    handleLanguageClose();
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate(`/${getCurrentLanguage()}/auth/login`);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  const menuItems = [
+    {
+      icon: <AccountIcon fontSize="small" />,
+      text: t('nav.profile'),
+      action: () => navigate(`/${getCurrentLanguage()}/${user?.role || 'student'}/profile`)
+    }
+  ];
+
+  return (
+    <AppBar
+      position="fixed"
+      elevation={0}
+      sx={{
+        backgroundColor: 'rgba(30, 41, 59, 0.95)',
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        borderRadius: 0
+      }}
+    >
+      <Toolbar sx={{ justifyContent: 'space-between' }}>
+        {/* Logo/Brand */}
+        <Box
+          component="img"
+          src="/images/logo.jpg"
+          alt="Logo"
+          sx={{
+            width: 40,
+            height: 40,
+            cursor: 'pointer',
+            borderRadius: '12px', // Squircle effect
+            transition: 'transform 0.2s ease-in-out',
+            '&:hover': {
+              transform: 'scale(1.05)'
+            }
+          }}
+          onClick={() => navigate(`/${getCurrentLanguage()}`)}
+        />
+
+        {/* Right Section */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          {/* Language Switcher */}
+          <IconButton
+            onClick={handleLanguageMenu}
+            size="large"
+            aria-label={t('nav.language')}
+            sx={{
+              color: 'rgba(148, 163, 184, 0.8)',
+              transition: 'all 0.2s ease-in-out',
+              '&:hover': {
+                color: '#00FFA3',
+                transform: 'translateY(-2px)',
+                backgroundColor: 'rgba(0, 255, 163, 0.08)'
+              }
+            }}
+          >
+            <LanguageIcon />
+          </IconButton>
+          <Menu
+            anchorEl={languageAnchorEl}
+            open={Boolean(languageAnchorEl)}
+            onClose={handleLanguageClose}
+            PaperProps={{
+              elevation: 0,
+              sx: {
+                minWidth: 120,
+                backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                mt: 1.5,
+                borderRadius: '12px',
+                backdropFilter: 'blur(10px)',
+                '& .MuiMenuItem-root': {
+                  color: 'rgba(148, 163, 184, 0.8)',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: 'rgba(0, 255, 163, 0.08)',
+                    color: '#00FFA3',
+                    transform: 'translateX(5px)'
+                  }
+                }
+              }
+            }}
+          >
+            <MenuItem onClick={() => handleLanguageChange('ar')} selected={i18n.language === 'ar'}>
+              العربية
+            </MenuItem>
+            <MenuItem onClick={() => handleLanguageChange('en')} selected={i18n.language === 'en'}>
+              English
+            </MenuItem>
+            <MenuItem onClick={() => handleLanguageChange('fr')} selected={i18n.language === 'fr'}>
+              Français
+            </MenuItem>
+          </Menu>
+
+          {/* Profile Menu */}
+          <Box sx={{ position: 'relative' }}>
+            <IconButton
+              onClick={handleMenu}
+              size="small"
+              aria-label={t('nav.openUserMenu')}
+              sx={{
+                ml: 1,
+                transition: 'all 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <Avatar
+                sx={{
+                  width: 36,
+                  height: 36,
+                  backgroundColor: 'rgba(0, 255, 163, 0.1)',
+                  color: '#00FFA3',
+                  border: '2px solid #00FFA3',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  fontFamily: '"Plus Jakarta Sans", sans-serif'
+                }}
+              >
+                {user?.displayName?.charAt(0) || t('nav.defaultUserInitial')}
+              </Avatar>
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleClose}
+              onClick={handleClose}
+              PaperProps={{
+                elevation: 0,
+                sx: {
+                  minWidth: 220,
+                  backgroundColor: 'rgba(30, 41, 59, 0.95)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  mt: 1.5,
+                  borderRadius: '12px',
+                  backdropFilter: 'blur(10px)',
+                  '& .MuiMenuItem-root': {
+                    px: 2,
+                    py: 1.5,
+                    gap: 1.5,
+                    color: 'rgba(148, 163, 184, 0.8)',
+                    transition: 'all 0.2s ease-in-out',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 255, 163, 0.08)',
+                      color: '#00FFA3',
+                      transform: 'translateX(5px)',
+                      '& .MuiListItemIcon-root': {
+                        color: '#00FFA3'
+                      }
+                    }
+                  }
+                }
+              }}
+              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+              <Box sx={{ px: 2, py: 1.5 }}>
+                <Typography 
+                  variant="subtitle2" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: '#fff',
+                    fontFamily: '"Plus Jakarta Sans", sans-serif'
+                  }}
+                >
+                  {user?.displayName || t('nav.defaultUserName')}
+                </Typography>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: 'rgba(148, 163, 184, 0.8)',
+                    fontFamily: '"Plus Jakarta Sans", sans-serif'
+                  }}
+                >
+                  {user?.email}
+                </Typography>
+              </Box>
+              <Divider sx={{ my: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+              {menuItems.map((item, index) => (
+                <MenuItem
+                  key={index}
+                  onClick={item.action}
+                  sx={{
+                    borderRadius: 0 // Remove corner rounding for menu items
+                  }}
+                >
+                  <ListItemIcon sx={{ color: '#666' }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  {item.text}
+                </MenuItem>
+              ))}
+              <Divider sx={{ my: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }} />
+              <MenuItem
+                onClick={handleLogout}
+                sx={{
+                  color: '#FCA5A5 !important',
+                  '&:hover': {
+                    backgroundColor: 'rgba(239, 68, 68, 0.08) !important',
+                    color: '#EF4444 !important',
+                    '& .MuiListItemIcon-root': {
+                      color: '#EF4444 !important'
+                    }
+                  }
+                }}
+              >
+                <ListItemIcon sx={{ color: '#FCA5A5' }}>
+                  <LogoutIcon fontSize="small" />
+                </ListItemIcon>
+                {t('nav.logout')}
+              </MenuItem>
+            </Menu>
+          </Box>
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+};
+
+export default Navbar;
+
+
+=== File: src/api/auth.js ===
+
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { auth, db } from './config';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
+class AuthService {
+  async login(email, password) {
+    try {
+      const { user } = await signInWithEmailAndPassword(auth, email, password);
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      
+      if (!userDoc.exists()) {
+        throw new Error('User profile not found');
+      }
+
+      const userData = userDoc.data();
+      const token = await user.getIdToken();
+      
+      const authData = {
+        token,
+        user: {
+          id: user.uid,
+          email: user.email,
+          ...userData
+        }
+      };
+
+      localStorage.setItem('token', authData.token);
+      localStorage.setItem('user', JSON.stringify(authData.user));
+      
+      return authData;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  }
+
+  async verifyAdminRole(userId) {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (!userDoc.exists()) {
+        throw new Error('User not found');
+      }
+
+      const userData = userDoc.data();
+      if (userData.role !== 'admin') {
+        throw new Error('User is not an admin');
+      }
+
+      return userData;
+    } catch (error) {
+      console.error('Admin verification error:', error);
+      throw error;
+    }
+  }
+
+  async register(userData) {
+    try {
+      // Create new user
+      const { user } = await createUserWithEmailAndPassword(auth, userData.email, userData.password);
+      
+      // Create user document in Firestore
+      await setDoc(doc(db, 'users', user.uid), {
+        email: userData.email,
+        displayName: userData.displayName,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        phoneNumber: userData.phoneNumber,
+        isNewUser: true,
+        createdAt: new Date().toISOString()
+      });
+
+      const token = await user.getIdToken();
+      const authData = {
+        token,
+        user: {
+          id: user.uid,
+          email: userData.email,
+          displayName: userData.displayName,
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          phoneNumber: userData.phoneNumber,
+          isNewUser: true
+        }
+      };
+
+      localStorage.setItem('token', authData.token);
+      localStorage.setItem('user', JSON.stringify(authData.user));
+      
+      return authData;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  }
+
+  async logout() {
+    try {
+      await signOut(auth);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  }
+
+  getCurrentUser() {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  }
+
+  isAuthenticated() {
+    return !!localStorage.getItem('token') && !!auth.currentUser;
+  }
+
+  onAuthStateChanged(callback) {
+    return auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const token = await user.getIdToken();
+          callback({
+            token,
+            user: {
+              id: user.uid,
+              email: user.email,
+              ...userData
+            }
+          });
+        } else {
+          callback(null);
+        }
+      } else {
+        callback(null);
+      }
+    });
+  }
+}
+
+export default new AuthService();

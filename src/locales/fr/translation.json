@@ -94,6 +94,36 @@
   "dashboard": {
     "title": "Tableau de bord",
     "welcome": "Bienvenue, {{name}}! 👋",
+    "children": "Mes enfants",
+    "attendance": "Présence",
+    "assignments": "Devoirs",
+    "overall": "Global",
+    "noChildren": "Aucun enfant trouvé",
+    "upcomingAssignments": "Devoirs à venir",
+    "noAssignments": "Aucun devoir à venir",
+    "parent": {
+      "title": "Tableau de bord parent",
+      "children": {
+        "performance": "Performance de l'élève",
+        "addChild": "Ajouter un enfant",
+        "noChildren": "Aucun enfant n'a encore été ajouté"
+      },
+      "stats": {
+        "attendance": "Taux de présence",
+        "assignments": "Devoirs complétés",
+        "performance": "Performance globale"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "noNotifications": "Aucune nouvelle notification",
+        "types": {
+          "assignment": "Nouveau devoir",
+          "grade": "Nouvelle note",
+          "absence": "Absence enregistrée",
+          "liveClass": "Cours en direct"
+        }
+      }
+    },
     "welcomeSubtitle": "Suivez vos progrès et gérez votre parcours d'apprentissage",
     "selectTeacherForSchedule": "Sélectionnez un enseignant pour voir son emploi du temps",
     "teacher": {

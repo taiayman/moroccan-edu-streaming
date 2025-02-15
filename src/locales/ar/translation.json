@@ -163,6 +163,36 @@
   "dashboard": {
     "title": "لوحة التحكم",
     "welcome": "مرحباً، {{name}}! 👋",
+    "children": "أطفالي",
+    "attendance": "الحضور",
+    "assignments": "الواجبات",
+    "overall": "الإجمالي",
+    "noChildren": "لم يتم العثور على أطفال",
+    "upcomingAssignments": "الواجبات القادمة",
+    "noAssignments": "لا توجد واجبات قادمة",
+    "parent": {
+      "title": "لوحة تحكم ولي الأمر",
+      "children": {
+        "performance": "أداء الطالب",
+        "addChild": "إضافة طفل",
+        "noChildren": "لم تتم إضافة أي أطفال بعد"
+      },
+      "stats": {
+        "attendance": "معدل الحضور",
+        "assignments": "إكمال الواجبات",
+        "performance": "الأداء العام"
+      },
+      "notifications": {
+        "title": "الإشعارات",
+        "noNotifications": "لا توجد إشعارات جديدة",
+        "types": {
+          "assignment": "واجب جديد",
+          "grade": "درجة جديدة",
+          "absence": "تسجيل غياب",
+          "liveClass": "فصل مباشر"
+        }
+      }
+    },
     "welcomeSubtitle": "تتبع تقدمك وإدارة رحلتك التعليمية",
     "selectTeacherForSchedule": "اختر معلماً لعرض جدوله الزمني",
     "teacher": {

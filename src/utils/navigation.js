@@ -10,7 +10,7 @@ export const navigateByRole = (navigate, role) => {
     case 'admin':
       navigate(`/${lang}/admin/dashboard`);
       break;
-    case 'teacher':
+    case 'teacher': 
       navigate(`/${lang}/teacher/dashboard`);
       break;
     case 'parent':

@@ -150,4 +150,58 @@ input[type="text"] {
 input[type="text"]:focus {
     border-color: #4F46E5;
     box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
+}
+
+/* Improved hand raise UI */
+.hand-raise-item {
+  background: rgba(234, 179, 8, 0.15);
+  border-left: 4px solid #eab308;
+  margin: 8px 0;
+  padding: 12px;
+  border-radius: 6px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(234, 179, 8, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+}
+
+.pulse {
+  animation: pulse 1.5s infinite;
+}
+
+/* Participant list improvements */
+.participant-card {
+  padding: 12px;
+  margin: 8px 0;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.participant-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.participant-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+}
+
+/* Button states */
+.control-btn.active {
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+}
+
+.control-btn.hand.active {
+  background: #eab308;
+  box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.3);
 } 

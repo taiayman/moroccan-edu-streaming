@@ -17,6 +17,7 @@ export const useStream = (roomId = null) => {
   const [hmsStore, setHMSStore] = useState(null);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [raisedHands, setRaisedHands] = useState(new Set());
 
   // Create a new streaming room
   const createRoom = useCallback(async (courseId, title) => {
@@ -81,24 +82,23 @@ export const useStream = (roomId = null) => {
     }
   }, []);
 
-  // Get current participants
-  const getParticipants = useCallback(() => {
-    if (!hmsStore) return [];
-    return hmsStore.getState(selectPeers);
+  // Handle hand raise
+  const raiseHand = useCallback(async (peerId) => {
+    try {
+      if (hmsStore) {
+        await hmsStore.actions.sendBroadcastMessage({
+          type: 'HAND_RAISE',
+          peerId,
+          raised: true
+        });
+        setRaisedHands(prev => new Set([...prev, peerId]));
+      }
+    } catch (err) {
+      setError(err.message);
+    }
   }, [hmsStore]);
 
-  // Get local peer
-  const getLocalPeer = useCallback(() => {
-    if (!hmsStore) return null;
-    return hmsStore.getState(selectLocalPeer);
-  }, [hmsStore]);
-
-  // Check if connected to room
-  const isConnected = useCallback(() => {
-    if (!hmsStore) return false;
-    return hmsStore.getState(selectIsConnectedToRoom);
-  }, [hmsStore]);
-
+  // Handle hand lower
   // Get room state
   const getRoomState = useCallback(() => {
     if (!hmsStore) return null;

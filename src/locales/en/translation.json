@@ -201,6 +201,36 @@
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome, {{name}}! 👋",
+    "children": "My Children",
+    "attendance": "Attendance",
+    "assignments": "Assignments",
+    "overall": "Overall",
+    "noChildren": "No children found",
+    "upcomingAssignments": "Upcoming Assignments",
+    "noAssignments": "No upcoming assignments",
+    "parent": {
+      "title": "Parent Dashboard",
+      "children": {
+        "performance": "Student Performance",
+        "addChild": "Add Child",
+        "noChildren": "No children added yet"
+      },
+      "stats": {
+        "attendance": "Attendance Rate",
+        "assignments": "Assignments Completion",
+        "performance": "Overall Performance"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "noNotifications": "No new notifications",
+        "types": {
+          "assignment": "New Assignment",
+          "grade": "New Grade",
+          "absence": "Absence Recorded",
+          "liveClass": "Live Class"
+        }
+      }
+    },
     "welcomeSubtitle": "Track your progress and manage your learning journey",
     "selectTeacherForSchedule": "Select a teacher to view their schedule",
     "teacher": {
