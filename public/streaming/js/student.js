@@ -596,13 +596,23 @@ function setupHandRaiseListeners() {
 function updateScreenShareButton(isAvailable) {
   const btn = document.getElementById('toggleScreenShareBtn');
   if (btn) {
+    // Check if it's a mobile device
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isAvailable && !isMobile) {
+    // Check specifically for Chrome on Android
+    const isChromeOnAndroid = /Android.*Chrome/.test(navigator.userAgent);
+    
+    if (isMobile || isChromeOnAndroid) {
+      // Hide screen share button on mobile devices
+      btn.style.display = 'none';
+      btn.title = isChromeOnAndroid 
+        ? 'Screen sharing is not supported on Chrome mobile' 
+        : 'Screen sharing is not available on mobile devices';
+    } else if (isAvailable) {
       btn.style.display = 'flex';
       btn.title = 'Share Screen';
     } else {
       btn.style.display = 'none';
-      btn.title = isMobile ? 'Screen sharing not available on mobile' : 'Screen sharing not available';
+      btn.title = 'Screen sharing is not available';
     }
   }
 }
@@ -614,10 +624,17 @@ async function toggleScreenShare() {
       throw new Error('Screen sharing is not available on this device or browser');
     }
 
-    // Check if we're on mobile
+    // Check if it's a mobile device
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-      throw new Error('Screen sharing is not supported on mobile devices');
+    // Check specifically for Chrome on Android
+    const isChromeOnAndroid = /Android.*Chrome/.test(navigator.userAgent);
+    
+    if (isMobile || isChromeOnAndroid) {
+      if (isChromeOnAndroid) {
+        throw new Error('Screen sharing is not supported on Chrome mobile');
+      } else {
+        throw new Error('Screen sharing is not supported on mobile devices');
+      }
     }
 
     // Check current screen sharing state
@@ -631,6 +648,12 @@ async function toggleScreenShare() {
         layout: {
           preset: 'presentationLarge'
         }
+      }).catch(error => {
+        // Handle specific screen sharing errors
+        if (error.message?.includes('Permission denied') || error.message?.includes('Permission not granted')) {
+          throw new Error('Screen sharing permission was denied. Please allow screen sharing and try again.');
+        }
+        throw error;
       });
       updateControlState('toggleScreenShareBtn', true);
     } else {
@@ -639,7 +662,7 @@ async function toggleScreenShare() {
     }
   } catch (error) {
     console.error('Screen share error:', error);
-    showError('Failed to toggle screen share: ' + error.message);
+    showError('Failed to share screen: ' + error.message);
     updateControlState('toggleScreenShareBtn', false);
   }
 }
