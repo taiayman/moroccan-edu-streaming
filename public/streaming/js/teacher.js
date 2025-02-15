@@ -401,7 +401,7 @@ function setupControlListeners() {
 function updateScreenShareButton(isAvailable) {
   const btn = document.getElementById('toggleScreenShareBtn');
   if (btn) {
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
     if (isAvailable && !isMobile) {
       btn.style.display = 'flex';
       btn.title = 'Share Screen';
@@ -411,6 +411,13 @@ function updateScreenShareButton(isAvailable) {
     }
   }
 }
+
+// Add resize listener to handle screen share button visibility
+window.addEventListener('resize', () => {
+  if (screenShareAvailable) {
+    updateScreenShareButton(true);
+  }
+});
 
 async function toggleAudio() {
   try {

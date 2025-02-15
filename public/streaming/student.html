@@ -87,7 +87,7 @@
             height: 100% !important;
             background-color: var(--surface) !important;
             border-radius: 0.5rem !important;
-            margin: 0.5rem !important;
+            margin: 0 !important;
             overflow: hidden !important;
         }
 
@@ -346,11 +346,35 @@
         }
 
         @media (max-width: 768px) {
+            .classroom-container {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+            }
+
+            #videoContainer {
+                border-radius: 0 !important;
+                margin: 0 !important;
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
             .controls-container {
                 right: 0;
                 left: 0;
                 transform: none;
                 border-radius: 0;
+                padding: 2rem;
+                position: fixed;
+                bottom: 0;
+                background: rgba(15, 23, 42, 0.95);
+            }
+
+            #toggleScreenShareBtn {
+                display: none !important;
             }
         }
     </style>

@@ -90,7 +90,7 @@
             height: 100% !important;
             background-color: var(--surface) !important;
             border-radius: 0.5rem !important;
-            margin: 0.5rem !important;
+            margin: 0 !important;
             overflow: hidden !important;
         }
 
@@ -413,11 +413,24 @@
                 transform: translateX(0);
             }
 
+            .main-content {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+            }
+
+            #videoContainer {
+                border-radius: 0 !important;
+                margin: 0 !important;
+            }
+
             .controls-container {
                 right: 0;
                 left: 0;
                 transform: none;
                 border-radius: 0;
+                padding: 2rem;
             }
 
             .toggle-sidebar {
@@ -425,6 +438,10 @@
                 right: 1rem;
                 top: 1rem;
                 z-index: 30;
+            }
+
+            #toggleScreenShareBtn {
+                display: none !important;
             }
         }
     </style>
