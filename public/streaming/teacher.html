@@ -120,7 +120,7 @@
 
         .controls-container {
             position: fixed;
-            bottom: 1rem;
+            bottom: 0rem;
             left: 50%;
             transform: translateX(-50%);
             padding: 1rem 2rem;
@@ -473,6 +473,9 @@
             <div class="sidebar-header">
                 <h3>Participants</h3>
                 <span id="participantCount">0 Participants</span>
+                <button class="control-btn" onclick="toggleSidebar()" style="width: 40px; height: 40px;">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
             <div id="handRaises" class="hand-raises">

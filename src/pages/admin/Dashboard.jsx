@@ -1,5 +1,10 @@
 // src/pages/admin/Dashboard.jsx
 import React, { useState, useEffect } from 'react';
+import { CacheProvider } from '@emotion/react';
+import createCache from '@emotion/cache';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+import rtlPlugin from 'stylis-plugin-rtl';
+import { prefixer } from 'stylis';
 import {
   Box,
   Container,
@@ -32,8 +37,10 @@ import {
   Divider,
   Avatar
 } from '@mui/material';
-import { Edit as EditIcon, Delete as DeleteIcon, ArrowBack as ArrowBackIcon, Timer as TimerIcon, People as PeopleIcon, Assignment as AssignmentIcon, LiveTv as LiveTvIcon, History as HistoryIcon, Add as AddIcon, Menu as MenuIcon, Close as CloseIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Delete as DeleteIcon, ArrowBack as ArrowBackIcon, Timer as TimerIcon, People as PeopleIcon, Assignment as AssignmentIcon, LiveTv as LiveTvIcon, History as HistoryIcon, Add as AddIcon, Menu as MenuIcon, Close as CloseIcon, Stars as StarsIcon, WorkspacePremium as PremiumIcon } from '@mui/icons-material';
 import { motion } from 'framer-motion';
+import { collection, getDocs, query, orderBy, doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { db, COLLECTIONS } from '../../api/config';
 import {
   getAllUsers,
   updateUser,
@@ -45,14 +52,14 @@ import {
   getLiveClasses,
   moderateLiveClass,
 } from '../../api/admin';
+import { toggleProStatus } from '../../api/users';
 import { endDailyRoom } from '../../api/teacher';
-import { collection, getDocs, query, orderBy, doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
-import { db, COLLECTIONS } from '../../api/config';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-import rtlPlugin from 'stylis-plugin-rtl';
-import { CacheProvider } from '@emotion/react';
-import createCache from '@emotion/cache';
-import { prefixer } from 'stylis';
+
+const truncateEmail = (email) => {
+  const [username, domain] = email.split('@');
+  if (!domain) return email;
+  return `${username}@...`;
+};
 
 // Add this after imports
 const fontFamily = "'Noto Kufi Arabic', sans-serif";
@@ -94,7 +101,7 @@ const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: `
         @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
-        
+
         body {
           font-family: ${fontFamily};
         }
@@ -225,6 +232,22 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleProToggle = async (userId) => {
+    try {
+      const updatedUser = await toggleProStatus(userId);
+      // If the user exists in the system, trigger an auth context update
+      if (updatedUser) {
+        // Find all instances of this user in our current users list and update them
+        setUsers(users.map(user =>
+          user.id === userId ? { ...user, ...updatedUser } : user
+        ));
+      }
+    } catch (err) {
+      console.error(err);
+      setError('Failed to toggle pro status.');
+    }
+  };
+
   const handleDelete = async (type, id) => {
     try {
       if (type === 'user') {
@@ -282,8 +305,8 @@ const AdminDashboard = () => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Avatar 
-            sx={{ 
+          <Avatar
+            sx={{
               bgcolor: '#00FFA3',
               color: '#0F172A',
               width: 50,
@@ -298,10 +321,25 @@ const AdminDashboard = () => {
               {user.displayName}
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-              {user.email}
+              {truncateEmail(user.email)}
             </Typography>
           </Box>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+            {user.role === 'student' && (
+              <IconButton
+                onClick={() => handleProToggle(user.id)}
+                sx={{
+                  color: user.isPro ? '#FFD700' : 'rgba(255,255,255,0.5)',
+                  backgroundColor: user.isPro ? 'rgba(255,215,0,0.1)' : 'rgba(255,255,255,0.1)',
+                  '&:hover': {
+                    backgroundColor: user.isPro ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.2)'
+                  },
+                  '&:active': { transform: 'scale(0.95)' }
+                }}
+              >
+                <PremiumIcon fontSize="small" />
+              </IconButton>
+            )}
             <IconButton
               onClick={() => handleEditOpen('user', user)}
               sx={{
@@ -310,8 +348,8 @@ const AdminDashboard = () => {
                 '&:active': { transform: 'scale(0.95)' }
               }}
             >
-                  <EditIcon fontSize="small" />
-                </IconButton>
+              <EditIcon fontSize="small" />
+            </IconButton>
             <IconButton
               onClick={() => handleDelete('user', user.id)}
               sx={{
@@ -320,8 +358,8 @@ const AdminDashboard = () => {
                 '&:active': { transform: 'scale(0.95)' }
               }}
             >
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
           </Box>
         </Box>
     </Paper>
@@ -335,11 +373,11 @@ const AdminDashboard = () => {
       >
         {/* Teachers Section */}
         <Box sx={{ mb: 4 }}>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              color: '#00FFA3', 
-              mb: 2, 
+          <Typography
+            variant="h6"
+            sx={{
+              color: '#00FFA3',
+              mb: 2,
               fontWeight: 500,
               px: 1
             }}
@@ -350,9 +388,9 @@ const AdminDashboard = () => {
             <UserCard key={user.id} user={user} />
           ))}
           {groupedUsers.teacher.length === 0 && (
-            <Typography 
-              sx={{ 
-                textAlign: 'center', 
+            <Typography
+              sx={{
+                textAlign: 'center',
                 color: 'rgba(255,255,255,0.7)',
                 py: 2
               }}
@@ -364,11 +402,11 @@ const AdminDashboard = () => {
 
         {/* Students Section */}
         <Box sx={{ mb: 4 }}>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              color: '#00FFA3', 
-              mb: 2, 
+          <Typography
+            variant="h6"
+            sx={{
+              color: '#00FFA3',
+              mb: 2,
               fontWeight: 500,
               px: 1
             }}
@@ -379,9 +417,9 @@ const AdminDashboard = () => {
             <UserCard key={user.id} user={user} />
           ))}
           {groupedUsers.student.length === 0 && (
-            <Typography 
-              sx={{ 
-                textAlign: 'center', 
+            <Typography
+              sx={{
+                textAlign: 'center',
                 color: 'rgba(255,255,255,0.7)',
                 py: 2
               }}
@@ -393,11 +431,11 @@ const AdminDashboard = () => {
 
         {/* Parents Section */}
         <Box>
-          <Typography 
-            variant="h6" 
-            sx={{ 
-              color: '#00FFA3', 
-              mb: 2, 
+          <Typography
+            variant="h6"
+            sx={{
+              color: '#00FFA3',
+              mb: 2,
               fontWeight: 500,
               px: 1
             }}
@@ -408,9 +446,9 @@ const AdminDashboard = () => {
             <UserCard key={user.id} user={user} />
           ))}
           {groupedUsers.parent.length === 0 && (
-            <Typography 
-              sx={{ 
-                textAlign: 'center', 
+            <Typography
+              sx={{
+                textAlign: 'center',
                 color: 'rgba(255,255,255,0.7)',
                 py: 2
               }}
@@ -496,9 +534,9 @@ const AdminDashboard = () => {
         </Paper>
       ))}
       {assignments.length === 0 && (
-        <Box 
-          sx={{ 
-            textAlign: 'center', 
+        <Box
+          sx={{
+            textAlign: 'center',
             py: 8,
             backgroundColor: 'rgba(26,32,44,0.5)',
             borderRadius: 2,
@@ -563,9 +601,9 @@ const AdminDashboard = () => {
                   },
                 }}
               />
-              <Typography 
-                variant="caption" 
-                sx={{ 
+              <Typography
+                variant="caption"
+                sx={{
                   color: '#4CAF50',
                   textTransform: 'uppercase',
                   fontWeight: 600,
@@ -603,9 +641,9 @@ const AdminDashboard = () => {
               </Typography>
             </Box>
             {liveClass.description && (
-              <Typography 
-                variant="body2" 
-                sx={{ 
+              <Typography
+                variant="body2"
+                sx={{
                   color: 'rgba(255,255,255,0.7)',
                   backgroundColor: 'rgba(255,255,255,0.05)',
                   p: 1.5,
@@ -657,9 +695,9 @@ const AdminDashboard = () => {
         </Paper>
       ))}
       {liveClasses.filter(liveClass => liveClass.status === 'active').length === 0 && (
-        <Box 
-          sx={{ 
-            textAlign: 'center', 
+        <Box
+          sx={{
+            textAlign: 'center',
             py: 8,
             backgroundColor: 'rgba(26,32,44,0.5)',
             borderRadius: 2,
@@ -727,9 +765,9 @@ const AdminDashboard = () => {
         </Paper>
       ))}
       {activityLogs.length === 0 && (
-        <Box 
-          sx={{ 
-            textAlign: 'center', 
+        <Box
+          sx={{
+            textAlign: 'center',
             py: 8,
             backgroundColor: 'rgba(26,32,44,0.5)',
             borderRadius: 2,
@@ -812,7 +850,7 @@ const AdminDashboard = () => {
           <style>
             {`
               @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
-              
+
               * {
                 font-family: ${fontFamily};
               }
@@ -853,8 +891,8 @@ const AdminDashboard = () => {
                   <MenuIcon />
           </IconButton>
                 <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
-                  {tabIndex === 0 ? 'المستخدمين' : 
-                   tabIndex === 1 ? 'الواجبات' : 
+                  {tabIndex === 0 ? 'المستخدمين' :
+                   tabIndex === 1 ? 'الواجبات' :
                    tabIndex === 2 ? 'الحصص المباشرة' : 'النشاطات'}
           </Typography>
                 {tabIndex === 0 && (
@@ -922,10 +960,10 @@ const AdminDashboard = () => {
                       <ListItemIcon sx={{ color: tabIndex === index ? '#00FFA3' : '#fff' }}>
                         {item.icon}
                       </ListItemIcon>
-                      <ListItemText 
-                        primary={item.text} 
-                        sx={{ 
-                          '& .MuiListItemText-primary': { 
+                      <ListItemText
+                        primary={item.text}
+                        sx={{
+                          '& .MuiListItemText-primary': {
                             color: tabIndex === index ? '#00FFA3' : '#fff'
                           }
                         }}
@@ -937,19 +975,19 @@ const AdminDashboard = () => {
             </SwipeableDrawer>
 
             {/* Main Content */}
-            <Container 
-              maxWidth="xl" 
-              sx={{ 
+            <Container
+              maxWidth="xl"
+              sx={{
                 py: 2,
                 px: { xs: 1, sm: 2 }
               }}
             >
               {error && (
-                <Alert 
-                  severity="error" 
-                  sx={{ 
+                <Alert
+                  severity="error"
+                  sx={{
                     mb: 2,
-                    backgroundColor: 'rgba(239,68,68,0.1)', 
+                    backgroundColor: 'rgba(239,68,68,0.1)',
                     color: '#ef4444',
                     border: '1px solid #ef4444'
                   }}
@@ -963,10 +1001,10 @@ const AdminDashboard = () => {
             {renderBottomNav()}
 
             {/* Update dialog titles and buttons */}
-            <Dialog 
-              open={editDialogOpen} 
+            <Dialog
+              open={editDialogOpen}
               onClose={() => setEditDialogOpen(false)}
-              fullWidth 
+              fullWidth
               maxWidth="sm"
               PaperProps={{
                 sx: {
@@ -1005,10 +1043,10 @@ const AdminDashboard = () => {
                           },
                         },
                       }}
-                      InputLabelProps={{ 
+                      InputLabelProps={{
                         style: { color: 'rgba(255,255,255,0.7)' }
                       }}
-                      InputProps={{ 
+                      InputProps={{
                         style: { color: '#fff' }
                       }}
               />
@@ -1016,20 +1054,20 @@ const AdminDashboard = () => {
           })}
         </DialogContent>
               <DialogActions sx={{ p: 3 }}>
-                <Button 
-                  onClick={() => setEditDialogOpen(false)} 
-                  sx={{ 
+                <Button
+                  onClick={() => setEditDialogOpen(false)}
+                  sx={{
                     color: '#fff',
                     '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
                   }}
                 >
                   إلغاء
                 </Button>
-                <Button 
-                  onClick={handleEditSave} 
-                  variant="contained" 
-                  sx={{ 
-                    backgroundColor: '#00FFA3', 
+                <Button
+                  onClick={handleEditSave}
+                  variant="contained"
+                  sx={{
+                    backgroundColor: '#00FFA3',
                     color: '#0F172A',
                     '&:hover': { backgroundColor: '#00cc82' }
                   }}
@@ -1039,10 +1077,10 @@ const AdminDashboard = () => {
               </DialogActions>
             </Dialog>
 
-            <Dialog 
-              open={addUserDialogOpen} 
+            <Dialog
+              open={addUserDialogOpen}
               onClose={() => setAddUserDialogOpen(false)}
-              fullWidth 
+              fullWidth
               maxWidth="sm"
               PaperProps={{
                 sx: {
@@ -1078,10 +1116,10 @@ const AdminDashboard = () => {
                     },
                     fontFamily: fontFamily
                   }}
-                  InputLabelProps={{ 
+                  InputLabelProps={{
                     style: { color: 'rgba(255,255,255,0.7)', fontFamily: fontFamily }
                   }}
-                  InputProps={{ 
+                  InputProps={{
                     style: { color: '#fff', fontFamily: fontFamily }
                   }}
                 />
@@ -1107,10 +1145,10 @@ const AdminDashboard = () => {
                     },
                     fontFamily: fontFamily
                   }}
-                  InputLabelProps={{ 
+                  InputLabelProps={{
                     style: { color: 'rgba(255,255,255,0.7)', fontFamily: fontFamily }
                   }}
-                  InputProps={{ 
+                  InputProps={{
                     style: { color: '#fff', fontFamily: fontFamily }
                   }}
                 />
@@ -1136,10 +1174,10 @@ const AdminDashboard = () => {
                     },
                     fontFamily: fontFamily
                   }}
-                  InputLabelProps={{ 
+                  InputLabelProps={{
                     style: { color: 'rgba(255,255,255,0.7)', fontFamily: fontFamily }
                   }}
-                  InputProps={{ 
+                  InputProps={{
                     style: { color: '#fff', fontFamily: fontFamily }
                   }}
                 />
@@ -1168,10 +1206,10 @@ const AdminDashboard = () => {
                     },
                     fontFamily: fontFamily
                   }}
-                  InputLabelProps={{ 
+                  InputLabelProps={{
                     style: { color: 'rgba(255,255,255,0.7)', fontFamily: fontFamily }
                   }}
-                  InputProps={{ 
+                  InputProps={{
                     style: { color: '#fff', fontFamily: fontFamily }
                   }}
                 >
@@ -1182,20 +1220,20 @@ const AdminDashboard = () => {
                 </TextField>
               </DialogContent>
               <DialogActions sx={{ p: 3 }}>
-                <Button 
-                  onClick={() => setAddUserDialogOpen(false)} 
-                  sx={{ 
+                <Button
+                  onClick={() => setAddUserDialogOpen(false)}
+                  sx={{
                     color: '#fff',
                     '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' }
                   }}
                 >
                   إلغاء
           </Button>
-                <Button 
-                  onClick={handleAddUserSave} 
-                  variant="contained" 
-                  sx={{ 
-                    backgroundColor: '#00FFA3', 
+                <Button
+                  onClick={handleAddUserSave}
+                  variant="contained"
+                  sx={{
+                    backgroundColor: '#00FFA3',
                     color: '#0F172A',
                     '&:hover': { backgroundColor: '#00cc82' }
                   }}

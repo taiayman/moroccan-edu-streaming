@@ -22,6 +22,7 @@ import SchedulePage from './pages/student/SchedulePage';
 import StudentRegistration from './pages/student/StudentRegistration';
 import AssignmentDetails from './pages/student/AssignmentDetails';
 import StudentProfile from './pages/student/Profile';
+import FreeUserNotice from './pages/student/FreeUserNotice';
 
 // Teacher Components
 import TeacherDashboard from './pages/teacher/Dashboard';
@@ -133,6 +134,7 @@ const AppRoutes = () => {
           <Route path="schedule" element={<SchedulePage />} />
           <Route path="register" element={<StudentRegistration />} />
           <Route path="profile" element={<StudentProfile />} />
+          <Route path="free-notice" element={<FreeUserNotice />} />
         </Route>
 
         {/* Teacher Routes */}

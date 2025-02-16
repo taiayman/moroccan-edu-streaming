@@ -109,6 +109,24 @@ class AuthService {
     return user ? JSON.parse(user) : null;
   }
 
+  async refreshUserData(userId) {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const userData = {
+          ...userDoc.data(),
+          id: userId
+        };
+        localStorage.setItem('user', JSON.stringify(userData));
+        return userData;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      throw error;
+    }
+  }
+
   isAuthenticated() {
     return !!localStorage.getItem('token') && !!auth.currentUser;
   }

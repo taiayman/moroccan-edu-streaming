@@ -1,5 +1,38 @@
-import { doc, setDoc, getDoc, collection, getDocs } from 'firebase/firestore';
-import { db } from './config';
+import { doc, setDoc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { updateProfile } from 'firebase/auth';
+import { db, auth } from './config';
+
+import authService from './auth';
+
+export const toggleProStatus = async (userId) => {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+
+    const userRef = doc(db, 'users', userId);
+    const userDoc = await getDoc(userRef);
+
+    if (!userDoc.exists()) {
+      throw new Error('User not found');
+    }
+
+    const userData = userDoc.data();
+    const newProStatus = !userData.isPro;
+    
+    await updateDoc(userRef, {
+      isPro: newProStatus
+    });
+
+    // Refresh the user data in auth context and local storage
+    const updatedUserData = await authService.refreshUserData(userId);
+    return updatedUserData;
+    
+  } catch (error) {
+    console.error('Error toggling pro status:', error);
+    throw error;
+  }
+};
 
 export const createUserProfile = async (userId, userData) => {
   try {
@@ -14,13 +47,52 @@ export const createUserProfile = async (userId, userData) => {
       firstName: userData.firstName || 'User',
       lastName: userData.lastName || '',
       phoneNumber: userData.phoneNumber || '',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      isPro: false // Default to free account
     };
 
     await setDoc(doc(db, 'users', userId), safeUserData);
     return true;
   } catch (error) {
     console.error('Error creating user profile:', error);
+    throw error;
+  }
+};
+
+export const updateUserProfile = async (userId, updateData) => {
+  try {
+    if (!userId) {
+      throw new Error('User ID is required');
+    }
+    
+    if (!updateData || typeof updateData !== 'object') {
+      throw new Error('Invalid update data provided');
+    }
+
+    const safeUpdateData = {};
+    // Only allow specific fields to be updated
+    if ('displayName' in updateData) {
+      safeUpdateData.displayName = updateData.displayName;
+    }
+
+    if (Object.keys(safeUpdateData).length === 0) {
+      throw new Error('No valid fields to update');
+    }
+
+    // Update in Firestore
+    const userRef = doc(db, 'users', userId);
+    await updateDoc(userRef, safeUpdateData);
+
+    // Update Firebase Auth profile if displayName is provided
+    if (updateData.displayName && auth.currentUser) {
+      await updateProfile(auth.currentUser, {
+        displayName: updateData.displayName
+      });
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
     throw error;
   }
 };
@@ -62,12 +134,6 @@ export const verifyUserRole = async (userId, requestedRole) => {
   }
 };
 
-/**
- * Gather user-specific stats for the dashboard:
- * - Number of courses enrolled
- * - Overall progress average
- * - Number of upcoming assignments
- */
 export const getDashboardStats = async (userId) => {
   try {
     // 1) Get user enrollments

@@ -1,3 +1,5 @@
+import AuthNavbar from '../layout/AuthNavbar';
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
@@ -159,38 +161,19 @@ const RegisterForm = () => {
               }
             `}
           </style>
-          <Container 
-            maxWidth={false} 
-            sx={{
-              minHeight: '100vh',
-              display: 'flex',
-              flexDirection: 'column',
-              background: 'linear-gradient(145deg, #1a1f2c 0%, #2d3748 100%)',
-              position: 'relative',
-              px: 0
-            }}
-          >
-            {/* App Bar */}
-            <Paper
-              elevation={0}
-              sx={{
-                backgroundColor: 'rgba(26,32,44,0.95)',
-                backdropFilter: 'blur(10px)',
-                borderBottom: '1px solid rgba(255,255,255,0.1)',
-                position: 'sticky',
-                top: 0,
-                zIndex: 1000,
-                px: 2,
-                py: 1.5,
-                borderRadius: 0
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600, fontFamily }}>
-                  {t('auth.createAccount')}
-                </Typography>
-              </Box>
-            </Paper>
+          <Container
+           maxWidth={false}
+           sx={{
+             minHeight: '100vh',
+             display: 'flex',
+             flexDirection: 'column',
+             background: 'linear-gradient(145deg, #1a1f2c 0%, #2d3748 100%)',
+             position: 'relative',
+             px: 0,
+             pt: 8 // Add padding top to account for Navbar height
+           }}
+         >
+           <AuthNavbar />
 
             <Box
               component={motion.div}

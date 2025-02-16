@@ -39,6 +39,8 @@ import {
   getTeacherCalendarNotes
 } from '../../api/teacher';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { getCurrentLanguage } from '../../utils/navigation';
 
 const SchedulePage = () => {
   const theme = useTheme();
@@ -48,6 +50,15 @@ const SchedulePage = () => {
   const { t } = useTranslation();
   const [teachers, setTeachers] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const navigate = useNavigate();
+  const currentLang = getCurrentLanguage();
+
+  // Redirect to FreeUserNotice if user is not pro
+  useEffect(() => {
+    if (user && !user.isPro) {
+      navigate(`/${currentLang}/student/free-notice`);
+    }
+  }, [user, currentLang, navigate]);
   const [schedule, setSchedule] = useState([]);
   const [notes, setNotes] = useState({});
   const [loading, setLoading] = useState(true);

@@ -320,6 +320,13 @@ const StudentDashboard = () => {
   const currentLang = getCurrentLanguage();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // Redirect to FreeUserNotice if user is not pro
+  useEffect(() => {
+    if (user && !user.isPro) {
+      navigate(`/${currentLang}/student/free-notice`);
+    }
+  }, [user, currentLang, navigate]);
+
   // State declarations for real data
   const [upcomingAssignments, setUpcomingAssignments] = useState([]);
   const [teachers, setTeachers] = useState([]);

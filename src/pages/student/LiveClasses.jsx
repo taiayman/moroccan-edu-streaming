@@ -74,6 +74,14 @@ const LiveClasses = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [joiningClass, setJoiningClass] = useState(false);
+  const currentLang = getCurrentLanguage();
+
+  // Redirect to FreeUserNotice if user is not pro
+  useEffect(() => {
+    if (user && !user.isPro) {
+      navigate(`/${currentLang}/student/free-notice`);
+    }
+  }, [user, currentLang, navigate]);
 
   useEffect(() => {
     const fetchLiveClasses = async () => {

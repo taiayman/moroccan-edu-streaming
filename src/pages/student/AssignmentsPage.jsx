@@ -57,6 +57,14 @@ const AssignmentsPage = () => {
   const [teachers, setTeachers] = useState([]);
   const [selectedTeacher, setSelectedTeacher] = useState('');
   const [loading, setLoading] = useState(true);
+  const currentLang = getCurrentLanguage();
+
+  // Redirect to FreeUserNotice if user is not pro
+  useEffect(() => {
+    if (user && !user.isPro) {
+      navigate(`/${currentLang}/student/free-notice`);
+    }
+  }, [user, currentLang, navigate]);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedAssignment, setSelectedAssignment] = useState(null);
