@@ -24,7 +24,12 @@ import {
   CircularProgress,
   Stack,
   Alert,
-  Tooltip
+  Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow
 } from '@mui/material';
 import {
   CalendarToday as CalendarIcon,
@@ -311,6 +316,104 @@ const CalendarCard = ({ schedule }) => {
 };
 
 // =============================================================================
+// TimeTable Component
+// =============================================================================
+const TimeTable = () => {
+  const days = ['Lundi', 'mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+  const timeSlots = {
+    '19h-20h': {
+      'Lundi': { subject: 'Maths', type: 'Bac S' },
+      'mardi': { subject: 'Français', type: 'Bac L' },
+      'Mercredi': { subject: 'Arabe', type: 'Bac L' },
+      'Jeudi': { subject: 'Anglais', type: 'Bac S/L' },
+      'Vendredi': { subject: 'Français', type: 'Bac L' },
+      'Samedi': { subject: 'Pc', type: 'Bac S' },
+      'Dimanche': { subject: 'Anglais', type: 'Bac S/L' },
+    },
+    '20h-21h': {
+      'Lundi': { subject: 'Histoire géo', type: '' },
+      'mardi': { subject: 'Maths', type: 'Bac S' },
+      'Mercredi': { subject: 'Arabe', type: 'Bac L' },
+      'Jeudi': { subject: 'Histoire géo', type: 'Bac L' },
+      'Vendredi': { subject: 'Svt', type: 'Bac S' },
+      'Samedi': { subject: 'Svt', type: 'Bac S' },
+      'Dimanche': { subject: 'Pc', type: 'Bac S' },
+    },
+    '14h-15h': {
+      'Lundi': { subject: '', type: '' },
+      'mardi': { subject: '', type: '' },
+      'Mercredi': { subject: '', type: '' },
+      'Jeudi': { subject: '', type: '' },
+      'Vendredi': { subject: '', type: '' },
+      'Samedi': { subject: 'Philoso', type: 'Bac S/L' },
+      'Dimanche': { subject: '', type: '' },
+    },
+    '15h-16h': {
+      'Lundi': { subject: '', type: '' },
+      'mardi': { subject: '', type: '' },
+      'Mercredi': { subject: '', type: '' },
+      'Jeudi': { subject: '', type: '' },
+      'Vendredi': { subject: '', type: '' },
+      'Samedi': { subject: 'Philoso', type: 'Bac S/L' },
+      'Dimanche': { subject: '', type: '' },
+    },
+  };
+
+  return (
+    <Box sx={{ bgcolor: 'white', p: 2, borderRadius: 1, mb: 3 }}>
+      <Box sx={{ overflowX: 'auto' }}>
+        <Table size="small" sx={{ minWidth: 800 }}>
+          <TableHead>
+            <TableRow sx={{ bgcolor: '#f5f5f5' }}>
+              <TableCell sx={{ fontWeight: 'bold', width: '100px' }}>
+                Horaire
+              </TableCell>
+              {days.map((day) => (
+                <TableCell key={day} sx={{ fontWeight: 'bold' }}>
+                  {day}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {Object.entries(timeSlots).map(([time, slots]) => (
+              <TableRow key={time}>
+                <TableCell sx={{ fontWeight: 'bold', bgcolor: '#f5f5f5' }}>
+                  {time}
+                </TableCell>
+                {days.map((day) => (
+                  <TableCell 
+                    key={`${time}-${day}`}
+                    sx={{
+                      borderRight: '1px solid #e0e0e0',
+                      p: 1,
+                      minWidth: '120px',
+                    }}
+                  >
+                    {slots[day].subject && (
+                      <>
+                        <Typography variant="body2">
+                          {slots[day].subject}
+                        </Typography>
+                        {slots[day].type && (
+                          <Typography variant="caption" color="text.secondary">
+                            {slots[day].type}
+                          </Typography>
+                        )}
+                      </>
+                    )}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
+    </Box>
+  );
+};
+
+// =============================================================================
 // StudentDashboard Component
 // =============================================================================
 const StudentDashboard = () => {
@@ -519,11 +622,8 @@ const StudentDashboard = () => {
                       backdropFilter: 'blur(10px)',
                       border: '1px solid rgba(255, 255, 255, 0.05)',
                       cursor: 'pointer',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: 1,
-                      textAlign: 'center'
+                      transition: 'all 0.2s',
+                      '&:active': { transform: 'scale(0.98)' }
                     }}
                   >
                     <Avatar
@@ -743,6 +843,10 @@ const StudentDashboard = () => {
                 </Grid>
               </Box>
             </Box>
+
+            <Grid item xs={12}>
+              <TimeTable />
+            </Grid>
           </Container>
 
           {/* Bottom Navigation */}
