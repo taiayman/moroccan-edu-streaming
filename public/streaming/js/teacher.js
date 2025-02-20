@@ -392,10 +392,37 @@ function setupControlListeners() {
   document.getElementById('toggleAudioBtn')?.addEventListener('click', toggleAudio);
   document.getElementById('toggleVideoBtn')?.addEventListener('click', toggleVideo);
   document.getElementById('toggleScreenShareBtn')?.addEventListener('click', toggleScreenShare);
+  document.getElementById('chatBtn')?.addEventListener('click', openChat);
   document.getElementById('endStreamBtn')?.addEventListener('click', endStream);
 
   // Make acknowledgeHand available globally for the onclick handlers
   window.acknowledgeHand = acknowledgeHand;
+}
+
+function openChat() {
+  const roomName = window.DAILY_PARAMS.ROOM_NAME;
+  const participants = callFrame.participants();
+  const localParticipant = Object.values(participants).find(p => p.local);
+  const teacherName = localParticipant?.user_name || 'Teacher';
+  
+  const chatWindow = window.open(
+    `chat.html?room=${encodeURIComponent(roomName)}&userName=${encodeURIComponent(teacherName)}&sessionId=${encodeURIComponent(localParticipant?.session_id || '')}&isTeacher=true`,
+    'ChatWindow',
+    'width=400,height=600,resizable=yes'
+  );
+
+  // Handle chat window state for button toggle
+  const chatBtn = document.getElementById('chatBtn');
+  if (chatBtn) {
+    chatBtn.classList.add('active');
+    
+    const checkWindow = setInterval(() => {
+      if (chatWindow.closed) {
+        chatBtn.classList.remove('active');
+        clearInterval(checkWindow);
+      }
+    }, 1000);
+  }
 }
 
 function updateScreenShareButton(isAvailable) {

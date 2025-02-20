@@ -37,11 +37,15 @@ function initializeFirebase() {
   }
 }
 
+// Make callFrame globally accessible
 let callFrame = null;
+window.callFrame = null;
+
 let isHandRaised = false;
 let meetingFullyJoined = false;
 let currentUser = null;
 let screenShareAvailable = false;
+let chatRef;
 
 async function initializeDaily() {
   try {
@@ -62,9 +66,22 @@ async function initializeDaily() {
           height: '100%',
           border: '0',
           zIndex: 1
+        },
+        // Force audio to be off by default and prevent it from being enabled
+        audioSource: false,
+        // Additional settings to ensure audio remains disabled
+        inputSettings: {
+          audio: {
+            processor: {
+              type: 'none'
+            }
+          }
         }
       }
     );
+
+    // Make callFrame globally accessible
+    window.callFrame = callFrame;
 
     // Add event listeners
     callFrame
@@ -84,9 +101,14 @@ async function initializeDaily() {
     try {
       await callFrame.join({
         url: roomUrl,
-        showLeaveButton: false
+        showLeaveButton: false,
+        // Set audio source to false to ensure it's disabled
+        audioSource: false
       });
 
+      // Ensure microphone stays disabled
+      await callFrame.setLocalAudio(false);
+      
       // Check if screen sharing is available after joining
       setTimeout(async () => {
         try {
@@ -108,6 +130,9 @@ async function initializeDaily() {
 
       // Add Firebase listeners after joining
       setupHandRaiseListeners();
+
+      // Add chat functionality
+      setupChat();
 
     } catch (joinError) {
       if (joinError.message?.includes('Meeting has ended')) {
@@ -350,42 +375,21 @@ function updateParticipantsList() {
 
 // Media Controls
 function setupControlListeners() {
-  document.getElementById('toggleAudioBtn')?.addEventListener('click', toggleAudio);
-  document.getElementById('toggleVideoBtn')?.addEventListener('click', toggleVideo);
-  document.getElementById('raiseHandBtn')?.addEventListener('click', toggleRaiseHand);
-  document.getElementById('leaveBtn')?.addEventListener('click', leaveStream);
+  // Remove audio toggle functionality
+  document.getElementById('videoBtn').addEventListener('click', toggleVideo);
+  document.getElementById('handBtn').addEventListener('click', toggleRaiseHand);
+  document.getElementById('leaveBtn').addEventListener('click', leaveStream);
   document.getElementById('toggleScreenShareBtn')?.addEventListener('click', toggleScreenShare);
-}
-
-async function toggleAudio() {
-  try {
-    const enabled = !callFrame.localAudio();
-    await callFrame.setLocalAudio(enabled);
-    updateControlState('toggleAudioBtn', enabled);
-    const icon = document.querySelector('#toggleAudioBtn i');
-    if (icon) {
-      icon.className = enabled ? 'fas fa-microphone' : 'fas fa-microphone-slash';
-    }
-    // Force an immediate UI update
-    updateParticipantsList();
-  } catch (error) {
-    showError('Failed to toggle audio: ' + error.message);
-  }
 }
 
 async function toggleVideo() {
   try {
-    const enabled = !callFrame.localVideo();
-    await callFrame.setLocalVideo(enabled);
-    updateControlState('toggleVideoBtn', enabled);
-    const icon = document.querySelector('#toggleVideoBtn i');
-    if (icon) {
-      icon.className = enabled ? 'fas fa-video' : 'fas fa-video-slash';
-    }
-    // Force an immediate UI update
-    updateParticipantsList();
+    const videoState = await callFrame.getLocalVideo();
+    await callFrame.setLocalVideo(!videoState);
+    updateControlState('videoBtn', !videoState);
   } catch (error) {
-    showError('Failed to toggle video: ' + error.message);
+    console.error('Error toggling video:', error);
+    showError('Failed to toggle video');
   }
 }
 
@@ -442,7 +446,7 @@ async function toggleRaiseHand() {
 }
 
 function updateHandRaiseState() {
-  const btn = document.getElementById('raiseHandBtn');
+  const btn = document.getElementById('handBtn');
   if (btn) {
     btn.classList.toggle('active', isHandRaised);
     const icon = btn.querySelector('i');
@@ -461,26 +465,13 @@ function updateControlState(btnId, isActive) {
 }
 
 function updateMediaControlsState() {
-  if (callFrame && meetingFullyJoined) {
-    const audioEnabled = callFrame.localAudio();
-    const videoEnabled = callFrame.localVideo();
-    
-    updateControlState('toggleAudioBtn', audioEnabled);
-    updateControlState('toggleVideoBtn', videoEnabled);
-    
-    const audioIcon = document.querySelector('#toggleAudioBtn i');
-    const videoIcon = document.querySelector('#toggleVideoBtn i');
-    
-    if (audioIcon) {
-      audioIcon.className = audioEnabled ? 'fas fa-microphone' : 'fas fa-microphone-slash';
-    }
-    if (videoIcon) {
-      videoIcon.className = videoEnabled ? 'fas fa-video' : 'fas fa-video-slash';
-    }
-    
-    // Force an immediate UI update
-    updateParticipantsList();
-  }
+  // Always show microphone as disabled
+  updateControlState('micStatus', false);
+  
+  // Update other media states
+  callFrame.getLocalVideo().then(videoEnabled => {
+    updateControlState('videoBtn', videoEnabled);
+  });
 }
 
 async function leaveStream() {
@@ -649,4 +640,72 @@ async function toggleScreenShare() {
     showError('Failed to toggle screen share: ' + error.message);
     updateControlState('toggleScreenShareBtn', false);
   }
+}
+
+// Add chat functionality
+function setupChat() {
+  const roomName = window.DAILY_PARAMS.ROOM_NAME;
+  chatRef = database.ref(`rooms/${roomName}/chat`);
+  
+  // Listen for new messages
+  chatRef.limitToLast(100).on('child_added', (snapshot) => {
+    const message = snapshot.val();
+    appendMessage(message);
+  });
+
+  // Setup send button and input
+  document.getElementById('sendMessageBtn').addEventListener('click', sendMessage);
+  document.getElementById('chatInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+}
+
+function appendMessage(message) {
+  const messagesEl = document.getElementById('chatMessages');
+  const isLocal = message.senderId === callFrame.participants().local.session_id;
+  
+  const messageEl = document.createElement('div');
+  messageEl.className = `chat-message ${isLocal ? 'local-message' : ''}`;
+  messageEl.innerHTML = `
+    <div class="message-header">
+      <span class="message-sender">${message.senderName}</span>
+      <span class="message-time">${new Date(message.timestamp).toLocaleTimeString()}</span>
+    </div>
+    <div class="message-content">${escapeHtml(message.text)}</div>
+  `;
+
+  messagesEl.appendChild(messageEl);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  
+  if (!text) return;
+
+  const participants = callFrame.participants();
+  const localParticipant = participants.local;
+  
+  try {
+    await chatRef.push({
+      text,
+      senderId: localParticipant.session_id,
+      senderName: localParticipant.user_name || 'Anonymous',
+      timestamp: firebase.database.ServerValue.TIMESTAMP
+    });
+    input.value = '';
+  } catch (error) {
+    showError('Failed to send message');
+  }
+}
+
+// Helper function to escape HTML to prevent XSS
+function escapeHtml(unsafe) {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }

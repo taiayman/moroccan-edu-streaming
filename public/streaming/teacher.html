@@ -443,6 +443,18 @@
             #toggleScreenShareBtn {
                 display: none !important;
             }
+
+            /* Adjust buttons for mobile */
+            .control-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 1.1rem;
+            }
+
+            .controls-container {
+                gap: 0.75rem;
+                padding: 1.5rem;
+            }
         }
     </style>
 </head>
@@ -462,6 +474,9 @@
                 </button>
                 <button id="toggleScreenShareBtn" class="control-btn" title="Share Screen">
                     <i class="fas fa-desktop"></i>
+                </button>
+                <button id="chatBtn" class="control-btn" title="Open Chat">
+                    <i class="fas fa-comments"></i>
                 </button>
                 <button id="endStreamBtn" class="control-btn leave" title="End Meeting">
                     <i class="fas fa-phone-slash"></i>

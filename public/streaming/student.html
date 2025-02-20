@@ -202,6 +202,279 @@
             margin: 0;
         }
 
+        .sidebar-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 0.5rem;
+            background: var(--surface-light);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+            height: calc(100% - 60px); /* Adjust for header height */
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #chatContainer.overlay {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 320px;
+            background: var(--surface);
+            border-left: 1px solid var(--secondary);
+            z-index: 1000;
+            box-shadow: -4px 0 6px rgba(0, 0, 0, 0.1);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #participantsList.tab-content {
+            padding-bottom: 1rem;
+        }
+
+        #chatContainer.tab-content {
+            display: none;
+            flex-direction: column;
+            height: calc(100% - 60px); /* Adjust for header height */
+        }
+
+        #chatContainer.tab-content.active {
+            display: flex;
+        }
+/* Chat styles */
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--secondary);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background: rgba(30, 41, 59, 0.95);
+}
+
+.chat-header-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.chat-header h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chat-header h1 i {
+    color: var(--primary);
+    font-size: 1.125rem;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: var(--background);
+}
+
+.chat-message {
+    padding: 1rem 1.25rem;
+    background: var(--surface);
+    border-radius: 1rem;
+    max-width: 75%;
+    position: relative;
+    margin: 0.25rem 0;
+    align-self: flex-start;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease;
+    animation: slideIn 0.3s ease forwards;
+}
+
+.chat-message:hover {
+    transform: translateY(-1px);
+}
+
+.chat-message.local-message {
+    background: var(--primary);
+    align-self: flex-end;
+    color: white;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.message-sender {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+}
+
+.message-time {
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+.message-content {
+    word-wrap: break-word;
+    line-height: 1.5;
+    color: var(--text);
+    font-size: 0.9375rem;
+}
+
+.local-message .message-sender,
+.local-message .message-time,
+.local-message .message-content {
+    color: white;
+}
+
+.chat-input-container {
+    padding: 1.25rem;
+    background: var(--surface);
+    border-top: 1px solid var(--secondary);
+}
+
+.chat-input-wrapper {
+    display: flex;
+    gap: 0.75rem;
+    max-width: 768px;
+    margin: 0 auto;
+    background: var(--surface-light);
+    padding: 0.75rem;
+    border-radius: 1rem;
+    transition: all 0.2s ease;
+}
+
+.chat-input-wrapper:focus-within {
+    box-shadow: 0 0 0 2px var(--primary);
+    background: var(--surface);
+}
+
+#chatInput {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-size: 1rem;
+    outline: none;
+}
+
+#chatInput::placeholder {
+    color: var(--text-secondary);
+}
+
+#sendMessageBtn {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border: none;
+    background: var(--primary);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 1.25rem;
+}
+
+#sendMessageBtn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+}
+
+/* Online indicator */
+.online-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--success);
+    padding: 0.5rem 1rem;
+    background: var(--surface-light);
+    border-radius: 2rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.online-indicator:hover {
+    background: var(--success);
+    color: var(--text);
+}
+
+.online-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.online-dot::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+    opacity: 0.5;
+}
+
+/* Message animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
         #participantsList {
             flex: 1;
             overflow-y: auto;
@@ -226,6 +499,7 @@
         }
     
 
+        
         .participant-card {
             display: flex;
             align-items: center;
@@ -378,6 +652,298 @@
                 display: none !important;
             }
         }
+
+        .chat-input {
+            display: flex;
+            gap: 0.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--secondary);
+        }
+
+        #chatInput {
+            flex: 1;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: none;
+            background: var(--surface-light);
+            color: var(--text);
+        }
+
+        .chat-message {
+            padding: 0.75rem;
+            background: var(--surface-light);
+            border-radius: 0.75rem;
+        }
+
+        .chat-message.local-message {
+            background: var(--primary);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .message-sender {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .local-message .message-sender {
+            color: var(--text);
+        }
+
+        .message-time {
+            color: var(--text-secondary);
+        }
+
+        .message-content {
+            word-wrap: break-word;
+        }
+        .local-message .message-time,
+        .local-message .message-content {
+            color: var(--text);
+        }
+
+        /* Chat overlay styles */
+        #chatOverlay {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 320px;
+            background: var(--surface);
+            border-left: 1px solid var(--secondary);
+            display: none;
+            flex-direction: column;
+            z-index: 1000;
+            box-shadow: -4px 0 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 0.5rem;
+            padding: 1rem;
+            border-top: 1px solid var(--secondary);
+            background: var(--surface);
+        }
+
+/* Chat overlay styles */
+#chatOverlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 320px;
+    background: var(--surface);
+    border-left: 1px solid var(--secondary);
+    display: none;
+    flex-direction: column;
+    z-index: 1000;
+    box-shadow: -4px 0 6px rgba(0, 0, 0, 0.1);
+}
+
+#chatContainer.active {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1rem;
+}
+
+#chatMessages {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    padding-right: 0.5rem;
+}
+
+#chatMessages::-webkit-scrollbar {
+    width: 6px;
+}
+
+#chatMessages::-webkit-scrollbar-track {
+    background: var(--surface);
+    border-radius: 3px;
+}
+
+#chatMessages::-webkit-scrollbar-thumb {
+    background: var(--secondary);
+    border-radius: 3px;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--secondary);
+    margin-bottom: 1rem;
+}
+
+.chat-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chat-header h3 i {
+    color: var(--primary);
+}
+
+.chat-message {
+    padding: 0.75rem 1rem;
+    background: var(--surface-light);
+    border-radius: 0.75rem;
+    margin-bottom: 0.75rem;
+    word-break: break-word;
+}
+
+.chat-message.local-message {
+    background: var(--primary);
+    margin-left: auto;
+    max-width: 80%;
+}
+
+.chat-input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--secondary);
+}
+
+#chatInput {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: none;
+    background: var(--surface-light);
+    color: var(--text);
+    font-size: 0.95rem;
+}
+
+#chatInput:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--primary);
+}
+
+#sendMessageBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 0.5rem;
+}
+
+/* Chat overlay styles */
+#chatOverlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 320px;
+    background: var(--surface);
+    border-left: 1px solid var(--secondary);
+    display: none;
+    flex-direction: column;
+    z-index: 1000;
+    box-shadow: -4px 0 6px rgba(0, 0, 0, 0.1);
+}
+
+#chatContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1rem;
+}
+
+#chatMessages {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+    padding-right: 0.5rem;
+}
+
+#chatMessages::-webkit-scrollbar {
+    width: 6px;
+}
+
+#chatMessages::-webkit-scrollbar-track {
+    background: var(--surface);
+    border-radius: 3px;
+}
+
+#chatMessages::-webkit-scrollbar-thumb {
+    background: var(--secondary);
+    border-radius: 3px;
+}
+
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--secondary);
+    margin-bottom: 1rem;
+}
+
+.chat-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.chat-header h3 i {
+    color: var(--primary);
+}
+
+.chat-message {
+    padding: 0.75rem 1rem;
+    background: var(--surface-light);
+    border-radius: 0.75rem;
+    margin-bottom: 0.75rem;
+    word-break: break-word;
+}
+
+.chat-message.local-message {
+    background: var(--primary);
+    margin-left: auto;
+    max-width: 80%;
+}
+
+.chat-input-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--secondary);
+}
+
+#chatInput {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: none;
+    background: var(--surface-light);
+    color: var(--text);
+    font-size: 0.95rem;
+}
+
+#chatInput:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--primary);
+}
+
+#sendMessageBtn {
+    width: 40px;
+    height: 40px;
+    border-radius: 0.5rem;
+}
+        
     </style>
 </head>
 <body>
@@ -391,31 +957,58 @@
         </button>
 
         <div class="controls-container">
-            <button id="toggleAudioBtn" class="control-btn" title="Toggle Microphone">
-                <i class="fas fa-microphone"></i>
-            </button>
-            <button id="toggleVideoBtn" class="control-btn" title="Toggle Camera">
+            <button class="control-btn" id="videoBtn" title="Toggle Video">
                 <i class="fas fa-video"></i>
             </button>
-            <button id="toggleScreenShareBtn" class="control-btn" title="Share Screen">
-                <i class="fas fa-desktop"></i>
+            <button class="control-btn disabled" id="micStatus" title="Microphone Disabled" disabled>
+                <i class="fas fa-microphone-slash"></i>
             </button>
-            <button id="raiseHandBtn" class="control-btn hand" title="Raise Hand">
+            <button class="control-btn hand" id="handBtn" title="Raise Hand">
                 <i class="fas fa-hand"></i>
             </button>
-            <button id="leaveBtn" class="control-btn leave" title="Leave Meeting">
+            <button class="control-btn leave" id="leaveBtn" title="Leave Class">
                 <i class="fas fa-phone-slash"></i>
             </button>
         </div>
 
         <div id="sidebar" class="sidebar">
             <div class="sidebar-header">
-                <h3>Participants</h3>
+                <div class="sidebar-tabs">
+                    <button class="tab-btn active" data-tab="participants">Participants</button>
+                    <button class="tab-btn" data-tab="chat">Chat</button>
+                </div>
                 <button class="control-btn" onclick="toggleSidebar()" style="width: 40px; height: 40px;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div id="participantsList"></div>
+
+            <!-- Participants List -->
+            <div id="participantsList" class="tab-content active" data-tab="participants"></div>
+
+            <!-- Chat Container -->
+            <div id="chatContainer" class="tab-content" data-tab="chat">
+                <div class="chat-header">
+                    <div class="chat-header-left">
+                        <h1>
+                            <i class="fas fa-comments"></i>
+                            <span>Class Chat</span>
+                        </h1>
+                    </div>
+                    <div class="online-indicator">
+                        <div class="online-dot"></div>
+                        <span>Connected</span>
+                    </div>
+                </div>
+                <div id="chatMessages" class="chat-messages"></div>
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <input type="text" id="chatInput" placeholder="Type a message...">
+                        <button id="sendMessageBtn" class="control-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -458,10 +1051,131 @@
             }
         }
 
+        // Function to initialize and show chat overlay
+        async function navigateToChat() {
+            if (!window.callFrame) {
+                console.error('Daily.co frame not initialized');
+                return;
+            }
+
+            const participants = window.callFrame.participants();
+            const localParticipant = participants?.local;
+            
+            if (!localParticipant) {
+                console.error('Local participant information not available');
+                return;
+            }
+
+            const roomName = window.DAILY_PARAMS.ROOM_NAME;
+            const userName = localParticipant.user_name || 'Anonymous';
+            const sessionId = localParticipant.session_id;
+
+            // Store user info
+            window.currentUser = {
+                sessionId: sessionId,
+                name: userName,
+                room: roomName
+            };
+            sessionStorage.setItem('chatUserInfo', JSON.stringify(window.currentUser));
+
+            // Open chat in a new window with specific dimensions
+            const chatURL = `chat.html?room=${encodeURIComponent(roomName)}&userName=${encodeURIComponent(userName)}&sessionId=${encodeURIComponent(sessionId)}`;
+            const chatWindow = window.open(chatURL, 'ClassChat', 
+                'width=400,height=600,right=0,top=0,location=no,menubar=no,toolbar=no,status=no,scrollbars=yes,resizable=yes'
+            );
+
+            // Keep track of the chat window
+            window.chatWindow = chatWindow;
+
+            // Update the chat tab state
+            const chatTab = document.querySelector('.tab-btn[data-tab="chat"]');
+            if (chatTab) {
+                chatTab.classList.add('active');
+            }
+
+            // Add window close event listener
+            chatWindow.addEventListener('beforeunload', () => {
+                chatTab.classList.remove('active');
+            });
+        }
+
+        function appendMessage(message) {
+            if (!message) return;
+            
+            const messagesEl = document.getElementById('chatMessages');
+            const isLocal = message.senderId === window.currentUser?.sessionId;
+            
+            const messageEl = document.createElement('div');
+            messageEl.className = `chat-message ${isLocal ? 'local-message' : ''}`;
+            messageEl.innerHTML = `
+                <div class="message-header">
+                    <span class="message-sender">${message.senderName}</span>
+                    <span class="message-time">${new Date(message.timestamp).toLocaleTimeString()}</span>
+                </div>
+                <div class="message-content">${escapeHtml(message.text)}</div>
+            `;
+
+            messagesEl.appendChild(messageEl);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            
+            if (!text || !window.chatRef || !window.currentUser) return;
+
+            try {
+                await window.chatRef.push({
+                    text,
+                    senderId: window.currentUser.sessionId,
+                    senderName: window.currentUser.name,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+                input.value = '';
+                input.focus();
+            } catch (error) {
+                console.error('Failed to send message:', error);
+            }
+        }
+
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         // Initialize sidebar functionality
         document.addEventListener('DOMContentLoaded', () => {
             updateSidebarToggle();
             window.addEventListener('resize', updateSidebarToggle);
+
+            // Update tab switching functionality
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabName = btn.getAttribute('data-tab');
+                    
+                    if (tabName === 'chat') {
+                        // If chat window exists and not closed, focus it
+                        if (window.chatWindow && !window.chatWindow.closed) {
+                            window.chatWindow.focus();
+                        } else {
+                            navigateToChat();
+                        }
+                        return;
+                    }
+
+                    // Handle other tabs normally
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    btn.classList.add('active');
+                    document.querySelector(`.tab-content[data-tab="${tabName}"]`).classList.add('active');
+                });
+            });
         });
     </script>
 
