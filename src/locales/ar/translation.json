@@ -51,6 +51,7 @@
     "delete": "حذف",
     "loading": "جاري التحميل...",
     "back": "رجوع",
+    "close": "إغلاق",
     "assignments": {
       "created": "تم الإنشاء في"
     },
@@ -133,7 +134,17 @@
       "passwordLength": "يجب أن تكون كلمة المرور 6 أحرف على الأقل",
       "invalidPhone": "يرجى إدخال رقم هاتف صحيح مكون من 10 أرقام",
       "registrationFailed": "فشل التسجيل. يرجى المحاولة مرة أخرى."
-    }
+    },
+    "howToRegister": "كيفاش تسجل",
+    "registrationGuide": "طريقة التسجيل",
+    "step1": "دير حساب جديد",
+    "clickRegister": "كليكي على زر التسجيل و دخل معلوماتك",
+    "step2": "ختار نوع الحساب",
+    "selectStudentRole": "ختار 'تلميذ' ملي غيطلب منك",
+    "step3": "كمل المعلومات ديالك",
+    "completeProfile": "عمر المعلومات ديال الدراسة و الاختيارات ديالك",
+    "startRegistration": "بدا التسجيل",
+    "registrationVideoUrl": "https://www.youtube.com/embed/RDGFv75ptj4"
   },
   "roleSelection": {
     "title": "اختر دورك",

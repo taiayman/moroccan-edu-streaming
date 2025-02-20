@@ -19,12 +19,24 @@ import {
   Alert,
   CircularProgress,
   Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from '@mui/material';
 import { 
   Visibility, 
   VisibilityOff, 
   Google as GoogleIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
+  HowToReg as HowToRegIcon,
+  School as SchoolIcon,
+  ArrowForward as ArrowForwardIcon,
+  CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { signInWithPopup } from 'firebase/auth';
 import { getDoc, doc } from 'firebase/firestore';
@@ -83,6 +95,7 @@ const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [showRegisterGuide, setShowRegisterGuide] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -434,6 +447,126 @@ const LoginForm = () => {
                   </Link>
                 </Typography>
               </Box>
+
+              {/* Registration Guide Button */}
+              <Box sx={{ mt: 3, textAlign: 'center' }}>
+                <Button
+                  startIcon={<HowToRegIcon />}
+                  onClick={() => setShowRegisterGuide(true)}
+                  variant="outlined"
+                  color="primary"
+                  sx={{
+                    color: 'white',
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                    '&:hover': {
+                      borderColor: 'white',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    },
+                  }}
+                >
+                  {t('auth.howToRegister')}
+                </Button>
+              </Box>
+
+              {/* Registration Guide Dialog */}
+              <Dialog
+                open={showRegisterGuide}
+                onClose={() => setShowRegisterGuide(false)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                  sx: {
+                    backgroundColor: '#1a1f2c',
+                    color: 'white',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }
+                }}
+              >
+                <DialogTitle sx={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                  {t('auth.registrationGuide')}
+                </DialogTitle>
+                <DialogContent>
+                  {/* Video Section */}
+                  <Box sx={{ 
+                    width: '100%', 
+                    aspectRatio: '16/9',
+                    mb: 3,
+                    mt: 2,
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                  }}>
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={t('auth.registrationVideoUrl')} // You'll need to add this to your translation files
+                      title={t('auth.registrationGuide')}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      style={{ display: 'block' }}
+                    />
+                  </Box>
+
+                  {/* Steps List */}
+                  <List>
+                    <ListItem>
+                      <ListItemIcon>
+                        <CheckCircleIcon sx={{ color: '#4CAF50' }} />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary={t('auth.step1')}
+                        secondary={t('auth.clickRegister')}
+                        secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon>
+                        <SchoolIcon sx={{ color: '#2196F3' }} />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary={t('auth.step2')}
+                        secondary={t('auth.selectStudentRole')}
+                        secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon>
+                        <ArrowForwardIcon sx={{ color: '#FFC107' }} />
+                      </ListItemIcon>
+                      <ListItemText 
+                        primary={t('auth.step3')}
+                        secondary={t('auth.completeProfile')}
+                        secondaryTypographyProps={{ sx: { color: 'rgba(255, 255, 255, 0.7)' } }}
+                      />
+                    </ListItem>
+                  </List>
+                </DialogContent>
+                <DialogActions sx={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', p: 2 }}>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      setShowRegisterGuide(false);
+                      navigate(`/${getCurrentLanguage()}/auth/register`);
+                    }}
+                    startIcon={<HowToRegIcon />}
+                    sx={{
+                      backgroundColor: '#4CAF50',
+                      '&:hover': {
+                        backgroundColor: '#45a049',
+                      }
+                    }}
+                  >
+                    {t('auth.startRegistration')}
+                  </Button>
+                  <Button
+                    onClick={() => setShowRegisterGuide(false)}
+                    sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+                  >
+                    {t('common.close')}
+                  </Button>
+                </DialogActions>
+              </Dialog>
 
               <Box sx={{ flex: 1 }} />
             </Box>

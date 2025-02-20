@@ -50,13 +50,14 @@
     "loading": "Loading...",
     "created": "Created",
     "back": "Back",
-      "assignments": {
-        "title": "Assignments",
-        "subtitle": "Manage student assignments",
-        "submissions": "submission",
-        "submissions_plural": "submissions",
-        "empty": "No assignments available"
-      },
+    "close": "Close",
+    "assignments": {
+      "title": "Assignments",
+      "subtitle": "Manage student assignments",
+      "submissions": "submission",
+      "submissions_plural": "submissions",
+      "empty": "No assignments available"
+    },
     "error": {
       "default": "An error occurred",
       "failed": "Operation failed"
@@ -115,7 +116,16 @@
       "passwordLength": "Password must be at least 6 characters long",
       "invalidPhone": "Please enter a valid 10-digit phone number",
       "registrationFailed": "Failed to register. Please try again."
-    }
+    },
+    "howToRegister": "How to Register",
+    "registrationGuide": "Registration Guide",
+    "step1": "Create Your Account",
+    "clickRegister": "Click the Register button and fill in your details",
+    "step2": "Select Student Role",
+    "selectStudentRole": "Choose 'Student' as your role when prompted",
+    "step3": "Complete Your Profile",
+    "completeProfile": "Fill in your academic information and preferences",
+    "startRegistration": "Start Registration"
   },
   "roleSelection": {
     "title": "Choose Your Role",

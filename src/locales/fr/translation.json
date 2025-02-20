@@ -49,6 +49,7 @@
     "delete": "Supprimer",
     "loading": "Chargement...",
     "back": "Retour",
+    "close": "Fermer",
     "assignments": {
       "title": "Devoirs",
       "subtitle": "Gérer les devoirs des étudiants",
@@ -107,7 +108,16 @@
     "creatingAccount": "Création du compte...",
     "haveAccount": "Vous avez déjà un compte ?",
     "allFieldsRequired": "Tous les champs sont obligatoires",
-    "passwordLength": "Le mot de passe doit contenir au moins 6 caractères"
+    "passwordLength": "Le mot de passe doit contenir au moins 6 caractères",
+    "howToRegister": "Comment s'inscrire",
+    "registrationGuide": "Guide d'inscription",
+    "step1": "Créez votre compte",
+    "clickRegister": "Cliquez sur le bouton S'inscrire et remplissez vos informations",
+    "step2": "Sélectionnez le rôle Étudiant",
+    "selectStudentRole": "Choisissez 'Étudiant' comme rôle lorsque demandé",
+    "step3": "Complétez votre profil",
+    "completeProfile": "Remplissez vos informations académiques et vos préférences",
+    "startRegistration": "Commencer l'inscription"
   },
   "dashboard": {
     "title": "Tableau de bord",

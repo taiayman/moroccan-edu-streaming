@@ -620,10 +620,29 @@ const StudentDashboard = () => {
                       borderRadius: '12px',
                       bgcolor: 'rgba(45, 55, 72, 0.9)',
                       backdropFilter: 'blur(10px)',
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
+                      border: action.text === t('dashboard.quickActions.browseLiveClasses') 
+                        ? '2px solid #00FFA3'
+                        : '1px solid rgba(255, 255, 255, 0.05)',
                       cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      '&:active': { transform: 'scale(0.98)' }
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 1,
+                      textAlign: 'center',
+                      animation: action.text === t('dashboard.quickActions.browseLiveClasses')
+                        ? 'pulsingOutline 1.5s ease-in-out infinite'
+                        : 'none',
+                      '@keyframes pulsingOutline': {
+                        '0%': {
+                          boxShadow: '0 0 0 0 rgba(0, 255, 163, 0.7)',
+                        },
+                        '50%': {
+                          boxShadow: '0 0 0 8px rgba(0, 255, 163, 0)',
+                        },
+                        '100%': {
+                          boxShadow: '0 0 0 0 rgba(0, 255, 163, 0)',
+                        },
+                      },
                     }}
                   >
                     <Avatar
