@@ -22,71 +22,81 @@ import {
   CalendarMonth as CalendarIcon
 } from '@mui/icons-material';
 
-// Create rtl cache
-const cacheRtl = createCache({
-  key: 'muirtl',
-  stylisPlugins: [prefixer, rtlPlugin],
-});
-
-// Add Arabic font
-const fontFamily = "'Noto Kufi Arabic', sans-serif";
-
-// Create RTL theme with Arabic font
-const theme = createTheme({
-  direction: 'rtl',
-  typography: {
-    fontFamily: fontFamily,
-    h3: {
-      fontFamily: fontFamily,
-      fontWeight: 600,
-    },
-    body1: {
-      fontFamily: fontFamily,
-    },
-    button: {
-      fontFamily: fontFamily,
-      fontWeight: 500,
-    }
-  },
-  components: {
-    MuiCssBaseline: {
-      styleOverrides: `
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
-        body { font-family: ${fontFamily}; }
-      `,
-    },
-  },
-});
-
 const FreeUserNotice = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isRtl = i18n.language === 'ar';
+
+  // Create rtl cache
+  const cacheRtl = createCache({
+    key: 'muirtl',
+    stylisPlugins: [prefixer, rtlPlugin],
+  });
+
+  // Create LTR cache
+  const cacheLtr = createCache({
+    key: 'muiltr',
+    stylisPlugins: [prefixer],
+  });
+
+  // Add fonts for different languages
+  const arabicFont = "'Noto Kufi Arabic', sans-serif";
+  const defaultFont = "'Roboto', 'Helvetica', 'Arial', sans-serif";
+
+  // Create theme based on language direction
+  const theme = createTheme({
+    direction: isRtl ? 'rtl' : 'ltr',
+    typography: {
+      fontFamily: isRtl ? arabicFont : defaultFont,
+      h3: {
+        fontFamily: isRtl ? arabicFont : defaultFont,
+        fontWeight: 600,
+      },
+      body1: {
+        fontFamily: isRtl ? arabicFont : defaultFont,
+      },
+      button: {
+        fontFamily: isRtl ? arabicFont : defaultFont,
+        fontWeight: 500,
+      }
+    },
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: `
+          @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
+          body { font-family: ${isRtl ? arabicFont : defaultFont}; }
+        `,
+      },
+    },
+  });
 
   const features = [
     {
       icon: <LiveTvIcon sx={{ fontSize: 40, color: '#00FFA3' }} />,
-      title: 'الدروس المباشرة',
-      description: 'حضور جميع الحصص المباشرة والتفاعل مع المعلمين'
+      titleKey: 'freeUserNotice.features.liveClasses.title',
+      descriptionKey: 'freeUserNotice.features.liveClasses.description'
     },
     {
       icon: <AssignmentIcon sx={{ fontSize: 40, color: '#00FFA3' }} />,
-      title: 'الواجبات والتمارين',
-      description: 'الوصول إلى جميع الواجبات والتمارين مع التصحيح المباشر'
+      titleKey: 'freeUserNotice.features.assignments.title',
+      descriptionKey: 'freeUserNotice.features.assignments.description'
     },
     {
       icon: <CalendarIcon sx={{ fontSize: 40, color: '#00FFA3' }} />,
-      title: 'جدول الحصص',
-      description: 'متابعة جدول الحصص الأسبوعي وتنظيم وقت الدراسة'
+      titleKey: 'freeUserNotice.features.schedule.title',
+      descriptionKey: 'freeUserNotice.features.schedule.description'
     }
   ];
 
+  const cache = isRtl ? cacheRtl : cacheLtr;
+
   return (
-    <CacheProvider value={cacheRtl}>
+    <CacheProvider value={cache}>
       <ThemeProvider theme={theme}>
         <>
           <style>
             {`
               @import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap');
-              * { font-family: ${fontFamily}; }
+              * { font-family: ${isRtl ? arabicFont : defaultFont}; }
             `}
           </style>
           <Container 
@@ -100,7 +110,6 @@ const FreeUserNotice = () => {
               px: 0
             }}
           >
-            {/* App Bar */}
             <Paper
               elevation={0}
               sx={{
@@ -117,8 +126,8 @@ const FreeUserNotice = () => {
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <PremiumIcon sx={{ color: '#00FFA3', fontSize: 28 }} />
-                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600, fontFamily }}>
-                  ترقية الحساب
+                <Typography variant="h6" sx={{ color: '#fff', fontWeight: 600 }}>
+                  {t('freeUserNotice.title')}
                 </Typography>
               </Box>
             </Paper>
@@ -148,7 +157,7 @@ const FreeUserNotice = () => {
                   textAlign: 'center'
                 }}
               >
-                للاستفادة من جميع المميزات، يرجى التواصل مع المشرف لترقية حسابك إلى النسخة الكاملة
+                {t('freeUserNotice.message')}
               </Typography>
 
               <Grid container spacing={3}>
@@ -178,7 +187,7 @@ const FreeUserNotice = () => {
                             color: '#fff'
                           }}
                         >
-                          {feature.title}
+                          {t(feature.titleKey)}
                         </Typography>
                         <Typography 
                           variant="body2"
@@ -186,7 +195,7 @@ const FreeUserNotice = () => {
                             color: 'rgba(255, 255, 255, 0.7)'
                           }}
                         >
-                          {feature.description}
+                          {t(feature.descriptionKey)}
                         </Typography>
                       </CardContent>
                     </Card>

@@ -5,6 +5,24 @@
       "register": "/:lang/auth/register"
     }
   },
+  "freeUserNotice": {
+    "title": "Mise à niveau du compte",
+    "message": "Pour accéder à toutes les fonctionnalités, veuillez contacter l'administrateur pour mettre à niveau votre compte vers la version complète",
+    "features": {
+      "liveClasses": {
+        "title": "Cours en direct",
+        "description": "Assistez à tous les cours en direct et interagissez avec les enseignants"
+      },
+      "assignments": {
+        "title": "Devoirs et exercices",
+        "description": "Accédez à tous les devoirs et exercices avec correction directe"
+      },
+      "schedule": {
+        "title": "Emploi du temps",
+        "description": "Suivez l'emploi du temps hebdomadaire et organisez votre temps d'étude"
+      }
+    }
+  },
   "nav": {
     "dashboard": "Tableau de bord",
     "assignments": "Devoirs",

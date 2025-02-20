@@ -5,6 +5,24 @@
       "register": "/:lang/auth/register"
     }
   },
+  "freeUserNotice": {
+    "title": "Account Upgrade",
+    "message": "To access all features, please contact the administrator to upgrade your account to the full version",
+    "features": {
+      "liveClasses": {
+        "title": "Live Classes",
+        "description": "Attend all live classes and interact with teachers"
+      },
+      "assignments": {
+        "title": "Assignments and Exercises",
+        "description": "Access all assignments and exercises with direct feedback"
+      },
+      "schedule": {
+        "title": "Class Schedule",
+        "description": "Track weekly class schedule and organize study time"
+      }
+    }
+  },
   "nav": {
     "dashboard": "Dashboard",
     "assignments": "Assignments",
