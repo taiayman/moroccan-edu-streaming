@@ -55,7 +55,7 @@ async function initializeDaily() {
       throw new Error('Room name is required');
     }
 
-    // Create Daily iframe with custom UI
+    // Create Daily iframe with custom UI and disabled video
     callFrame = window.DailyIframe.createFrame(
       document.getElementById('mainVideo'),
       {
@@ -67,10 +67,16 @@ async function initializeDaily() {
           border: '0',
           zIndex: 1
         },
-        // Force audio to be off by default and prevent it from being enabled
+        // Force both audio and video to be off by default
         audioSource: false,
-        // Additional settings to ensure audio remains disabled
+        videoSource: false,
+        // Additional settings to ensure audio and video remain disabled
         inputSettings: {
+          video: {
+            processor: {
+              type: 'none'
+            }
+          },
           audio: {
             processor: {
               type: 'none'
@@ -102,12 +108,14 @@ async function initializeDaily() {
       await callFrame.join({
         url: roomUrl,
         showLeaveButton: false,
-        // Set audio source to false to ensure it's disabled
-        audioSource: false
+        // Set both audio and video source to false to ensure they're disabled
+        audioSource: false,
+        videoSource: false
       });
 
-      // Ensure microphone stays disabled
+      // Ensure microphone and camera stay disabled
       await callFrame.setLocalAudio(false);
+      await callFrame.setLocalVideo(false);
       
       // Check if screen sharing is available after joining
       setTimeout(async () => {
@@ -349,6 +357,15 @@ function updateParticipantsList() {
         }
         .participant-controls i {
           transition: all 0.3s ease;
+          opacity: 0.7;
+        }
+        .participant-controls i.fa-video,
+        .participant-controls i.fa-video-slash {
+          opacity: 0.5;
+          color: var(--text-secondary);
+        }
+        .participant-controls i.fa-video-slash {
+          color: var(--text-muted);
         }
         .participant-controls i.speaking {
           color: var(--success);
@@ -375,22 +392,17 @@ function updateParticipantsList() {
 
 // Media Controls
 function setupControlListeners() {
-  // Remove audio toggle functionality
-  document.getElementById('videoBtn').addEventListener('click', toggleVideo);
+  // Remove video toggle button functionality
   document.getElementById('handBtn').addEventListener('click', toggleRaiseHand);
   document.getElementById('leaveBtn').addEventListener('click', leaveStream);
   document.getElementById('toggleScreenShareBtn')?.addEventListener('click', toggleScreenShare);
 }
 
-async function toggleVideo() {
-  try {
-    const videoState = await callFrame.getLocalVideo();
-    await callFrame.setLocalVideo(!videoState);
-    updateControlState('videoBtn', !videoState);
-  } catch (error) {
-    console.error('Error toggling video:', error);
-    showError('Failed to toggle video');
-  }
+// Remove the toggleVideo function since we don't want to allow video toggling
+function updateMediaControlsState() {
+  // Always show microphone and video as disabled
+  updateControlState('micStatus', false);
+  updateControlState('videoBtn', false);
 }
 
 async function toggleRaiseHand() {
@@ -462,16 +474,6 @@ function updateControlState(btnId, isActive) {
   if (btn) {
     btn.classList.toggle('active', isActive);
   }
-}
-
-function updateMediaControlsState() {
-  // Always show microphone as disabled
-  updateControlState('micStatus', false);
-  
-  // Update other media states
-  callFrame.getLocalVideo().then(videoEnabled => {
-    updateControlState('videoBtn', videoEnabled);
-  });
 }
 
 async function leaveStream() {
