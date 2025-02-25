@@ -25,7 +25,7 @@
   },
   "nav": {
     "dashboard": "لوحة التحكم",
-    "assignments": "الواجبات",
+    "assignments": "ملخصات",
     "liveClasses": "الفصول المباشرة",
     "schedule": "الجدول الزمني",
     "profile": "الملف الشخصي",
@@ -194,11 +194,11 @@
     "welcome": "مرحباً، {{name}}! 👋",
     "children": "أطفالي",
     "attendance": "الحضور",
-    "assignments": "الواجبات",
+    "assignments": "كتب ملخصات",
     "overall": "الإجمالي",
     "noChildren": "لم يتم العثور على أطفال",
-    "upcomingAssignments": "الواجبات القادمة",
-    "noAssignments": "لا توجد واجبات قادمة",
+    "upcomingAssignments": "كتب ملخصات القادمة",
+    "noAssignments": "لا توجد كتب ملخصات قادمة",
     "parent": {
       "title": "لوحة تحكم ولي الأمر",
       "children": {
@@ -208,14 +208,14 @@
       },
       "stats": {
         "attendance": "معدل الحضور",
-        "assignments": "إكمال الواجبات",
+        "assignments": "إكمال كتب الملخصات",
         "performance": "الأداء العام"
       },
       "notifications": {
         "title": "الإشعارات",
         "noNotifications": "لا توجد إشعارات جديدة",
         "types": {
-          "assignment": "واجب جديد",
+          "assignment": "كتب ملخصات جديدة",
           "grade": "درجة جديدة",
           "absence": "تسجيل غياب",
           "liveClass": "فصل مباشر"
@@ -230,7 +230,7 @@
         "title": "الإحصائيات",
         "students": "الطلاب",
         "courses": "المقررات",
-        "assignments": "الواجبات",
+        "assignments": "كتب الملخصات",
         "calendar": {
           "title": "التقويم",
           "noEvents": "لا توجد أحداث لهذا اليوم",
@@ -241,7 +241,7 @@
           "title": "النشاطات الأخيرة",
           "empty": "لا توجد نشاطات حديثة",
           "types": {
-            "assignment": "واجب جديد",
+            "assignment": "كتب ملخصات جديدة",
             "submission": "تسليم واجب",
             "liveClass": "فصل مباشر",
             "course": "مقرر جديد"
@@ -256,7 +256,7 @@
         },
         "assignment": {
           "title": "إنشاء واجب",
-          "subtitle": "إضافة واجب جديد"
+          "subtitle": "إضافة كتب ملخصات جديدة"
         },
         "course": {
           "title": "إنشاء مقرر",
@@ -274,9 +274,9 @@
         "viewAll": "عرض الكل"
       },
       "assignments": {
-        "title": "الواجبات",
-        "subtitle": "إدارة واجبات الطلاب",
-        "empty": "لا توجد واجبات متاحة",
+        "title": "كتب الملخصات",
+        "subtitle": "إدارة كتب الملخصات الطلاب",
+        "empty": "لا توجد كتب ملخصات متاحة",
         "created": "تم الإنشاء في",
         "submissions": "إجابة",
         "submissions_plural": "إجابات",
@@ -308,20 +308,20 @@
           }
         },
         "assignment": {
-          "title": "إنشاء واجب جديد",
-          "subtitle": "أدخل تفاصيل الواجب",
+          "title": "إنشاء كتب ملخصات جديد",
+          "subtitle": "أدخل تفاصيل الكتب الملخصات",
           "form": {
-            "title": "عنوان الواجب",
-            "description": "وصف الواجب",
-            "content": "محتوى الواجب",
+            "title": "عنوان الكتب الملخصات",
+            "description": "وصف الكتب الملخصات",
+            "content": "محتوى الكتب الملخصات",
             "placeholder": {
-              "title": "أدخل عنوان الواجب",
-              "description": "أدخل وصف الواجب هنا...",
-              "content": "اكتب محتوى الواجب هنا..."
+              "title": "أدخل عنوان الكتب الملخصات",
+              "description": "أدخل وصف الكتب الملخصات هنا...",
+              "content": "اكتب محتوى الكتب الملخصات هنا..."
             }
           },
           "actions": {
-            "create": "إنشاء الواجب",
+            "create": "إنشاء الكتب الملخصات",
             "cancel": "إلغاء",
             "creating": "جاري الإنشاء..."
           }
@@ -356,7 +356,7 @@
     "stats": {
       "courses": "الدورات",
       "activeCourses": "{{count}} دورة نشطة",
-      "upcomingAssignments": "الواجبات القادمة",
+      "upcomingAssignments": "كتب ملخصات القادمة",
       "dueSoon": "مستحق قريباً",
       "globalProgress": "التقدم الإجمالي",
       "courseAverage": "المتوسط في جميع الدورات"
@@ -364,7 +364,7 @@
     "quickActions": {
       "title": "إجراءات سريعة",
       "browseLiveClasses": "تصفح الفصول المباشرة",
-      "viewAssignments": "عرض الواجبات",
+      "viewAssignments": "عرض كتب الملخصات",
       "viewSchedule": "عرض الجدول"
     },
     "teachers": {
@@ -372,7 +372,7 @@
       "schedule": "جدول {{name}}"
     },
     "assignments": {
-      "title": "الواجبات",
+      "title": "كتب الملخصات",
       "complete": "تم الانتهاء"
     },
     "schedule": {
@@ -381,7 +381,7 @@
     }
   },
   "assignment": {
-    "backToAssignments": "العودة إلى الواجبات",
+    "backToAssignments": "العودة إلى كتب الملخصات",
     "details": {
       "description": "وصف الواجب",
       "requirements": "متطلبات الواجب",
@@ -410,11 +410,11 @@
       "not_submitted": "لم يتم التسليم",
       "graded": "تم التصحيح"
     },
-    "myAssignments": "واجباتي",
-    "viewAndSubmit": "عرض وتسليم واجباتك",
+    "myAssignments": "كتب ملخصاتي",
+    "viewAndSubmit": "عرض وتسليم كتب ملخصاتك",
     "selectTeacher": "اختر المعلم",
-    "searchAssignments": "البحث في الواجبات",
-    "failedToLoad": "فشل في تحميل الواجبات",
+    "searchAssignments": "البحث في كتب الملخصات",
+    "failedToLoad": "فشل في تحميل كتب الملخصات",
     "failedToLoadTeachers": "فشل في تحميل قائمة المعلمين",
     "authRequired": "يجب تسجيل الدخول",
     "multipleSubmissionsNotAllowed": "لقد قمت بتسليم هذا الواجب بالفعل. لا يسمح بتسليمات متعددة.",
@@ -428,11 +428,11 @@
     "enrollmentDate": "تاريخ التسجيل",
     "academicProgress": "التقدم الأكاديمي",
     "enrolledCourses": "المقررات المسجلة",
-    "currentAssignments": "الواجبات الحالية",
+    "currentAssignments": "كتب الملخصات الحالية",
     "attendanceRate": "نسبة الحضور",
     "noCourses": "لم يتم تسجيل أي مقررات",
     "coursesCount": "{{count}} مقرر",
-    "assignmentsCount": "{{count}} واجب"
+    "assignmentsCount": "{{count}} كتب ملخصات"
   },
   "schedule": {
     "title": "الجدول الزمني",
@@ -493,13 +493,13 @@
   },
   "teacherPages": {
     "assignments": {
-      "title": "الواجبات",
-      "description": "إدارة واجبات الطلاب",
+      "title": "كتب الملخصات",
+      "description": "إدارة كتب ملخصات الطلاب",
       "backToDashboard": "العودة إلى لوحة التحكم",
       "createNew": "إنشاء واجب جديد",
       "search": "البحث عن الواجبات...",
-      "noAssignments": "لا توجد واجبات",
-      "empty": "لم يتم إنشاء أي واجبات بعد",
+      "noAssignments": "لا توجد كتب ملخصات",
+      "empty": "لم يتم إنشاء أي كتب ملخصات بعد",
       "created": "تم الإنشاء في",
       "submissions": "إجابة",
       "submissions_plural": "إجابات",
@@ -511,11 +511,11 @@
       },
       "dialogs": {
         "assignment": {
-          "title": "إنشاء واجب جديد",
+          "title": "إنشاء كتاب ملخصات جديد",
           "form": {
-            "title": "عنوان الواجب",
-            "description": "وصف الواجب",
-            "content": "محتوى الواجب"
+            "title": "عنوان كتاب الملخصات",
+            "description": "وصف كتاب الملخصات",
+            "content": "محتوى كتاب الملخصات"
           },
           "actions": {
             "cancel": "إلغاء",
@@ -623,8 +623,8 @@
   },
   "studentPages": {
     "assignments": {
-      "title": "واجباتي",
-      "description": "عرض وإدارة واجباتك",
+      "title": "كتب ملخصاتي",
+      "description": "عرض وإدارة كتب ملخصاتك",
       "backToDashboard": "العودة إلى لوحة التحكم",
       "filter": {
         "all": "الكل",
@@ -632,7 +632,7 @@
         "submitted": "تم التسليم",
         "graded": "تم التصحيح"
       },
-      "search": "البحث في الواجبات...",
+      "search": "البحث في كتب الملخصات...",
       "table": {
         "title": "العنوان",
         "course": "المقرر",
@@ -641,7 +641,7 @@
         "grade": "الدرجة",
         "actions": "الإجراءات"
       },
-      "noAssignments": "لم يتم العثور على واجبات",
+      "noAssignments": "لم يتم العثور على كتب ملخصات",
       "viewDetails": "عرض التفاصيل",
       "status": {
         "pending": "قيد الانتظار",

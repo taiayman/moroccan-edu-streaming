@@ -194,7 +194,6 @@ function handleJoinedMeeting(event) {
   console.log('Joined meeting:', event);
   meetingFullyJoined = true;
   
-  // Add all event listeners for participant and media updates
   callFrame
     .on('participant-updated', handleParticipantUpdated)
     .on('track-started', handleTrackStarted)
