@@ -72,16 +72,12 @@ async function initializeDaily() {
         videoSource: false,
         // Additional settings to ensure audio and video remain disabled
         inputSettings: {
-          video: {
-            processor: {
-              type: 'none'
-            }
-          },
           audio: {
             processor: {
               type: 'none'
             }
-          }
+          },
+          video: false
         }
       }
     );
@@ -194,6 +190,7 @@ function handleJoinedMeeting(event) {
   console.log('Joined meeting:', event);
   meetingFullyJoined = true;
   
+  // Add all event listeners for participant and media updates
   callFrame
     .on('participant-updated', handleParticipantUpdated)
     .on('track-started', handleTrackStarted)
@@ -356,15 +353,6 @@ function updateParticipantsList() {
         }
         .participant-controls i {
           transition: all 0.3s ease;
-          opacity: 0.7;
-        }
-        .participant-controls i.fa-video,
-        .participant-controls i.fa-video-slash {
-          opacity: 0.5;
-          color: var(--text-secondary);
-        }
-        .participant-controls i.fa-video-slash {
-          color: var(--text-muted);
         }
         .participant-controls i.speaking {
           color: var(--success);
