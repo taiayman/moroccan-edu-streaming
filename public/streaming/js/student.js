@@ -77,7 +77,11 @@ async function initializeDaily() {
               type: 'none'
             }
           },
-          video: false
+          video: {
+            processor: {
+              type: 'none'
+            }
+          }
         }
       }
     );
@@ -106,7 +110,20 @@ async function initializeDaily() {
         showLeaveButton: false,
         // Set both audio and video source to false to ensure they're disabled
         audioSource: false,
-        videoSource: false
+        videoSource: false,
+        // Properly formatted inputSettings
+        inputSettings: {
+          audio: {
+            processor: {
+              type: 'none'
+            }
+          },
+          video: {
+            processor: {
+              type: 'none'
+            }
+          }
+        }
       });
 
       // Ensure microphone and camera stay disabled
