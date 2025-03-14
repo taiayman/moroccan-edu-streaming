@@ -42,8 +42,61 @@ let raisedHands = new Map();
 let meetingFullyJoined = false;
 let screenShareAvailable = false;
 
+// Replace the ensureDailyLibraryLoaded function with this one
+function ensureDailyLibraryLoaded() {
+  return new Promise((resolve, reject) => {
+    // If DailyIframe is already available, resolve immediately
+    if (window.DailyIframe) {
+      console.log('Daily.co library already loaded');
+      return resolve(window.DailyIframe);
+    }
+
+    console.log('Attempting direct access to Daily.co library...');
+    
+    // Try to access the global variable after a short delay
+    // This might work if the script is loaded but not yet initialized
+    setTimeout(() => {
+      if (window.DailyIframe) {
+        console.log('Daily.co library found after delay');
+        resolve(window.DailyIframe);
+        return;
+      }
+      
+      console.log('Loading specific version from CDN...');
+      
+      // If still not available, load it directly from a specific version CDN
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@daily-co/daily-js@0.44.0/dist/daily-iframe.min.js';
+      script.async = true;
+      
+      script.onload = () => {
+        console.log('Daily.co script loaded from alternate CDN');
+        // Give time for initialization
+        setTimeout(() => {
+          if (window.DailyIframe) {
+            console.log('DailyIframe is now available');
+            resolve(window.DailyIframe);
+          } else {
+            console.error('Daily.co script loaded but DailyIframe is not available');
+            reject(new Error('Daily.co library loaded but DailyIframe is not available'));
+          }
+        }, 1000);
+      };
+      
+      script.onerror = (e) => {
+        console.error('Error loading Daily.co script from alternate CDN:', e);
+        reject(new Error('Failed to load Daily.co library from alternate CDN'));
+      };
+      
+      document.body.appendChild(script);
+    }, 500);
+  });
+}
+
 async function createRoom(roomName) {
   try {
+    console.log('Creating/checking room:', roomName);
+    
     // First check if room exists
     const checkResponse = await fetch(`https://api.daily.co/v1/rooms/${roomName}`, {
       method: 'GET',
@@ -55,10 +108,12 @@ async function createRoom(roomName) {
     // If room exists, return its URL
     if (checkResponse.ok) {
       const room = await checkResponse.json();
+      console.log('Room exists:', room);
       return `https://${CONFIG.DAILY.DOMAIN}/${roomName}`;
     }
 
     // If room doesn't exist, create it
+    console.log('Room does not exist, creating it');
     const response = await fetch('https://api.daily.co/v1/rooms', {
       method: 'POST',
       headers: {
@@ -82,10 +137,12 @@ async function createRoom(roomName) {
 
     if (!response.ok) {
       const errorData = await response.json();
+      console.error('Failed to create room:', errorData);
       throw new Error(errorData.error || 'Failed to create room');
     }
 
     const room = await response.json();
+    console.log('Room created:', room);
     return `https://${CONFIG.DAILY.DOMAIN}/${roomName}`;
   } catch (error) {
     console.error('Error creating/checking room:', error);
@@ -94,15 +151,53 @@ async function createRoom(roomName) {
   }
 }
 
+// Add a global loading timeout
+let initializationTimeout;
+
 async function initializeDaily() {
+  // Set a global timeout for the entire initialization process
+  initializationTimeout = setTimeout(() => {
+    console.error('Initialization timed out after 30 seconds');
+    showError('Connection timed out. Please reload the page to try again.');
+    // Add a retry button to the error message
+    const errorEl = document.getElementById('streamError');
+    if (errorEl) {
+      errorEl.innerHTML = `
+        Connection timed out. 
+        <button 
+          onclick="window.location.reload()" 
+          style="background: white; color: #dc2626; border: none; padding: 5px 10px; margin-left: 10px; border-radius: 4px; cursor: pointer;"
+        >
+          Retry
+        </button>
+      `;
+    }
+  }, 30000); // 30 seconds timeout
+  
   try {
     const roomName = window.DAILY_PARAMS.ROOM_NAME;
     
     if (!roomName) {
+      clearTimeout(initializationTimeout);
       throw new Error('Room name is required');
     }
 
+    console.log('Starting initialization for room:', roomName);
+    updateConnectionStatus('connecting');
+    
+    // Ensure Daily.co library is loaded before using it
+    console.log('Waiting for Daily.co library to load...');
+    try {
+      await ensureDailyLibraryLoaded();
+      console.log('Daily.co library loaded successfully');
+    } catch (error) {
+      console.error('Failed to load Daily.co library:', error);
+      clearTimeout(initializationTimeout);
+      throw error;
+    }
+
     // Create Daily iframe first
+    console.log('Creating Daily iframe');
     callFrame = window.DailyIframe.createFrame(
       document.getElementById('mainVideo'),
       {
@@ -116,8 +211,11 @@ async function initializeDaily() {
         }
       }
     );
+    
+    console.log('Daily iframe created');
 
     // Add event listeners
+    console.log('Adding event listeners');
     callFrame
       .on('joining-meeting', handleJoiningMeeting)
       .on('joined-meeting', handleJoinedMeeting)
@@ -129,6 +227,7 @@ async function initializeDaily() {
       .on('error', handleError);
 
     // Get room URL and join
+    console.log('Getting room URL');
     const roomUrl = await createRoom(roomName);
     console.log('Joining room:', roomUrl);
     
@@ -136,6 +235,9 @@ async function initializeDaily() {
       url: roomUrl,
       showLeaveButton: false
     });
+    
+    console.log('Successfully joined room');
+    clearTimeout(initializationTimeout); // Clear the timeout after successful join
 
     // Check if screen sharing is available after joining
     setTimeout(async () => {
@@ -160,8 +262,23 @@ async function initializeDaily() {
     setupHandRaiseListeners();
 
   } catch (error) {
+    clearTimeout(initializationTimeout);
     console.error('Daily initialization failed:', error);
     showError('Failed to join room: ' + (error.message || 'Unknown error'));
+    
+    // Add a retry button to the error message
+    const errorEl = document.getElementById('streamError');
+    if (errorEl) {
+      errorEl.innerHTML = `
+        Failed to join room: ${error.message || 'Unknown error'} 
+        <button 
+          onclick="window.retryConnection()" 
+          style="background: white; color: #dc2626; border: none; padding: 5px 10px; margin-left: 10px; border-radius: 4px; cursor: pointer;"
+        >
+          Retry
+        </button>
+      `;
+    }
   }
 }
 
@@ -253,77 +370,92 @@ function updateConnectionStatus(status) {
   const statusEl = document.getElementById('connectionStatus');
   if (statusEl) {
     statusEl.className = `status-badge ${status === 'connected' ? 'connected' : ''}`;
+    statusEl.innerHTML = status === 'connected' 
+      ? '<i class="fas fa-check-circle"></i> Connected' 
+      : '<i class="fas fa-circle-notch fa-spin"></i> Connecting...';
   }
 }
 
 function updateParticipantsList() {
-  const participants = callFrame.participants();
-  const listEl = document.getElementById('participantsList');
-  const countEl = document.getElementById('participantCount');
+  if (!callFrame) {
+    console.warn('Attempted to update participants list, but callFrame is not initialized');
+    return;
+  }
   
-  if (listEl) {
-    const participantCount = Object.keys(participants).length;
-    countEl.textContent = `${participantCount} ${participantCount === 1 ? 'Participant' : 'Participants'}`;
+  try {
+    const participants = callFrame.participants();
+    const listEl = document.getElementById('participantsList');
+    const countEl = document.getElementById('participantCount');
+    
+    if (listEl) {
+      const participantCount = Object.keys(participants).length;
+      countEl.textContent = `${participantCount} ${participantCount === 1 ? 'Participant' : 'Participants'}`;
 
-    listEl.innerHTML = Object.values(participants)
-      .map(participant => {
-        const isLocal = participant.local;
-        const hasAudio = participant.audio;
-        const hasVideo = participant.video;
-        const isScreenSharing = participant.screen;
-        const hasHandRaised = raisedHands.has(participant.session_id);
+      listEl.innerHTML = Object.values(participants)
+        .map(participant => {
+          const isLocal = participant.local;
+          const hasAudio = participant.audio;
+          const hasVideo = participant.video;
+          const isScreenSharing = participant.screen;
+          const hasHandRaised = raisedHands.has(participant.session_id);
 
-        return `
-          <div class="participant-card">
-            <div class="participant-info">
-              <div class="participant-avatar" style="background: ${getAvatarColor(participant.user_name)}">
-                ${participant.user_name?.[0]?.toUpperCase() || '?'}
-              </div>
-              <div class="participant-details">
-                <div class="participant-name">
-                  ${participant.user_name || 'Anonymous'}
-                  ${isLocal ? ' (You)' : ''}
+          return `
+            <div class="participant-card">
+              <div class="participant-info">
+                <div class="participant-avatar" style="background: ${getAvatarColor(participant.user_name)}">
+                  ${participant.user_name?.[0]?.toUpperCase() || '?'}
                 </div>
-                ${isLocal ? '<div class="participant-role">Teacher</div>' : ''}
+                <div class="participant-details">
+                  <div class="participant-name">
+                    ${participant.user_name || 'Anonymous'}
+                    ${isLocal ? ' (You)' : ''}
+                  </div>
+                  ${isLocal ? '<div class="participant-role">Teacher</div>' : ''}
+                </div>
+              </div>
+              <div class="participant-controls">
+                <i class="fas ${hasAudio ? 'fa-microphone' : 'fa-microphone-slash'} ${hasAudio ? '' : 'text-red-500'}"></i>
+                <i class="fas ${hasVideo ? 'fa-video' : 'fa-video-slash'} ${hasVideo ? '' : 'text-red-500'}"></i>
+                ${isScreenSharing ? '<i class="fas fa-desktop text-blue-400"></i>' : ''}
+                ${hasHandRaised ? '<i class="fas fa-hand text-yellow-400"></i>' : ''}
               </div>
             </div>
-            <div class="participant-controls">
-              <i class="fas ${hasAudio ? 'fa-microphone' : 'fa-microphone-slash'} ${hasAudio ? '' : 'text-red-500'}"></i>
-              <i class="fas ${hasVideo ? 'fa-video' : 'fa-video-slash'} ${hasVideo ? '' : 'text-red-500'}"></i>
-              ${isScreenSharing ? '<i class="fas fa-desktop text-blue-400"></i>' : ''}
-              ${hasHandRaised ? '<i class="fas fa-hand text-yellow-400"></i>' : ''}
-            </div>
-          </div>
-        `;
-      })
-      .join('');
+          `;
+        })
+        .join('');
 
-    // Add styles for new elements
-    const style = document.createElement('style');
-    style.textContent = `
-      .participant-details {
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
+      // Add styles for new elements if not already added
+      if (!document.getElementById('participant-styles')) {
+        const style = document.createElement('style');
+        style.id = 'participant-styles';
+        style.textContent = `
+          .participant-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+          }
+          .participant-name {
+            font-weight: 500;
+          }
+          .participant-role {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+          }
+          .text-red-500 {
+            color: #ef4444;
+          }
+          .text-blue-400 {
+            color: #60a5fa;
+          }
+          .text-yellow-400 {
+            color: #facc15;
+          }
+        `;
+        document.head.appendChild(style);
       }
-      .participant-name {
-        font-weight: 500;
-      }
-      .participant-role {
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-      }
-      .text-red-500 {
-        color: #ef4444;
-      }
-      .text-blue-400 {
-        color: #60a5fa;
-      }
-      .text-yellow-400 {
-        color: #facc15;
-      }
-    `;
-    document.head.appendChild(style);
+    }
+  } catch (error) {
+    console.error('Error updating participants list:', error);
   }
 }
 
@@ -400,6 +532,12 @@ function setupControlListeners() {
 }
 
 function openChat() {
+  if (!callFrame) {
+    console.error('Cannot open chat, callFrame is not initialized');
+    showError('Chat is not available yet. Please wait for the connection to establish.');
+    return;
+  }
+
   const roomName = window.DAILY_PARAMS.ROOM_NAME;
   const participants = callFrame.participants();
   const localParticipant = Object.values(participants).find(p => p.local);
@@ -447,6 +585,12 @@ window.addEventListener('resize', () => {
 });
 
 async function toggleAudio() {
+  if (!callFrame) {
+    console.error('Cannot toggle audio, callFrame is not initialized');
+    showError('Audio controls are not available yet. Please wait for the connection to establish.');
+    return;
+  }
+
   try {
     const enabled = !callFrame.localAudio();
     await callFrame.setLocalAudio(enabled);
@@ -455,11 +599,18 @@ async function toggleAudio() {
     icon.className = enabled ? 'fas fa-microphone' : 'fas fa-microphone-slash';
     updateParticipantsList(); // Update the participants list to reflect the change
   } catch (error) {
+    console.error('Failed to toggle audio:', error);
     showError('Failed to toggle audio: ' + error.message);
   }
 }
 
 async function toggleVideo() {
+  if (!callFrame) {
+    console.error('Cannot toggle video, callFrame is not initialized');
+    showError('Video controls are not available yet. Please wait for the connection to establish.');
+    return;
+  }
+
   try {
     const enabled = !callFrame.localVideo();
     await callFrame.setLocalVideo(enabled);
@@ -468,11 +619,18 @@ async function toggleVideo() {
     icon.className = enabled ? 'fas fa-video' : 'fas fa-video-slash';
     updateParticipantsList(); // Update the participants list to reflect the change
   } catch (error) {
+    console.error('Failed to toggle video:', error);
     showError('Failed to toggle video: ' + error.message);
   }
 }
 
 async function toggleScreenShare() {
+  if (!callFrame) {
+    console.error('Cannot toggle screen share, callFrame is not initialized');
+    showError('Screen sharing is not available yet. Please wait for the connection to establish.');
+    return;
+  }
+
   try {
     // Check if screen sharing is supported
     if (!screenShareAvailable) {
@@ -517,20 +675,29 @@ function updateControlState(btnId, isActive) {
 }
 
 function updateMediaControlsState() {
+  if (!callFrame) {
+    console.warn('Attempted to update media controls, but callFrame is not initialized');
+    return;
+  }
+
   if (callFrame && meetingFullyJoined) {
-    const audioEnabled = callFrame.localAudio();
-    const videoEnabled = callFrame.localVideo();
-    
-    updateControlState('toggleAudioBtn', audioEnabled);
-    updateControlState('toggleVideoBtn', videoEnabled);
-    
-    const audioIcon = document.querySelector('#toggleAudioBtn i');
-    const videoIcon = document.querySelector('#toggleVideoBtn i');
-    
-    if (audioIcon) audioIcon.className = audioEnabled ? 'fas fa-microphone' : 'fas fa-microphone-slash';
-    if (videoIcon) videoIcon.className = videoEnabled ? 'fas fa-video' : 'fas fa-video-slash';
-    
-    updateParticipantsList(); // Update the participants list to reflect current state
+    try {
+      const audioEnabled = callFrame.localAudio();
+      const videoEnabled = callFrame.localVideo();
+      
+      updateControlState('toggleAudioBtn', audioEnabled);
+      updateControlState('toggleVideoBtn', videoEnabled);
+      
+      const audioIcon = document.querySelector('#toggleAudioBtn i');
+      const videoIcon = document.querySelector('#toggleVideoBtn i');
+      
+      if (audioIcon) audioIcon.className = audioEnabled ? 'fas fa-microphone' : 'fas fa-microphone-slash';
+      if (videoIcon) videoIcon.className = videoEnabled ? 'fas fa-video' : 'fas fa-video-slash';
+      
+      updateParticipantsList(); // Update the participants list to reflect current state
+    } catch (error) {
+      console.error('Error updating media controls state:', error);
+    }
   }
 }
 
@@ -554,7 +721,21 @@ async function acknowledgeHand(participantId) {
 }
 
 async function endStream() {
-  if (callFrame) {
+  if (!callFrame) {
+    console.error('Cannot end stream, callFrame is not initialized');
+    showError('Cannot end stream, connection not established');
+    
+    // Fallback to redirect
+    setTimeout(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const lang = urlParams.get('lang') || 'en'; 
+      window.location.href = `/${lang}/teacher/dashboard`;
+    }, 2000);
+    
+    return;
+  }
+  
+  try {
     // Notify all participants
     const participants = callFrame.participants();
     Object.keys(participants).forEach(participantId => {
@@ -572,11 +753,22 @@ async function endStream() {
     const urlParams = new URLSearchParams(window.location.search);
     const lang = urlParams.get('lang') || 'en'; // Default to 'en' if not specified
     window.location.href = `/${lang}/teacher/dashboard`;
+  } catch (error) {
+    console.error('Error ending stream:', error);
+    showError('Failed to end stream properly. Redirecting...');
+    
+    // Fallback to redirect
+    setTimeout(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const lang = urlParams.get('lang') || 'en'; 
+      window.location.href = `/${lang}/teacher/dashboard`;
+    }, 2000);
   }
 }
 
 // Notifications
 function showNotification(message) {
+  console.log('Notification:', message);
   const notification = document.createElement('div');
   notification.className = 'status-badge connected';
   notification.style.right = '1rem';
@@ -589,11 +781,11 @@ function showNotification(message) {
   
   // Add fade out animation
   notification.style.animation = 'fadeIn 0.3s ease, fadeOut 0.3s ease forwards';
-  notification.style.animationDelay = '0s, ${CONFIG.UI.NOTIFICATIONS.DURATION - 300}ms';
+  notification.style.animationDelay = '0s, 2700ms';
   
   setTimeout(() => {
     notification.remove();
-  }, CONFIG.UI.NOTIFICATIONS.DURATION);
+  }, 3000);
 }
 
 function notifyParticipantChange(action, username) {
@@ -605,7 +797,7 @@ function notifyParticipantChange(action, username) {
 
 // Error handling
 function showError(message) {
-  console.error(message);
+  console.error('Error:', message);
   const errorEl = document.getElementById('streamError');
   if (errorEl) {
     errorEl.textContent = message;
@@ -633,22 +825,61 @@ style.textContent = `
   .text-emerald-400 {
     color: #34d399;
   }
+
+  .status-badge {
+    z-index: 1000;
+  }
 `;
 document.head.appendChild(style);
 
-window.retryConnection = initializeDaily;
+// Add a connection status indicator if it doesn't exist
+function ensureConnectionStatus() {
+  if (!document.getElementById('connectionStatus')) {
+    const statusEl = document.createElement('div');
+    statusEl.id = 'connectionStatus';
+    statusEl.className = 'status-badge';
+    statusEl.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Connecting...';
+    document.body.appendChild(statusEl);
+  }
+}
+
+window.retryConnection = function() {
+  // Clear any existing timeout
+  if (initializationTimeout) {
+    clearTimeout(initializationTimeout);
+  }
+  
+  // Hide any error message
+  const errorEl = document.getElementById('streamError');
+  if (errorEl) {
+    errorEl.style.display = 'none';
+  }
+  
+  // Show connecting status
+  updateConnectionStatus('connecting');
+  
+  // Reinitialize
+  initializeDaily();
+};
 
 // Initialize when the page loads
 document.addEventListener('DOMContentLoaded', async () => {
+  ensureConnectionStatus();
+  
   // Initialize Firebase first
   const firebaseInitialized = initializeFirebase();
   
   // Then initialize Daily
-  if (firebaseInitialized) {
-    await initializeDaily();
-  } else {
-    showError('Failed to initialize Firebase. Some features may not work properly.');
-    await initializeDaily();
+  try {
+    if (firebaseInitialized) {
+      await initializeDaily();
+    } else {
+      showError('Failed to initialize Firebase. Some features may not work properly.');
+      await initializeDaily();
+    }
+  } catch (error) {
+    console.error('Initialization failed:', error);
+    showError('Failed to initialize: ' + error.message);
   }
 });
 

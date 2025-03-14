@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teacher's Virtual Classroom</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Add Firebase CDN scripts -->
+    <!-- Add specific version of Daily.co -->
+    <script src="https://cdn.jsdelivr.net/npm/@daily-co/daily-js@0.44.0/dist/daily-iframe.min.js"></script>
+    <!-- Firebase CDN scripts -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <style>
@@ -531,11 +533,8 @@
         };
     </script>
 
-    <script src="https://unpkg.com/@daily-co/daily-js"></script>
-    <!-- Add Firebase -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
-
+    <!-- Removed unpkg Daily.co script since we're using the specific version above -->
+    
     <script>
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
