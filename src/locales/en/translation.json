@@ -161,6 +161,7 @@
     "student": "student",
     "teacher": "teacher",
     "welcomeMessage": "Hello everyone! Let's start the class.",
+    "noClasses": "No live classes available at the moment.",
     "controls": {
       "toggleMic": "Toggle microphone",
       "toggleCamera": "Toggle camera",
