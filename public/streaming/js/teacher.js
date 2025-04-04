@@ -98,12 +98,18 @@ async function createRoom(roomName) {
     console.log('Creating/checking room:', roomName);
     
     // First check if room exists
-    const checkResponse = await fetch(`https://api.daily.co/v1/rooms/${roomName}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${CONFIG.DAILY.API_KEY}`
-      }
-    });
+    let checkResponse;
+    try {
+      checkResponse = await fetch(`https://api.daily.co/v1/rooms/${roomName}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${CONFIG.DAILY.API_KEY}`
+        }
+      });
+    } catch (networkError) {
+      console.error('Network error checking room existence:', networkError);
+      throw new Error(`Network error checking for room ${roomName}: ${networkError.message}`);
+    }
 
     // If room exists, return its URL
     if (checkResponse.ok) {
@@ -112,42 +118,68 @@ async function createRoom(roomName) {
       return `https://${CONFIG.DAILY.DOMAIN}/${roomName}`;
     }
 
-    // If room doesn't exist, create it
-    console.log('Room does not exist, creating it');
-    const response = await fetch('https://api.daily.co/v1/rooms', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${CONFIG.DAILY.API_KEY}`
-      },
-      body: JSON.stringify({
-        name: roomName,
-        privacy: 'public',
-        properties: {
-          enable_network_ui: false,
-          enable_chat: true,
-          enable_screenshare: true,
-          enable_prejoin_ui: false,
-          start_video_off: false,
-          start_audio_off: false,
-          exp: Math.round(Date.now() / 1000) + 24 * 60 * 60 // 24 hours from now
-        }
-      })
-    });
+    // If room doesn't exist (404), create it
+    if (checkResponse.status === 404) {
+      console.log('Room does not exist (404), creating it');
+      let createResponse;
+      try {
+        createResponse = await fetch('https://api.daily.co/v1/rooms', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${CONFIG.DAILY.API_KEY}`
+          },
+          body: JSON.stringify({
+            name: roomName,
+            privacy: 'public',
+            properties: {
+              enable_network_ui: false,
+              enable_chat: true,
+              enable_screenshare: true,
+              enable_prejoin_ui: false,
+              start_video_off: false,
+              start_audio_off: false,
+              exp: Math.round(Date.now() / 1000) + 24 * 60 * 60 // 24 hours from now
+            }
+          })
+        });
+      } catch (networkError) {
+        console.error('Network error creating room:', networkError);
+        throw new Error(`Network error creating room ${roomName}: ${networkError.message}`);
+      }
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Failed to create room:', errorData);
-      throw new Error(errorData.error || 'Failed to create room');
+      if (!createResponse.ok) {
+        let errorData;
+        try {
+          errorData = await createResponse.json();
+        } catch (parseError) {
+          errorData = { error: `Failed to parse error response (Status: ${createResponse.status})` };
+        }
+        console.error('Failed to create room:', errorData);
+        throw new Error(errorData.error || `Failed to create room (Status: ${createResponse.status})`);
+      }
+
+      const room = await createResponse.json();
+      console.log('Room created:', room);
+      return `https://${CONFIG.DAILY.DOMAIN}/${roomName}`;
+
+    } else {
+      // Handle other non-ok statuses from the initial check
+      let errorData;
+      try {
+        errorData = await checkResponse.json();
+      } catch (parseError) {
+         errorData = { error: `Failed to parse error response (Status: ${checkResponse.status})` };
+      }
+      console.error('Error checking room existence:', errorData);
+      throw new Error(errorData.error || `Failed to check room existence (Status: ${checkResponse.status})`);
     }
 
-    const room = await response.json();
-    console.log('Room created:', room);
-    return `https://${CONFIG.DAILY.DOMAIN}/${roomName}`;
   } catch (error) {
-    console.error('Error creating/checking room:', error);
-    // Fallback to direct room URL if API fails
-    return `https://${CONFIG.DAILY.DOMAIN}/${roomName}`;
+    // Re-throw the error to be caught by initializeDaily
+    console.error('Error in createRoom function:', error);
+    throw error; // Propagate the specific error
+    // DO NOT return a fallback URL here anymore
   }
 }
 
@@ -237,7 +269,6 @@ async function initializeDaily() {
     });
     
     console.log('Successfully joined room');
-    clearTimeout(initializationTimeout); // Clear the timeout after successful join
 
     // Check if screen sharing is available after joining
     setTimeout(async () => {
@@ -289,6 +320,7 @@ function handleJoiningMeeting(event) {
 }
 
 function handleJoinedMeeting(event) {
+  clearTimeout(initializationTimeout); 
   console.log('Joined meeting:', event);
   meetingFullyJoined = true;
   updateParticipantsList();

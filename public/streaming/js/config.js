@@ -1,10 +1,10 @@
 // public/streaming/js/config.js
-const CONFIG = {
+const CONFIG = { 
   DAILY: {
     // Your Daily.co domain - this should be configured in your Daily.co dashboard
-    DOMAIN: 'educationmaroc.daily.co',
+    DOMAIN: 'bacpack.daily.co',
     // Add your Daily.co API key here
-    API_KEY: '8dc623aefd1c1dcfa9d69a3d5bc8ffea7db18018fa470bace7fce36ee2b74a3f',
+    API_KEY: '64f3f69918bcf5de9a3d6d8eba97b55f78e37ac722169061ca509bb433e17ca8',
     VIDEO_SETTINGS: {
       width: 1280,
       height: 720,
